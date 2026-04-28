@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Runtime.ConstrainedExecution;
 using static DynamicTimeDraw.StaticConfig;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace DynamicTimeDraw
 {
@@ -25,7 +26,7 @@ namespace DynamicTimeDraw
 
         // Character to use for the first set of flingX items (e.g., "X", "❿", "⬤", etc.)
         const string _fighterShip = "▣";
-        const string _rebelShip= "⬙";
+        const string _raiderShip = "⬙";
         const string _towRigShip = "▢";
         // Number of flingX items to create
         const int _fling1Count = 30;
@@ -48,12 +49,11 @@ namespace DynamicTimeDraw
         readonly Font _closeBtnFont = new Font("Arial", 22, FontStyle.Regular);
         readonly Font _titleFont = new Font("Arial", 14, FontStyle.Bold);
 
-        readonly Color fgColor4 = Color.FromArgb(255, Color.White);         // divisible by 11   (rare, make brightest)
-        readonly Color fgColor6 = Color.FromArgb(255, 0, 255, 0);   // divisible by 7    (rare, make brightest)
-        readonly Color fgColor1 = Color.FromArgb(192, Color.Turquoise);    // divisible by 10   (kinda rare, make brigher)
-        readonly Color fgColor2 = Color.FromArgb(128, Color.RosyBrown);    // divisible by 3    (most common,t make dimmer)
-        readonly Color fgColor5 = Color.FromArgb(128, Color.Snow);         // divisible by 2    (most common, make dimmer)
-        readonly Color fgColor3 = Color.FromArgb(128, Color.Orange);       // default           (rest, dimmer, not divisible by 2, 3, 7, 10, or 11)
+        readonly Color _raiderColor = Color.FromArgb(255, 255, 255, 255);
+        readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
+        private Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
+        private Color _homeBaseLinkColor = Color.FromArgb(32, 0, 255, 0);
+
         readonly EventStatus _eventStatus = new EventStatus();
 
         internal static ItemReq CloseButton = ItemReq.Empty;
@@ -88,6 +88,15 @@ namespace DynamicTimeDraw
 
         private void BgPlatform_Paint(object sender, PaintEventArgs e)
         {
+            if (this.Cursor == Cursors.Hand)
+            {
+                this.Cursor.Draw(e.Graphics, _customCursor);
+            }
+            else if (this.Cursor == Cursors.No)
+            {
+                this.Cursor = Cursors.Default;
+                this.Cursor.Draw(e.Graphics, _customCursor);
+            }
             // 1. Set global quality once for the whole frame
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
@@ -230,6 +239,7 @@ namespace DynamicTimeDraw
                 }));
             }
         }
+        private Rectangle _customCursor = new Rectangle(0, 0, 1, 1);
         /// <summary>
         /// Initializes and displays a close button in the top-right corner of the view
         /// if it does not already exist.
@@ -274,6 +284,15 @@ namespace DynamicTimeDraw
                         InActiveHide = true,
                         AnimateClick = true,
                         Visible = true
+                    };
+
+                    CloseButton.MouseMove += (e, args) =>
+                    {
+                        // Change the cursor to a hand when hovering over the close button for better UX
+                        if (CloseButton.IsMouseInRect(args.Location))
+                            this.Cursor = Cursors.Hand;
+                        else if (this.Cursor == Cursors.Hand)
+                            this.Cursor = Cursors.No;
                     };
 
                     CloseButton.MouseUp += (e, args) =>
@@ -366,17 +385,11 @@ namespace DynamicTimeDraw
                         // Randomly position the flingX items within the bounds of the form
                         x = Random.Shared.Next(0, w + 1);
                         y = Random.Shared.Next(0, h + 1);
-                        //var clr = (x % 3) == 0 ? fgColor2 :   // divisible by 3 is the most common other than 2
-                        //          (x % 7) == 0 ? fgColor6 :   // divisible by 7 is the rarest other than 11.
-                        //          (x % 10) == 0 ? fgColor1 :  // divisible by 10 is the second rarest.
-                        //          (x % 11) == 0 ? fgColor4 :  // divisible by 11 is the rarest other than 7.
-                        //          (x % 2) == 0 ? fgColor5 :   // divisible by 2 is the most common other than 3.
-                        //          fgColor3;                   // anything else that isn't divisible by 2, 3, 7, 10, or 11.
 
                         // Alternate between two different ship characters for visual variety
-                        var shipImg = (x % 2) == 0 ? _rebelShip : _fighterShip;
+                        var shipImg = (x % 2) == 0 ? _raiderShip : _fighterShip;
                         var shipType = (x % 2) == 0 ? ShipType.Raider : ShipType.Fighter;
-                        var shipColor = (x % 2) == 0 ? fgColor4 : fgColor6;   
+                        var shipColor = (x % 2) == 0 ? _raiderColor : _fighterColor;   
                         var partName = $"{shipType}";
 
                         var fly = new ItemReq(this, $"{partName}_{cnt:000}")
@@ -402,9 +415,6 @@ namespace DynamicTimeDraw
                         FlingX.Add(fly);
                     }
 
-                    var homeBaseLinkColor = Color.FromArgb(64, Color.AliceBlue);
-                    var capitalShipColor = Color.FromArgb(128, Color.Gold);
-
                     // Create x amount of  animated "X" items that will fling out
                     // from the center of the form when triggered.
                     for (int cnt = 0; cnt < _fling2Count; cnt++)
@@ -422,7 +432,7 @@ namespace DynamicTimeDraw
                                 Font = _largeFlierFont,
                                 Text = _capitalShip,
                                 ShadowDepth = _shadowStyle.depth,
-                                ShadowColor = Color.FromArgb(64, capitalShipColor),
+                                ShadowColor = Color.FromArgb(64, _capitalShipColor),
                             },
                             DestinationRange = (uint)this.Width / 2,
                             DrunkEffect = false,
@@ -430,9 +440,7 @@ namespace DynamicTimeDraw
                             DLine =
                             {
                                 // used for the lines in the matrix grid.
-                                Pen = new Pen(homeBaseLinkColor, 2),
-                                // if LineShadowPen is commented, it wil not have a shadow on the lines.
-                                ShadowPen = new Pen(Color.FromArgb(28, homeBaseLinkColor), 2),
+                                Pen = new Pen(_homeBaseLinkColor, 2),
                                 // Set HasAnchor to true to indicate that the line should be anchored
                                 // to a specific point (the center of the form in this case).
                                 HasAnchor = true,
@@ -444,7 +452,7 @@ namespace DynamicTimeDraw
                         // the anchor location, while the end is dynamic following the ItemRec.
                         fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                         fly.SpaceBattle = _useBattlegrounds;
-                        fly.SetShiptType(ShipType.Capital, capitalShipColor);
+                        fly.SetShiptType(ShipType.Capital, _capitalShipColor);
                         FlingX.Add(fly);
                     }
                 }));
