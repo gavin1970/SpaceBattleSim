@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+		<PropertyGroup>
+				<Authors>Chizl</Authors>
+				<PackageId>DynamicTimeDraw</PackageId>
+				<Company>chizl.com</Company>
+				<Copyright>© 2026 chizl.com</Copyright>
+				<PackageTags>dynamic-time-draw</PackageTags>
+        <ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
+        <PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
+				<AssemblyVersion>6.0.0.0</AssemblyVersion>
+				<FileVersion>6.4.28.1855</FileVersion>
+				<Version>6.4.28.0</Version>
+		</PropertyGroup>
+		
+  <ItemGroup>
+    <Content Include="Chizl_Atomic_Blue_512.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Chizl_Atomic_Blue_512.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Chizl.TextLogger">
+      <HintPath>..\..\..\Libraries\AnyOS\Chizl.TextLogger\src\Chizl.TextLogger\bin\Release\net8.0\Chizl.TextLogger.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
