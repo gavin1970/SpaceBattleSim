@@ -24,30 +24,32 @@ namespace DynamicTimeDraw
         const int _matrixCellSize = 40;     // Size of the matrix grid (50pxx50px)
 
         // Character to use for the first set of flingX items (e.g., "X", "❿", "⬤", etc.)
-        const string _fling1Str = "⬙";
+        const string _fighterShip = "▣";
+        const string _rebelShip= "⬙";
+        const string _towRigShip = "▢";
         // Number of flingX items to create
         const int _fling1Count = 30;
 
         // Character to use for the second set of flingX items (e.g., "⭄", "⬙", "⬤", "❿", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
-        const string _fling2Str = "⭄";
+        const string _capitalShip = "⭄";
         // Number of flingX items to create for the second set with different styling
         const int _fling2Count = (_fling1Count / 7);
 
-        const float _moveX = 0.0f;          // Moves X position of HomeBase and _fling2Str anchor points if changed.
+        const float _moveX = 0.0f;          // Moves X position of HomeBase and _capitalShip anchor points if changed.
                                             // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
-        const float _moveY = 0.0f;          // Moves Y position of HomeBase and _fling2Str anchor points if changed.
+        const float _moveY = 0.0f;          // Moves Y position of HomeBase and _capitalShip anchor points if changed.
                                             // Center Screen: 0.0f, Far Top: -455.0f, Far Bottom: 450.0f.
-        const float _anchorX = 758.0f;      // _fling2Str Lines: - Base X anchor point of lines to the large flingX moving items.
-        const float _anchorY = 540.0f;      // _fling2Str Lines: - Base Y anchor point of lines to the large flingX moving items.
+        const float _anchorX = 758.0f;      // _capitalShip Lines: - Base X anchor point of lines to the large flingX moving items.
+        const float _anchorY = 540.0f;      // _capitalShip Lines: - Base Y anchor point of lines to the large flingX moving items.
 
         readonly (Color color, uint depth) _shadowStyle = (Color.FromArgb(64, Color.White), 5);
-        readonly Font _flyxFont = new Font("Arial", 12, FontStyle.Regular);
-        readonly Font _flyLrgXFont = new Font("Arial", 20, FontStyle.Regular);
+        readonly Font _smallFlierFont = new Font("Arial", 12, FontStyle.Regular);
+        readonly Font _largeFlierFont = new Font("Arial", 20, FontStyle.Regular);
         readonly Font _closeBtnFont = new Font("Arial", 22, FontStyle.Regular);
         readonly Font _titleFont = new Font("Arial", 14, FontStyle.Bold);
 
         readonly Color fgColor4 = Color.FromArgb(255, Color.White);         // divisible by 11   (rare, make brightest)
-        readonly Color fgColor6 = Color.FromArgb(255, Color.Green);   // divisible by 7    (rare, make brightest)
+        readonly Color fgColor6 = Color.FromArgb(255, 0, 255, 0);   // divisible by 7    (rare, make brightest)
         readonly Color fgColor1 = Color.FromArgb(192, Color.Turquoise);    // divisible by 10   (kinda rare, make brigher)
         readonly Color fgColor2 = Color.FromArgb(128, Color.RosyBrown);    // divisible by 3    (most common,t make dimmer)
         readonly Color fgColor5 = Color.FromArgb(128, Color.Snow);         // divisible by 2    (most common, make dimmer)
@@ -345,10 +347,8 @@ namespace DynamicTimeDraw
         {
             if (FlingX.Count == 0)
             {
-                // Size of the close button
-                var closeSize = new Size(30, 30);
-                // Set to true to use lines instead of text for the "X" button
-                var useLines = false;
+                // Size of the flier button
+                var flierSize = new Size(30, 30);
 
                 // Calculate the X/Y Location of the close button that will be in the top-right corner
                 // of the screen. Accounting for top and right padding along with the MatrixArray border
@@ -366,28 +366,29 @@ namespace DynamicTimeDraw
                         // Randomly position the flingX items within the bounds of the form
                         x = Random.Shared.Next(0, w + 1);
                         y = Random.Shared.Next(0, h + 1);
-                        var clr = (x % 3) == 0 ? fgColor2 :   // divisible by 3 is the most common other than 2
-                                  (x % 7) == 0 ? fgColor6 :   // divisible by 7 is the rarest other than 11.
-                                  (x % 10) == 0 ? fgColor1 :  // divisible by 10 is the second rarest.
-                                  (x % 11) == 0 ? fgColor4 :  // divisible by 11 is the rarest other than 7.
-                                  (x % 2) == 0 ? fgColor5 :   // divisible by 2 is the most common other than 3.
-                                  fgColor3;                   // anything else that isn't divisible by 2, 3, 7, 10, or 11.
+                        //var clr = (x % 3) == 0 ? fgColor2 :   // divisible by 3 is the most common other than 2
+                        //          (x % 7) == 0 ? fgColor6 :   // divisible by 7 is the rarest other than 11.
+                        //          (x % 10) == 0 ? fgColor1 :  // divisible by 10 is the second rarest.
+                        //          (x % 11) == 0 ? fgColor4 :  // divisible by 11 is the rarest other than 7.
+                        //          (x % 2) == 0 ? fgColor5 :   // divisible by 2 is the most common other than 3.
+                        //          fgColor3;                   // anything else that isn't divisible by 2, 3, 7, 10, or 11.
 
-                        clr = (x % 2) == 0 ? fgColor4 : fgColor6;   // TESTING
-                        var partName = clr == fgColor6 ? $"{ShipType.Fighter}" : $"{ShipType.Raider}";
+                        // Alternate between two different ship characters for visual variety
+                        var shipImg = (x % 2) == 0 ? _rebelShip : _fighterShip;
+                        var shipType = (x % 2) == 0 ? ShipType.Raider : ShipType.Fighter;
+                        var shipColor = (x % 2) == 0 ? fgColor4 : fgColor6;   
+                        var partName = $"{shipType}";
 
                         var fly = new ItemReq(this, $"{partName}_{cnt:000}")
                         {
                             Location = new PointF(x, y),
-                            Size = closeSize,
-                            //HitBox = 50,
+                            Size = flierSize,
                             ShadowDepth = _shadowStyle.depth,
                             DText = {
-                                TextColor = clr,
-                                Font = _flyxFont,
-                                Text = _fling1Str,
+                                Font = _smallFlierFont,
+                                Text = shipImg,
                                 ShadowDepth = _shadowStyle.depth,
-                                ShadowColor = Color.FromArgb(32, Color.White)
+                                ShadowColor = Color.FromArgb(32, shipColor),
                             },
                             DestinationRange = (uint)this.Width / 2,
                             // DrunkEffect = true,
@@ -395,19 +396,14 @@ namespace DynamicTimeDraw
                             Visible = true
                         };
 
-                        if (clr == fgColor6 || clr == fgColor4)
-                        {
-                            fly.SpaceBattle = _useBattlegrounds;
-                            fly.SetShiptType(clr == fgColor6 ? ShipType.Fighter : ShipType.Raider, clr);
-                        }
+                        fly.SpaceBattle = _useBattlegrounds;
+                        fly.SetShiptType(shipType, shipColor);
 
                         FlingX.Add(fly);
                     }
 
-                    closeSize = new Size(100, 100);
-                    var fgColor = Color.FromArgb(64, Color.Yellow);
-                    var fgColorTip = Color.FromArgb(128, Color.Gold);
-                    useLines = true;
+                    var homeBaseLinkColor = Color.FromArgb(64, Color.AliceBlue);
+                    var capitalShipColor = Color.FromArgb(128, Color.Gold);
 
                     // Create x amount of  animated "X" items that will fling out
                     // from the center of the form when triggered.
@@ -419,16 +415,14 @@ namespace DynamicTimeDraw
                         var fly = new ItemReq(this, $"Capital_{cnt:000}")
                         {
                             Location = new PointF(x, y),
-                            Size = closeSize,
+                            Size = new Size(100, 100),
                             ShadowDepth = _shadowStyle.depth,
                             SpaceBattle = _useBattlegrounds,
-                            //HitBox = 75,
                             DText = {
-                                Text = _fling2Str,
-                                TextColor = fgColorTip,
+                                Font = _largeFlierFont,
+                                Text = _capitalShip,
                                 ShadowDepth = _shadowStyle.depth,
-                                ShadowColor = Color.FromArgb(64, Color.White),
-                                Font = _flyLrgXFont,
+                                ShadowColor = Color.FromArgb(64, capitalShipColor),
                             },
                             DestinationRange = (uint)this.Width / 2,
                             DrunkEffect = false,
@@ -436,9 +430,9 @@ namespace DynamicTimeDraw
                             DLine =
                             {
                                 // used for the lines in the matrix grid.
-                                Pen = new Pen(fgColor, 2),
+                                Pen = new Pen(homeBaseLinkColor, 2),
                                 // if LineShadowPen is commented, it wil not have a shadow on the lines.
-                                ShadowPen = new Pen(Color.FromArgb(28, fgColor), 2),
+                                ShadowPen = new Pen(Color.FromArgb(28, homeBaseLinkColor), 2),
                                 // Set HasAnchor to true to indicate that the line should be anchored
                                 // to a specific point (the center of the form in this case).
                                 HasAnchor = true,
@@ -446,15 +440,11 @@ namespace DynamicTimeDraw
                             Visible = true
                         };
 
-                        if (useLines)
-                        {
-                            // When anchoring lines and using Animation, the start of the line is
-                            // the anchor location, while the end is dynamic following the ItemRec.
-                            fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
-                        }
-
+                        // When anchoring lines and using Animation, the start of the line is
+                        // the anchor location, while the end is dynamic following the ItemRec.
+                        fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                         fly.SpaceBattle = _useBattlegrounds;
-                        fly.SetShiptType(ShipType.Capital, fgColorTip);
+                        fly.SetShiptType(ShipType.Capital, capitalShipColor);
                         FlingX.Add(fly);
                     }
                 }));

@@ -1,7 +1,6 @@
 ﻿using Chizl.IO.Logging;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using static DDefaults;
 
 namespace DynamicTimeDraw
@@ -13,9 +12,6 @@ namespace DynamicTimeDraw
     internal class ItemReq
     {
         const int _alternateShadowDepth = 7;
-        const int _maxRandomSkip = 30;
-        const int _upperRandomRange = _maxRandomSkip / 10;
-        const int _lowerRandomRange = _maxRandomSkip - _upperRandomRange;
 
         /// <summary>
         /// Provides a StringFormat configured to center text both horizontally and vertically.
@@ -23,6 +19,7 @@ namespace DynamicTimeDraw
         static readonly StringFormat _centerText = new() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
         internal static readonly ConcurrentDictionary<string, SpaceShip> _allSpaceShips = new ConcurrentDictionary<string, SpaceShip>();
         private ABool _isInBattleCheck = ABool.False;
+        private ABool _isSpaceBattle = ABool.False;
         private TextLogger _logger = TextLogger.Empty;
 
         private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
@@ -336,6 +333,7 @@ namespace DynamicTimeDraw
             // instance with the specified type and color,
             _spaceShip = new SpaceShip(Name, stype, shipsColor);
             _allSpaceShips.TryAdd(Name, _spaceShip);
+            _isSpaceBattle.TrySetTrue();
         }
         /// <summary>
         /// Gets the current spaceship information.
@@ -372,7 +370,6 @@ namespace DynamicTimeDraw
         {
             try
             {
-                int animationSpeed = 1;
                 int boxShadowDepth = this.BoxShadowing ? (this.ShadowDepth == 0 ? _alternateShadowDepth : (int)this.ShadowDepth) : 0;
 
                 // Calculate the rectangle for the close button based on form size and padding
@@ -395,7 +392,7 @@ namespace DynamicTimeDraw
                     // It is throttled to _scanInterval to avoid flooding the thread pool when many
                     // ships fight simultaneously. At 1px/frame the steering lag is at most ~7px
                     // per interval, which is imperceptible.
-                    if (this.SpaceBattle)
+                    if (_isSpaceBattle)
                     {
                         // Throttled async scan: steering + damage + new-target search at most once per _scanInterval.
                         var now = DateTime.UtcNow;
@@ -443,15 +440,14 @@ namespace DynamicTimeDraw
                                             }
                                             else
                                             {
-                                                // Always steer toward the locked target.
+                                                // Break lock if target is out of range, so the ship can
+                                                // search for a new one instead of chasing a lost cause.
                                                 _activeTargetName = string.Empty;
-                                                //_pendingDestination = locked.Location;
                                             }
                                         }
                                         else
                                         {
                                             // Target is dead or gone — clear lock.
-                                            // _logger.WriteLine(LogLevel.Debug, $"'{Name}' lost lock on '{_activeTargetName}' (dead or gone)");
                                             _activeTargetName = string.Empty;
                                         }
                                     }
@@ -495,17 +491,16 @@ namespace DynamicTimeDraw
                                             }
                                         }
 
-                                        // _logger.WriteLine(LogLevel.Debug, $"'{Name}' search concluded with {((closest == null) ? "none" : $"'{closest.Name}'")} found.");
-
                                         if (closest != null)
                                         {
                                             _activeTargetName = closest.Name;
                                             _pendingDestination = closest.Location;
-                                            closest.TakeDamage(_spaceShip.Power, Name);
                                             _lastTargetLocation = closest.Location;
                                             _lastCombatTime = DateTime.UtcNow;
-                                            _allSpaceShips[closest.Name] = closest;
-                                            // _logger.WriteLine(LogLevel.Debug, $"'{Name}' acquired '{closest.Name}' @ '{closest.Location}' dist={closestDist:F1}");
+
+                                            // closest.TakeDamage(_spaceShip.Power, Name);
+                                            // _allSpaceShips[closest.Name] = closest;
+                                            _allSpaceShips[closest.Name].TakeDamage(_spaceShip.Power, Name);
                                         }
                                     }
 
@@ -534,6 +529,7 @@ namespace DynamicTimeDraw
                         var lY = Math.Min(_pendingDestination.Y, this.ShipInfo.Location.Y);
                         var hY = Math.Min(_pendingDestination.Y, this.ShipInfo.Location.Y);
 
+                        // this way theyare not on top of each other constantly.
                         var rX = Random.Shared.Next((int)lX, (int)hX) + (lX - (int)lX);
                         var rY = Random.Shared.Next((int)lY, (int)hY) + (lY - (int)lY);
 
@@ -558,21 +554,21 @@ namespace DynamicTimeDraw
                         }
                     }
 
-                    if(this.SpaceBattle)
+                    if (_isSpaceBattle)
                     {
                         if (this.Location.X < this.NextDestination.X)
-                            x = Math.Min(this.Location.X + animationSpeed, this.NextDestination.X);
+                            x = Math.Min(this.Location.X + _spaceShip.Speed, this.NextDestination.X);
                         else
-                            x = Math.Max(this.Location.X - animationSpeed, this.NextDestination.X);
+                            x = Math.Max(this.Location.X - _spaceShip.Speed, this.NextDestination.X);
                         if (this.Location.Y < this.NextDestination.Y)
-                            y = Math.Min(this.Location.Y + animationSpeed, this.NextDestination.Y);
+                            y = Math.Min(this.Location.Y + _spaceShip.Speed, this.NextDestination.Y);
                         else
-                            y = Math.Max(this.Location.Y - animationSpeed, this.NextDestination.Y);
+                            y = Math.Max(this.Location.Y - _spaceShip.Speed, this.NextDestination.Y);
                     }
 
                     this.Location = new PointF(x, y);
 
-                    if (this.SpaceBattle)
+                    if (_isSpaceBattle)
                     {
                         _spaceShip.Location = this.Center;
                         _allSpaceShips[Name] = _spaceShip;
@@ -635,47 +631,13 @@ namespace DynamicTimeDraw
                         g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
                     }
 
-                    if (this.SpaceBattle || _spaceShip != null)
+                    if (_isSpaceBattle)
                         g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
                     else
                         g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
 
-                    // used for ship damage.  If overlay color is not transparent, draw the text again with the
-                    // overlay color to create a damage effect, allowing us to visually indicate damage or other
-                    // status effects on the text content without needing separate properties for each effect.
-                    /*
-                    if (this.SpaceBattle)
-                    {
-                        // 1. Use your existing Center property - much cleaner!
-                        var currentCenter = ShipInfo.ShipsCenter;
-                        var hitBoxRange = (float)ShipInfo.HitBox;
-
-                        // 2. Draw the detection radius centered on the ship
-                        var hbRect = new RectangleF(
-                            currentCenter.X - hitBoxRange,
-                            currentCenter.Y - hitBoxRange,
-                            hitBoxRange * 2,
-                            hitBoxRange * 2);
-
-                        if (g != null)
-                        {
-                            g.DrawEllipse(_hitboxCircle, hbRect);
-
-                            if (_showFire.TrySetTrue() && !_lastTargetLocation.IsEmpty && (DateTime.UtcNow - _lastCombatTime).TotalMilliseconds < 300)
-                            {
-                                // Draw the laser from center to target
-                                g.DrawLine(DEF_LASER_LINE, currentCenter, _lastTargetLocation);
-
-                                // Optional: Add a small "Muzzle Flash" at the ship center
-                                // g.FillEllipse(Brushes.White, shipCenter.X - 2, shipCenter.Y - 2, 4, 4);
-                            }
-                            else if (_showFire)
-                                _showFire.SetFalse();
-                        }
-                    }
-                    /**/
                     //*
-                    if (this.SpaceBattle)
+                    if (_isSpaceBattle && _spaceShip.Status != ShipStatus.Dead)
                     {
                         // Draw the detection radius as a circle correctly centered on the ship
                         // and sized to match ShipInfo.HitBox (the actual combat range).
@@ -739,7 +701,7 @@ namespace DynamicTimeDraw
         {
             try
             {
-                if (this.SpaceBattle)
+                if (_isSpaceBattle)
                     return false;
 
                 // First, check if the mouse position is within the bounds of the parent form to avoid unnecessary calculations.

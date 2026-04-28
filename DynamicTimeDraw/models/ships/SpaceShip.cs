@@ -27,7 +27,7 @@ namespace DynamicTimeDraw
         private uint _shields = 0;
         private uint _orgPower = 0;
         private uint _power = 0;
-        private uint _speed = 0;
+        private float _speed = 0.5f;
         // The last attack time is stored as an Autonomous DateTime, which can be used
         // to track if currently in battle. This allows for cooldown management,
         // attack rate limiting, and other time-based mechanics in the game or
@@ -202,7 +202,7 @@ namespace DynamicTimeDraw
         /// The speed value is used to determine the ship's status and can affect its performance in various<br/>
         /// ways, such as reducing maneuverability or changing its visual representation based on the damage level.<br/>
         /// </summary>
-        public uint Speed => _speed;
+        public float Speed => _speed;
 
         /// <summary>
         /// Gets a value indicating whether the ship is currently in battle. A ship is considered 
