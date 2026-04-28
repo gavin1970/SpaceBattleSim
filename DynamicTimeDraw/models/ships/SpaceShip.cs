@@ -46,11 +46,15 @@ namespace DynamicTimeDraw
         // user interface or game environment.
         private Color _damageColor = Color.Transparent;
         private Color _orgShipColor = Color.Transparent;
-        private SolidBrush _shipsColorBrush = new SolidBrush(Color.FromArgb(255, 0, 255, 0));
-        private Color _shipsColor = Color.FromArgb(255, 0, 255, 0); //Pure Green aka, Lime 
+        private ShipMission _shipsMission = ShipMission.Idle;
+        private SolidBrush _shipsColorBrush = new SolidBrush(Color.FromArgb(255, 127, 127, 127));   // default
+        private Color _shipsColor = Color.FromArgb(255, 127, 127, 127); //Pure Green aka, Lime 
         private string _shipName = string.Empty;
         private bool _isEnabled = false;
         private bool _isEmpty = true;
+        // special case
+        private bool _isTowRig = false;
+        private bool _isRaider = false;
 
         private ConcurrentDictionary<string, object> _customData = new ConcurrentDictionary<string, object>();
 
@@ -58,7 +62,7 @@ namespace DynamicTimeDraw
         /// Initializes a new instance of the <see cref="SpaceShip"/> class with the specified type.
         /// </summary>
         /// <param name="type">The type of the spaceship.</param>
-        public SpaceShip(string name, ShipType type, Color shipColor)// : base(shipSize)
+        public SpaceShip(string name, ShipType type, Color shipColor)
         {
             if (!string.IsNullOrWhiteSpace(name))
             {
@@ -75,6 +79,9 @@ namespace DynamicTimeDraw
                                              this.ShipsCenter.Y - _hitBox,
                                              _hitBox * 2,
                                              _hitBox * 2);
+                
+                _isTowRig = type == ShipType.TowRig;
+                _isRaider = type == ShipType.Raider;
 
                 _orgShipColor = shipColor;
                 _shipsColor = shipColor;
@@ -167,6 +174,51 @@ namespace DynamicTimeDraw
         /// such as gameplay mechanics or visual representations in a game or simulation.
         /// </summary>
         public ShipType ShipType => _shipType;
+        /// <summary>
+        /// TowRig is a special case. 
+        /// Gets a value indicating whether the vehicle is configured as a tow rig.
+        /// </summary>
+        public bool IsTowRig => _isTowRig;
+        /// <summary>
+        /// Like TowRig, Raiders are a special case. Raiders are aggressive ships that can attack other 
+        /// ships and cause damage.  Gets a value indicating whether the entity is classified as a raider.
+        /// </summary>
+        public bool IsRaider => _isRaider;
+        public bool SetTower(string towerName, float towerDistance)
+        {
+            if (this.IsEmpty)
+                return false;
+
+            if (NeedTowRig.TrySetFalse())
+            {
+                TowerName = towerName;
+                TowerDistance = towerDistance;
+                return true;
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether a tow rig is required.
+        /// </summary>
+        public ABool NeedTowRig { get; } = ABool.False;
+        /// <summary>
+        /// Gets or sets the name of the tower.
+        /// </summary>
+        public string TowerName { get; private set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the distance to the tower, measured in units relevant to the application's context.
+        /// </summary>
+        public float TowerDistance { get; set; } = 0.0f;
+
+        /// <summary>
+        /// Gets the current mission assigned to the ship.
+        /// </summary>
+        public ShipMission CurrentMission
+        {
+            get { return _shipsMission; }
+            set { _shipsMission = value; }
+        }
         /// <summary>
         /// Gets the current status of the ship. The status is determined based on the ship's health and other<br/>
         /// factors, such as damage taken and shield levels. This allows for easy categorization and management<br/>
@@ -356,7 +408,6 @@ namespace DynamicTimeDraw
                 {
                     _shipsColor = ColorConvert.GetOverlayColor(damageColor, _orgShipColor);
                     var newBrush = new SolidBrush(_shipsColor);
-
                     _customData.TryUpdate(SHIP_COLR_BRUSH_KEY, newBrush, _shipsColorBrush);
 
                     return newBrush;
@@ -377,6 +428,7 @@ namespace DynamicTimeDraw
             
             _power = _orgPower;
             _shields = _orgShields;
+            _shipsMission = ShipMission.Idle;
 
             UpdateStatus();
         }

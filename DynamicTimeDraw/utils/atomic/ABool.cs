@@ -30,7 +30,7 @@ namespace Chizl.ThreadSupport
     ///   <item><description>Cheap</description></item>
     /// </list>
     /// </summary>
-    internal sealed class ABool : IEquatable<ABool>
+    public sealed class ABool : IEquatable<ABool>
     {
         private const int FALSE = 0;
         private const int TRUE = 1;

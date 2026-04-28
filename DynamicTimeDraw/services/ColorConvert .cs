@@ -21,6 +21,9 @@
                 byte g;
                 byte b;
 
+                if (fgColor.A == 0)
+                    return bgColor;
+
                 // if alpha is 0 or 1, treat as fully opaque for blending purposes.
                 if (bgColor.A <= 1)
                     bgColor = Color.FromArgb(255, bgColor);

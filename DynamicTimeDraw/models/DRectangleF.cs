@@ -1,4 +1,6 @@
-﻿namespace DynamicTimeDraw
+﻿using static System.Net.WebRequestMethods;
+
+namespace DynamicTimeDraw
 {
     public class DRectangleF
     {
@@ -109,7 +111,10 @@
         public float Left
         {
             get => _rect.X;
-            set => _rect.X = Math.Clamp(value, 0, _boundary.Width - _rect.Width);
+            set
+            {
+                _rect.X = Math.Clamp(value, 0, _boundary.Width - _rect.Width);
+            }
         }
         /// <summary>
         /// Gets or sets the Y-coordinate of the top edge of the rectangle, constrained within the vertical bounds of
@@ -122,7 +127,10 @@
         public float Top
         {
             get => _rect.Y;
-            set => _rect.Y = Math.Clamp(value, 0, _boundary.Height - _rect.Height);
+            set
+            {
+                _rect.Y = Math.Clamp(value, 0, _boundary.Height - _rect.Height);
+            }
         }
         /// <summary>
         /// Gets or sets the width of the rectangle, constrained by the boundary limits.
@@ -133,7 +141,10 @@
         public float Width
         {
             get => _rect.Width;
-            set => _rect.Width = Math.Clamp(value, 0, _boundary.Width - _rect.X);
+            set
+            {
+                _rect.Width = Math.Clamp(value, 0, _boundary.Width - _rect.X);
+            }
         }
         /// <summary>
         /// Gets or sets the height of the rectangle, constrained within the allowed boundary.
@@ -144,7 +155,10 @@
         public float Height
         {
             get => _rect.Height;
-            set => _rect.Height = Math.Clamp(value, 0, _boundary.Height - _rect.Y);
+            set
+            {
+                _rect.Height = Math.Clamp(value, 0, _boundary.Height - _rect.Y);
+            }
         }
         /// <summary>
         /// Gets or sets the center point of the rectangle within its boundary.

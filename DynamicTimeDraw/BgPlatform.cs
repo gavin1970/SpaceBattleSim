@@ -27,14 +27,20 @@ namespace DynamicTimeDraw
         // Character to use for the first set of flingX items (e.g., "X", "❿", "⬤", etc.)
         const string _fighterShip = "▣";
         const string _raiderShip = "⬙";
-        const string _towRigShip = "▢";
-        // Number of flingX items to create
-        const int _fling1Count = 30;
+        // Total number of flighters and Raiders combined.
+        const int _flierCount = 30;
 
         // Character to use for the second set of flingX items (e.g., "⭄", "⬙", "⬤", "❿", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
         const string _capitalShip = "⭄";
-        // Number of flingX items to create for the second set with different styling
-        const int _fling2Count = (_fling1Count / 7);
+        // Number of capital shipss to create
+        const int _capShipCount = (_flierCount / 7);
+
+        // TowRig are for towing Dead ships back to the HomeBase. They don't have a lot of power,
+        // but have a lot of shields. They are anchored to the HomeBase like the Captital Ships and
+        // can be attacked by Raiders.
+        const string _towRigShip = "▢";
+        // Number of TowRig ships to create
+        const int _towRigCount = (_flierCount / 5);
 
         const float _moveX = 0.0f;          // Moves X position of HomeBase and _capitalShip anchor points if changed.
                                             // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
@@ -51,8 +57,9 @@ namespace DynamicTimeDraw
 
         readonly Color _raiderColor = Color.FromArgb(255, 255, 255, 255);
         readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
-        private Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
-        private Color _homeBaseLinkColor = Color.FromArgb(32, 0, 255, 0);
+        readonly Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
+        readonly Color _towRigShipColor = Color.FromArgb(255, 255, 0, 255);
+        readonly Color _homeBaseLinkColor = Color.FromArgb(32, 0, 255, 0);
 
         readonly EventStatus _eventStatus = new EventStatus();
 
@@ -116,20 +123,6 @@ namespace DynamicTimeDraw
             if (!CloseButton.IsEmpty) CloseButton.DrawItem(e.Graphics);
         }
 
-        private void BgPlatform_Paint2(object sender, PaintEventArgs e)
-        {
-            // The form's Paint event is used to trigger the drawing of all ItemReq controls.
-            // Each ItemReq is responsible for drawing itself when the form repaints. By calling
-            // Refresh on each ItemReq, we ensure that they are redrawn with their current properties
-            // and states. This allows for dynamic updates to the controls (like animations, color changes, etc.)
-            // to be reflected visually on the form whenever it repaints.
-            MatrixArray.Refresh();
-            HomeBase.Refresh();
-            TitleText.Refresh();
-            CloseButton.Refresh();
-            foreach (var flier in FlingX) flier.Refresh();
-        }
-
         /// <summary>
         /// One time method to create all the necessary ItemReq objects for the form. 
         /// This is called in the constructor after a short delay to ensure the form 
@@ -161,7 +154,7 @@ namespace DynamicTimeDraw
                 // =================================================================
                 // Build other controls on top of the matrix background, but in the order of which layer they should appear.
                 BuildHomeBase();
-                BuildFlingX();
+                BuildFliers();
 
                 // =================================================================
                 // last object created so it appears on top of the others
@@ -308,8 +301,6 @@ namespace DynamicTimeDraw
                         if (_eventStatus.Set(_formClosing, true))
                         {
                             CloseButton.BGColor = bgColor;
-                            // Force the form to redraw to update the button's appearance
-                            CloseButton.Refresh();
                             // wait 1/2 second to allow user to see the button release effect
                             // before closing the form
                             Task.Delay(500).ContinueWith(_ =>
@@ -333,8 +324,6 @@ namespace DynamicTimeDraw
                         {
                             // Change the background color back to the original color after 1 second
                             CloseButton.BGColor = bgColor;
-                            // Force the form to redraw to update the button's appearance
-                            CloseButton.Refresh();
                         });
                     };
 
@@ -362,12 +351,14 @@ namespace DynamicTimeDraw
         ///    Each item is positioned randomly near the center of the form and can display 
         ///    either an 'X' character or intersecting lines, depending on configuration.
         /// </remarks>
-        private void BuildFlingX()
+        private void BuildFliers()
         {
             if (FlingX.Count == 0)
             {
                 // Size of the flier button
                 var flierSize = new Size(30, 30);
+                var capSize = new Size(100, 100);
+                var towSize = new Size(30, 30);
 
                 // Calculate the X/Y Location of the close button that will be in the top-right corner
                 // of the screen. Accounting for top and right padding along with the MatrixArray border
@@ -380,7 +371,7 @@ namespace DynamicTimeDraw
                     int x, y;
                     // Create x amount of  animated "X" items that will fling out
                     // from the center of the form when triggered.
-                    for (int cnt = 0; cnt < _fling1Count; cnt++)
+                    for (int cnt = 0; cnt < _flierCount; cnt++)
                     {
                         // Randomly position the flingX items within the bounds of the form
                         x = Random.Shared.Next(0, w + 1);
@@ -417,7 +408,7 @@ namespace DynamicTimeDraw
 
                     // Create x amount of  animated "X" items that will fling out
                     // from the center of the form when triggered.
-                    for (int cnt = 0; cnt < _fling2Count; cnt++)
+                    for (int cnt = 0; cnt < _capShipCount; cnt++)
                     {
                         x = Random.Shared.Next(0, w + 1);
                         y = Random.Shared.Next(0, h + 1);
@@ -425,7 +416,7 @@ namespace DynamicTimeDraw
                         var fly = new ItemReq(this, $"Capital_{cnt:000}")
                         {
                             Location = new PointF(x, y),
-                            Size = new Size(100, 100),
+                            Size = capSize,
                             ShadowDepth = _shadowStyle.depth,
                             SpaceBattle = _useBattlegrounds,
                             DText = {
@@ -435,7 +426,6 @@ namespace DynamicTimeDraw
                                 ShadowColor = Color.FromArgb(64, _capitalShipColor),
                             },
                             DestinationRange = (uint)this.Width / 2,
-                            DrunkEffect = false,
                             Animation = true,
                             DLine =
                             {
@@ -455,6 +445,51 @@ namespace DynamicTimeDraw
                         fly.SetShiptType(ShipType.Capital, _capitalShipColor);
                         FlingX.Add(fly);
                     }
+
+                    // Create x amount of  animated "X" items that will fling out
+                    // from the center of the form when triggered.
+                    for (int cnt = 0; cnt < _towRigCount; cnt++)
+                    {
+                        x = Random.Shared.Next((int)(_anchorX - 100.0f), (int)(_anchorX + 100.0f));
+                        y = Random.Shared.Next((int)(_anchorY - 100.0f), (int)(_anchorY + 100.0f));
+
+                        var fly = new ItemReq(this, $"TowRig_{cnt:000}")
+                        {
+                            Location = new PointF(x, y),
+                            Size = towSize,
+                            ShadowDepth = _shadowStyle.depth,
+                            SpaceBattle = _useBattlegrounds,
+                            DText = {
+                                Font = _smallFlierFont,
+                                Text = _towRigShip,
+                                ShadowDepth = _shadowStyle.depth,
+                                ShadowColor = Color.FromArgb(64, _towRigShipColor),
+                            },
+                            DestinationRange = (uint)this.Width / 2,
+                            Animation = false,
+                            DLine =
+                            {
+                                // used for the lines in the matrix grid.
+                                Pen = new Pen(_homeBaseLinkColor, 2),
+                                // Set HasAnchor to true to indicate that the line should be anchored
+                                // to a specific point (the center of the form in this case).
+                                HasAnchor = true,
+                            },
+                            Visible = true
+                        };
+
+                        // When anchoring lines and using Animation, the start of the line is
+                        // the anchor location, while the end is dynamic following the ItemRec.
+                        fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
+                        fly.SpaceBattle = _useBattlegrounds;
+                        fly.SetShiptType(ShipType.TowRig, _towRigShipColor);
+                        FlingX.Add(fly);
+                    }
+
+                    //const string _towRigShip = "▢";
+                    //// Number of TowRig ships to create
+                    //const int _towRigCount = (_flierCount / 5);
+
                 }));
             }
         }
@@ -566,7 +601,6 @@ namespace DynamicTimeDraw
                                 this.Invoke(new Action(() =>
                                 {
                                     TitleText.DText.Text = _appTitle;
-                                    TitleText.Refresh();
                                 }));
                             });
                         }
@@ -590,14 +624,6 @@ namespace DynamicTimeDraw
                                 this.Invoke(new Action(() => { this.TransparencyKey = this.BackColor; }));
                             else
                                 this.Invoke(new Action(() => { this.TransparencyKey = Color.Empty; }));
-
-                            _ = Task.Delay(1000).ContinueWith(_ =>
-                            {
-                                this.Invoke(new Action(() =>
-                                {
-                                    TitleText.Refresh();
-                                }));
-                            });
                         }
                         else
                         {
@@ -615,9 +641,7 @@ namespace DynamicTimeDraw
                                     {
                                         flier.Animation = true;
                                         flier.SpaceBattle = _useBattlegrounds;
-                                        //flier.DText.Text = _fling1Str;
-                                        //flier.DText.TextColor = flier.ShipInfo.ShipsColor;
-                                        flier.Refresh();
+                                        //flier.Refresh();
                                     }
                                 }
                             }));

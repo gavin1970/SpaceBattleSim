@@ -30,6 +30,63 @@
         /// intended operations.
         /// </summary>
         Operational = 4,
+        /// <summary>
+        /// Indicates that the Fighter is currently being towed back to HomeBase.
+        /// </summary>
+        BeingTowed = 5,
+    }
+
+    /// <summary>
+    /// Specifies the operational status or current mission assignment of a ship.
+    /// </summary>
+    /// <remarks>Use this enumeration to indicate whether a ship is idle, actively engaged in a mission,
+    /// undergoing repairs, or on standby awaiting deployment. The values can be used to control ship behavior or
+    /// display status information in user interfaces.</remarks>
+    public enum ShipMission
+    {
+        /// <summary>
+        /// The ship is currently idle and not assigned to any specific task or operation.
+        /// </summary>
+        Idle = 0,
+        /// <summary>
+        /// The ship is actively engaged in a mission, which could involve combat, support, or other operational tasks.
+        /// </summary>
+        Active = 1,
+        /// <summary>
+        /// TowRig ships are currently on a towing mission, assisting disabled ships by towing them to safety or back to base for repairs.
+        /// </summary>
+        OnTow = 2,
+        /// <summary>
+        /// Heading back to home base.
+        /// </summary>
+        HeadingHome = 3,
+    }
+
+    /// <summary>
+    /// Specifies the functional role of a ship within a fleet, such as support, combat, or utility.    
+    /// </summary>
+    /// <remarks>Use this enumeration to categorize ships based on their primary purpose or operational
+    /// capabilities. The role determines the ship's typical functions and may influence how it is deployed or interacts
+    /// with other ships.</remarks>
+    public enum ShipRole
+    {
+        /// <summary>
+        /// Support ships provide assistance to other ships, such as repairs, resupply, or
+        /// towing. They are not designed for combat and may have limited offensive capabilities.
+        /// </summary>
+        Support = 0,
+        /// <summary>
+        /// Combat ships are designed for engaging in battles and offensive operations. They
+        /// are equipped with weapons and armor to withstand enemy attacks and deal damage to
+        /// opponents.
+        /// </summary>
+        Combat = 1,
+        /// <summary>
+        /// Utility ships perform various non-combat functions, such as reconnaissance, mining,
+        /// or exploration. They may have specialized equipment for their specific tasks but are
+        /// not primarily focused on combat.
+        /// </summary>
+        Utility = 2
     }
 
     /// <summary>
