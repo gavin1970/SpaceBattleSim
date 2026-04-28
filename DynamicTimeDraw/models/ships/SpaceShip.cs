@@ -9,55 +9,51 @@ namespace DynamicTimeDraw
     /// </summary>
     public class SpaceShip : DRectangleF
     {
+        private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
+
         const string SHIP_COLR_BRUSH_KEY = "shipsColorBrush";
-        //private TextLogger _logger = TextLogger.Empty;
-        // Using a ConcurrentQueue to store the current location allows for
-        // thread-safe updates and retrievals of the ship's position, ensuring that
-        // multiple threads can interact with the ship's location without causing race
-        // conditions or data corruption.
-        private ConcurrentQueue<PointF> _currentLoc = new ConcurrentQueue<PointF>();
         // The hitbox is represented as a char, which can be used to store a single
         // character representation of the ship's radar distance to pick up ships,
         // based on ShipType. This drops as they take damage.
         private char _hitBox = (char)0;
         private RectangleF _hitBoxRect = RectangleF.Empty;
-        // Shields represent the ship's defensive capabilities, while power represents
-        // the ship's energy reserves for various systems and operations.
         private uint _orgShields = 0;
         private uint _shields = 0;
         private uint _orgPower = 0;
         private uint _power = 0;
         private float _speed = 0.5f;
-        // The last attack time is stored as an Autonomous DateTime, which can be used
+        // The last attack time is stored as an Atomic DateTime, which can be used
         // to track if currently in battle. This allows for cooldown management,
         // attack rate limiting, and other time-based mechanics in the game or
         // simulation.
         private ADateTime _lastAttack = ADateTime.MinValue;
-        // The ship's type and status are stored as enums, allowing for easy categorization
-        // and management of the ship's characteristics and condition.
+        // The reset flag is used to prevent multiple threads from trying to reset
+        // the ship's stats simultaneously, ensuring that the reset operation is
+        // thread-safe and does not cause race conditions or data corruption.
+        private ABool _reset = ABool.False;
+        // The in-use color brush flag is used to prevent multiple threads from
+        // trying to update the ship's color brush simultaneously, ensuring that
+        // the color update operation is thread-safe and does not cause race
+        // conditions or data corruption when multiple threads attempt to update
+        // the ship's visual representation based on damage levels or status changes.
+        private ABool _inUseColorBrush = ABool.False;
         private ShipType _shipType = ShipType.Transport;
-        // The ship's status is determined by the amount of damage it has taken, with
-        // different statuses representing different levels of damage and operational
-        // capability.
         private ShipStatus _shipStatus = ShipStatus.Operational;
-        // The damage color is used to visually represent the ship's current status,
-        // changing based on the level of damage it has sustained. This allows for
-        // quick identification of the ship's condition in a visual context, such as a
-        // user interface or game environment.
         private Color _damageColor = Color.Transparent;
-        private Color _orgShipColor = Color.Transparent;
+        private Color _orgShipColor = SHIP_COLOR_DEFAULT;
+        private Color _shipsColor = SHIP_COLOR_DEFAULT;
+        private SolidBrush _shipsColorBrush = new SolidBrush(SHIP_COLOR_DEFAULT);   // default
         private ShipMission _shipsMission = ShipMission.Idle;
-        private SolidBrush _shipsColorBrush = new SolidBrush(Color.FromArgb(255, 127, 127, 127));   // default
-        private Color _shipsColor = Color.FromArgb(255, 127, 127, 127); //Pure Green aka, Lime 
+
         private string _shipName = string.Empty;
         private bool _isEnabled = false;
         private bool _isEmpty = true;
-        // special case
         private bool _isTowRig = false;
         private bool _isRaider = false;
 
-        private ConcurrentDictionary<string, object> _customData = new ConcurrentDictionary<string, object>();
+        private ConcurrentDictionary<string, SolidBrush> _customData = new ConcurrentDictionary<string, SolidBrush>();
 
+        #region Public Properties
         /// <summary>
         /// Initializes a new instance of the <see cref="SpaceShip"/> class with the specified type.
         /// </summary>
@@ -75,11 +71,12 @@ namespace DynamicTimeDraw
                 _orgShields = shipStats.Shields;
                 _speed = shipStats.Speed;
                 _hitBox = (char)shipStats.Hitbox;
-                _hitBoxRect = new RectangleF(this.ShipsCenter.X - _hitBox,
-                                             this.ShipsCenter.Y - _hitBox,
+
+                _hitBoxRect = new RectangleF(this.Center.X - _hitBox,
+                                             this.Center.Y - _hitBox,
                                              _hitBox * 2,
                                              _hitBox * 2);
-                
+
                 _isTowRig = type == ShipType.TowRig;
                 _isRaider = type == ShipType.Raider;
 
@@ -115,7 +112,11 @@ namespace DynamicTimeDraw
         /// Gets or sets a value indicating whether the ship is enabled. An enabled ship is active and can<br/>
         /// perform operations.<br/>
         /// </summary>
-        public bool Enabled { get { return !IsEmpty && _isEnabled; } set { _isEnabled = value; } }
+        public bool Enabled 
+        { 
+            get { return !IsEmpty && _isEnabled; } 
+            set { _isEnabled = value; } 
+        }
         /// <summary>
         /// Gets the hit box value. The hit box represents the ship's radar distance to pick up other ships, and<br/>
         /// it drops as the ship takes damage. The hit box is determined based on the ship's current shield<br/>
@@ -125,43 +126,12 @@ namespace DynamicTimeDraw
         /// </summary>
         public uint HitBox => _hitBox;
         /// <summary>
-        /// Gets or sets the current location of the ship.
+        /// Gets the bounding rectangle that defines the hit box area around the outside of the ship.
         /// </summary>
-        /// <remarks>Thread-safe updates to the ship's position are supported. Only the most recent
-        /// location is retained.</remarks>
-        public PointF ShipsCenter
+        public RectangleF HitBoxRect
         {
-            get
-            {
-                if (this.IsEmpty || _currentLoc.Count == 0)
-                    return new Point(0, 0);
-
-                // Ensure that only the most recent location is kept in the queue by dequeuing older locations until
-                // only one remains.
-                // ## FUTURE ##
-                // This can be used for ghosting effects, where the ship's previous positions are
-                // briefly visible before disappearing.
-                while (_currentLoc.Count() > 1)
-                    _currentLoc.TryDequeue(out _);
-
-                // TryPeek is used to retrieve the current location without removing it from the queue, ensuring that
-                // the ship's position can be accessed without affecting its state. If the queue is empty, it returns a
-                // default PointF(0, 0) to indicate that the ship has no defined location.
-                return _currentLoc.TryPeek(out PointF retVal) ?
-                                retVal : new PointF(0, 0);
-            }
-            set
-            {
-                if (this.IsEmpty)
-                    return;
-
-                // Enqueue the new location to the ConcurrentQueue, allowing for thread-safe updates to the ship's
-                // position. The while loop ensures that only the most recent location is kept in the queue,
-                // effectively maintaining a single current location for the ship.
-                _currentLoc.Enqueue(value);
-            }
+            get { return new RectangleF(this.Center.X - _hitBox, this.Center.Y - _hitBox, _hitBox * 2, _hitBox * 2); }
         }
-
         /// <summary>
         /// Gets the color of the ship. The ship's color is used to visually represent the ship in various contexts,
         /// such as user interfaces or visual effects in a game or simulation. The color can be used to differentiate
@@ -184,20 +154,6 @@ namespace DynamicTimeDraw
         /// ships and cause damage.  Gets a value indicating whether the entity is classified as a raider.
         /// </summary>
         public bool IsRaider => _isRaider;
-        public bool SetTower(string towerName, float towerDistance)
-        {
-            if (this.IsEmpty)
-                return false;
-
-            if (NeedTowRig.TrySetFalse())
-            {
-                TowerName = towerName;
-                TowerDistance = towerDistance;
-                return true;
-            }
-
-            return false;
-        }
         /// <summary>
         /// Gets or sets a value indicating whether a tow rig is required.
         /// </summary>
@@ -210,7 +166,6 @@ namespace DynamicTimeDraw
         /// Gets or sets the distance to the tower, measured in units relevant to the application's context.
         /// </summary>
         public float TowerDistance { get; set; } = 0.0f;
-
         /// <summary>
         /// Gets the current mission assigned to the ship.
         /// </summary>
@@ -233,7 +188,6 @@ namespace DynamicTimeDraw
         /// used in various contexts, such as user interfaces or visual effects in a game or simulation.<br/>
         /// </summary>
         public Color DamageColor => _damageColor;
-
         /// <summary>
         /// Gets the current shield value. The shields represent the ship's defensive capabilities, and as they<br/>
         /// take damage, the shield value decreases. When the shields reach zero, the ship is considered dead.<br/>
@@ -255,7 +209,6 @@ namespace DynamicTimeDraw
         /// ways, such as reducing maneuverability or changing its visual representation based on the damage level.<br/>
         /// </summary>
         public float Speed => _speed;
-
         /// <summary>
         /// Gets a value indicating whether the ship is currently in battle. A ship is considered 
         /// in battle if it is dead or if it has been attacked within the last 5 seconds.<br/>
@@ -293,7 +246,6 @@ namespace DynamicTimeDraw
         /// damage level is calculated based on the ratio of current shields to maximum shields.</remarks>
         /// public double DamageLevel => 1 - ((double)(_shields / _orgShields));
         public double DamageLevel => _orgShields == 0 ? 0 : 100.0 - ((_shields / (double)_orgShields) * 100.0);
-
         /// <summary>
         /// Gets the brush used to represent the ship's color. The color can be customized through the 
         /// ship's custom data, allowing for dynamic visual representations based on the ship's status 
@@ -302,15 +254,56 @@ namespace DynamicTimeDraw
         /// visual representations of the ship in various contexts, such as user interfaces or visual 
         /// effects in a game or simulation.<br/>
         /// </summary>
-        public Brush ShipsColorBrush
+        public SolidBrush ShipsColorBrush
         {
             get 
             {
                 if (_customData.TryGetValue(SHIP_COLR_BRUSH_KEY, out var brush))
-                    return (Brush)brush;
+                    return brush;
 
                 return _shipsColorBrush;
             }
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Attempts to set the tower name and distance if the current instance is not empty and the tow rig is not
+        /// needed.
+        /// </summary>
+        /// <param name="towerName">The name of the tower to assign. This value will be set if the operation succeeds.</param>
+        /// <param name="towerDistance">The distance to the tower, in units relevant to the context. This value will be set if the operation
+        /// succeeds.</param>
+        /// <returns>true if the tower name and distance were successfully set; otherwise, false.</returns>
+        public bool SetTower(string towerName, float towerDistance)
+        {
+            if (this.IsEmpty)
+                return false;
+
+            if (NeedTowRig.TrySetFalse())
+            {
+                TowerName = towerName;
+                TowerDistance = towerDistance;
+                return true;
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Calculates the squared Euclidean distance from the center of the ship to the specified point.
+        /// </summary>
+        /// <remarks>This method returns the squared distance rather than the actual distance. To obtain
+        /// the true Euclidean distance, take the square root of the returned value. Using the squared distance can be
+        /// more efficient when only relative distances are needed.</remarks>
+        /// <param name="point">The point to which the squared distance from the ship's center is calculated.</param>
+        /// <returns>The squared distance between the ship's center and the specified point.</returns>
+        public float DistanceFrom(PointF point)
+        {
+            var shipLoc = this.Location;
+            var dx = point.X - shipLoc.X;
+            var dy = point.Y - shipLoc.Y;
+
+            return (dx * dx) + (dy * dy);
         }
         /// <summary>
         /// Applies damage to the ship, reducing its shields and power accordingly. The ship's status is updated<br/>
@@ -344,6 +337,29 @@ namespace DynamicTimeDraw
             // scratched, damaged, critical, or dead.
             UpdateStatus();
         }
+        /// <summary>
+        /// Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
+        /// </summary>
+        public void ResetStats()
+        {
+            if (this.IsEmpty || !_reset.TrySetTrue())
+                return;
+            try
+            {
+                _power = _orgPower;
+                _shields = _orgShields;
+                _shipsMission = ShipMission.Idle;
+
+                UpdateStatus();
+            }
+            finally
+            {
+                _reset.SetFalse();
+            }
+        }
+        #endregion
+
+        #region Support Methods
         /// <summary>
         /// Updates the ship's status based on its current shield level. The status can be operational,<br/>
         /// scratched, damaged, critical, or dead. The damage color is also updated accordingly.<br/>
@@ -397,11 +413,22 @@ namespace DynamicTimeDraw
                 });
             }
         }
-        private ABool _inUseColorBrush = ABool.False;
+        /// <summary>
+        /// Asynchronously updates and retrieves the ship's color brush based on the specified damage color.
+        /// </summary>
+        /// <remarks>Thread safety is ensured by preventing concurrent updates to the ship's color brush.
+        /// If an update is already in progress, the current brush is returned without modification.</remarks>
+        /// <param name="damageColor">The color representing the current damage state to be applied as an overlay to the ship's original color.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a SolidBrush reflecting the
+        /// updated ship color.</returns>
         private Task<SolidBrush> GetUpdatedShipsColorBrushAsync(Color damageColor)
         {
             return Task.Run(() =>
             {
+                // To prevent multiple threads from trying to update the ship's color brush simultaneously,
+                // we use an ABool as a atomic lock mechanism. If another thread is already updating the brush,
+                // we return the current brush without making changes. This ensures thread safety while
+                // allowing for asynchronous updates to the ship's color based on damage levels.
                 if (!_inUseColorBrush.TrySetTrue())
                     return _shipsColorBrush;
                 try
@@ -418,19 +445,6 @@ namespace DynamicTimeDraw
                 }
             });
         }
-        /// <summary>
-        /// Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
-        /// </summary>
-        public void ResetStats()
-        {
-            if (this.IsEmpty)
-                return;
-            
-            _power = _orgPower;
-            _shields = _orgShields;
-            _shipsMission = ShipMission.Idle;
-
-            UpdateStatus();
-        }
+        #endregion
     }
 }

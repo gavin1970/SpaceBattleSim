@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 // Copyright (c) 2026 Gavin W. Landon (chizl.com)
@@ -29,7 +30,7 @@ namespace Chizl.ThreadSupport
     ///   <item><description>No locks</description></item>
     ///   <item><description>Cheap</description></item>
     /// </list>
-    /// </summary>
+    /// </summary>   
     public sealed class ABool : IEquatable<ABool>
     {
         private const int FALSE = 0;
@@ -75,6 +76,7 @@ namespace Chizl.ThreadSupport
         ///     Return: True
         /// </code>
         /// </summary>
+        [NotNull]
         public bool Value => Volatile.Read(ref _boolValue) == TRUE;
         #endregion
 
@@ -192,8 +194,8 @@ namespace Chizl.ThreadSupport
         /// </summary>
         /// <param name="obj">The ABool object to compare to this instance.</param>
         /// <returns>true if the value of the obj parameter is the same as the value of this instance; otherwise, false. If value is null, the method returns false.</returns>
-        public override bool Equals(object obj) => obj is ABool other && Equals(other) 
-                                                || obj is bool other2 && Equals(other2);
+        public override bool Equals(object? obj) => obj is ABool other && Equals(other) || 
+                                                    obj is bool other2 && Equals(other2);
         /// <summary>
         /// explicit + fast; same as bool hash behavior.<br/>
         /// NOTE: Do not mutate while used as a key in hash-based collections.
@@ -222,7 +224,7 @@ namespace Chizl.ThreadSupport
         /// </summary>
         /// <param name="other">The ABool object to compare to this instance.</param>
         /// <returns>true if the value of the obj parameter is the same as the value of this instance; otherwise, false. If value is null, the method returns false.</returns>
-        public bool Equals(ABool other)
+        public bool Equals(ABool? other)
         {
             if (ReferenceEquals(other, null)) return false;
             if (ReferenceEquals(this, other)) return true;

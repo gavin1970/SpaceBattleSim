@@ -377,6 +377,9 @@ namespace DynamicTimeDraw
                 RectangleF clsBtnRect = this.Rectangle;
                 if (this.Animation)
                 {
+                    if (this._dText.Text != this._dText.OrgText)
+                        this._dText.Text = this._dText.OrgText;
+
                     if (this.NextDestination.IsEmpty)
                         this.NextDestination = this.Location;
 
@@ -419,16 +422,15 @@ namespace DynamicTimeDraw
                                         // Verify locked target is still alive; steer toward it and deal damage if in range.
                                         if (_allSpaceShips.TryGetValue(_activeTargetName, out var locked) && !locked.IsDead )
                                         {
-                                            var dx = locked.Location.X - myLoc.X;
-                                            var dy = locked.Location.Y - myLoc.Y;
+                                            //var dx = locked.Location.X - myLoc.X;
+                                            //var dy = locked.Location.Y - myLoc.Y;
 
                                             // Using distance squared (distSq) for comparison to avoid the overhead of
                                             // calculating the square root when determining proximity to targets. Better
                                             // use of memory and CPU than Math.sqrt() when we only need relative distances
                                             // for comparison against hitBoxSq and closestDist.
-                                            float distSq = (dx * dx) + (dy * dy);
-
-                                            // _logger.WriteLine(LogLevel.Debug, $"'{Name}' @ '{myLoc}' steering -> '{_activeTargetName}' @ '{locked.Location}' dist={dist:F1} hitBox={hitBox}");
+                                            //float distSq = (dx * dx) + (dy * dy);
+                                            float distSq = locked.DistanceFrom(myLoc);
 
                                             if (distSq <= hitBox)
                                             {
@@ -436,7 +438,6 @@ namespace DynamicTimeDraw
                                                 _lastTargetLocation = locked.Location;
                                                 _lastCombatTime = DateTime.UtcNow;
                                                 _allSpaceShips[_activeTargetName] = locked;
-                                                // _logger.WriteLine(LogLevel.Debug, $"'{Name}' fired on '{_activeTargetName}' (dist={dist:F1})");
                                             }
                                             else
                                             {
@@ -475,13 +476,13 @@ namespace DynamicTimeDraw
                                             {
                                                 foreach (var kvp in allShips) 
                                                 {
-                                                    var dx = kvp.Location.X - myLoc.X;
-                                                    var dy = kvp.Location.Y - myLoc.Y;
+                                                    //var dx = kvp.Location.X - myLoc.X;
+                                                    //var dy = kvp.Location.Y - myLoc.Y;
                                                     // Using distance squared (distSq) for comparison to avoid the overhead of
                                                     // calculating the square root when determining proximity to targets. Better
                                                     // use of memory and CPU than Math.sqrt() when we only need relative distances
                                                     // for comparison against hitBoxSq and closestDist.
-                                                    float distSq = (dx * dx) + (dy * dy);
+                                                    float distSq = kvp.DistanceFrom(myLoc);// (dx * dx) + (dy * dy);
                                                     if (distSq <= hitBoxSq && distSq < closestDist)
                                                     {
                                                         closestDist = distSq;
@@ -508,6 +509,7 @@ namespace DynamicTimeDraw
                                     {
                                         this.Animation = false;
                                         this.SpaceBattle = false;
+                                        this._dText.Text = $"{this._dText.DeadDisplay}";
                                         // _logger.WriteLine(LogLevel.Debug, $"'{Name}' is dead, stopping animation.");
                                     }
                                 }

@@ -14,6 +14,9 @@ namespace DynamicTimeDraw
         // the IsEnabled property will correctly reflect whether there is valid text content
         // to display.
         private string _text = string.Empty;
+        // On initial set of Text, if orginal is empty, set orgText to the new value, otherwise 
+        // keep orgText unchanged.
+        private string _orgText = string.Empty;
         // internal fields to track the enabled state and shadowing state of the text.
         // Automatically updated when the Text and ShadowDepth properties are set,
         // ensuring that the rendering logic can easily determine whether to render
@@ -36,8 +39,23 @@ namespace DynamicTimeDraw
         public string Text
         {
             get { return _text; }
-            set { _text = value; _isEnabled = !string.IsNullOrWhiteSpace(_text); }
+            set { 
+                _text = value; 
+                _isEnabled = !string.IsNullOrWhiteSpace(_text);
+                if (_isEnabled && string.IsNullOrWhiteSpace(_orgText))
+                    _orgText = _text;
+            }
         }
+        /// <summary>
+        /// Auto set during first Text value set.<br/>
+        /// Gets the original text associated with the current instance.
+        /// </summary>
+        public string OrgText { get { return _orgText; } }
+        /// <summary>
+        /// When ship is destroyed, this character will be used to represent the dead ship 
+        /// instead of the text content.<br/>
+        /// </summary>
+        public char DeadDisplay { get; set; } = '✞';
         /// <summary>
         /// Gets or sets the font used for rendering text.<br/>
         /// Default: Arial, 12pt, Regular

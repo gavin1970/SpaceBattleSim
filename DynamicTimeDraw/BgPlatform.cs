@@ -25,20 +25,20 @@ namespace DynamicTimeDraw
         const int _matrixCellSize = 40;     // Size of the matrix grid (50pxx50px)
 
         // Character to use for the first set of flingX items (e.g., "X", "❿", "⬤", etc.)
-        const string _fighterShip = "▣";
-        const string _raiderShip = "⬙";
+        const string _fighterShip = "⬙";
+        const string _raiderShip = "⥺"; //⭄
         // Total number of flighters and Raiders combined.
         const int _flierCount = 30;
 
-        // Character to use for the second set of flingX items (e.g., "⭄", "⬙", "⬤", "❿", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
-        const string _capitalShip = "⭄";
+        // Character to use for the second set of flingX items (e.g., "⧉", "⭄", "❖", "⬙", "⬤", "❿", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
+        const string _capitalShip = "⧉";
         // Number of capital shipss to create
         const int _capShipCount = (_flierCount / 7);
 
         // TowRig are for towing Dead ships back to the HomeBase. They don't have a lot of power,
         // but have a lot of shields. They are anchored to the HomeBase like the Captital Ships and
         // can be attacked by Raiders.
-        const string _towRigShip = "▢";
+        const string _towRigShip = "❖";
         // Number of TowRig ships to create
         const int _towRigCount = (_flierCount / 5);
 
@@ -51,7 +51,7 @@ namespace DynamicTimeDraw
 
         readonly (Color color, uint depth) _shadowStyle = (Color.FromArgb(64, Color.White), 5);
         readonly Font _smallFlierFont = new Font("Arial", 12, FontStyle.Regular);
-        readonly Font _largeFlierFont = new Font("Arial", 20, FontStyle.Regular);
+        readonly Font _largeFlierFont = new Font("Arial", 16, FontStyle.Regular);
         readonly Font _closeBtnFont = new Font("Arial", 22, FontStyle.Regular);
         readonly Font _titleFont = new Font("Arial", 14, FontStyle.Bold);
 
@@ -358,7 +358,7 @@ namespace DynamicTimeDraw
                 // Size of the flier button
                 var flierSize = new Size(30, 30);
                 var capSize = new Size(100, 100);
-                var towSize = new Size(30, 30);
+                var towSize = new Size(20, 30);
 
                 // Calculate the X/Y Location of the close button that will be in the top-right corner
                 // of the screen. Accounting for top and right padding along with the MatrixArray border
