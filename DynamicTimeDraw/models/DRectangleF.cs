@@ -1,6 +1,4 @@
-﻿using static System.Net.WebRequestMethods;
-
-namespace DynamicTimeDraw
+﻿namespace DynamicTimeDraw
 {
     public class DRectangleF
     {

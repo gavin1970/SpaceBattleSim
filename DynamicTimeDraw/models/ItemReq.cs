@@ -2,10 +2,7 @@
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Net.Sockets;
 using static DDefaults;
-using static System.Net.WebRequestMethods;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip;
 
 namespace DynamicTimeDraw
 {
