@@ -375,7 +375,7 @@ namespace DynamicTimeDraw
                 var capSize = new Size(100, 100);
                 var towSize = new Size(20, 20);
 
-                //*
+                /*
                 int raiderCodePoint = char.ConvertToUtf32(_raiderShip, 0);
                 int fighterCodePoint = char.ConvertToUtf32(_fighterShip, 0);
                 int capitalCodePoint = char.ConvertToUtf32(_capitalShip, 0);
@@ -453,20 +453,11 @@ namespace DynamicTimeDraw
                             },
                             DestinationRange = (uint)this.Width / 2,
                             Animation = true,
-                            DLine =
-                            {
-                                // used for the lines in the matrix grid.
-                                Pen = new Pen(_homeBaseLinkCapColor, 2),
-                                // Set HasAnchor to true to indicate that the line should be anchored
-                                // to a specific point (the center of the form in this case).
-                                HasAnchor = true,
-                            },
                             Visible = true
                         };
 
                         // When anchoring lines and using Animation, the start of the line is
                         // the anchor location, while the end is dynamic following the ItemRec.
-                        fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                         fly.SpaceBattle = _useBattlegrounds;
                         fly.SetShiptType(ShipType.Capital, _capitalShipColor);
                         BattleShips.Add(fly);
