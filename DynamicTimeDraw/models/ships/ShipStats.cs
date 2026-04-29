@@ -5,12 +5,12 @@
         static private readonly Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed)> _shipsAvailable = 
                             new Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed)>()
         {
-            { ShipType.TowRig, (2000, 1, 50, 2.0f) },
-            { ShipType.Transport, (400, 0, 0, 2.0f) },
+            { ShipType.TowRig, (2000, 1, 30, 2.0f) },
+            { ShipType.Transport, (1000, 0, 40, 2.0f) },
             { ShipType.Raider, (200, 4, 50, 1.0f) },
             { ShipType.Fighter, (200, 4, 50, 1.0f) },
-            { ShipType.Bomber, (400, 4, 60, 0.5f) },
-            { ShipType.Capital, (800, 4, 75, 0.3f) }
+            { ShipType.Bomber, (400, 6, 60, 0.5f) },
+            { ShipType.Capital, (800, 8, 75, 0.3f) }
         };
 
         private uint _shields = 0;
