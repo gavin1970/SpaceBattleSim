@@ -1,8 +1,6 @@
-﻿using Chizl.ThreadSupport;
-using System.Drawing;
-using System.Runtime.ConstrainedExecution;
+﻿using Chizl.Applications;
+using Chizl.ThreadSupport;
 using static DynamicTimeDraw.StaticConfig;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace DynamicTimeDraw
 {
@@ -10,14 +8,9 @@ namespace DynamicTimeDraw
     {
         // Set to true to make the background transparent
         // while keeping the grid lines visible.
-#if DEBUG
         static bool _transparentBG = false;
-#else
-        static bool _transparentBG = true;
-#endif
-
         const string _appTitle = "WinForm Random Battleground";
-        const string _appInfo = "Version: v6.4.29.0525\nRight click on title\nto reset the dead.";
+        static string _appInfo = "Version: {0} - Right click on title to reset the dead.";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
@@ -27,7 +20,7 @@ namespace DynamicTimeDraw
         // Size of the matrix grid (50pxx50px)
         const int _matrixCellSize = 40;
         // Total number of flighters and Raiders combined.
-        const int _flierCount = 50;
+        const int _flierCount = 75;
         // Number of capital shipss to create
         const int _capShipCount = (_flierCount / 7);
         // Number of TowRig ships to create
@@ -68,7 +61,7 @@ namespace DynamicTimeDraw
         readonly Font _closeBtnFont = new Font("Arial", 22, FontStyle.Regular);
         readonly Font _titleFont = new Font("Arial", 14, FontStyle.Bold);
         // Colors for different ship types to provide visual distinction between them.
-        readonly Color _raiderColor = Color.FromArgb(255, 255, 255, 255);
+        readonly Color _raiderColor = Color.FromArgb(255, 255, 0, 0);
         readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
         readonly Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
         readonly Color _towRigShipColor = Color.FromArgb(255, 255, 0, 255);
@@ -101,12 +94,22 @@ namespace DynamicTimeDraw
             // delay to ensure the form is fully initialized.
             BuildObjects(100);
 
+            //set the app info text with the current file version for display in the bottom-left
+            //corner of the form. This provides users with version information about the application,
+            //which can be useful for troubleshooting or ensuring they are using the latest version.
+            _appInfo = string.Format(_appInfo, About.FileVersion);
+
+            // Attach a MouseMove event handler to the form to check for mouse interactions with
+            // the controls. This allows for dynamic interaction with the controls, such as changing
+            // the cursor when hovering over interactive elements or triggering animations when the
+            // mouse moves over certain areas.
             this.MouseMove += (s, e) =>
             {
                 // Direct call to all ships to check their hitboxes
                 //foreach (var ship in BattleShips) 
                 //    ship.IsMouseInRect(e.Location);
-                CloseButton.IsMouseInRect(e.Location);
+                if (!CloseButton.IsMouseInRect(e.Location))
+                    CloseButton.InActiveHide = true;
             };
         }
 
@@ -121,7 +124,7 @@ namespace DynamicTimeDraw
             // 2. Draw the grid background
             if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
 
-            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left, this.FormSize.Height - Padding.Bottom - 60));
+            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30));
 
             // 3. Draw the Space Battle (Fighters & Raiders)
             foreach (var ship in BattleShips)

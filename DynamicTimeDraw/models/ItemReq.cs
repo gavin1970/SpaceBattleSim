@@ -57,7 +57,6 @@ namespace DynamicTimeDraw
             this.MouseDown += (e, args) => { };      
             this.MouseUp += (e, args) => { };
             this.MouseMove += (e, args) => { };
-            //this.FormMouseUp += (e, args) => { };
 
             // Since the Form was required to have a value, used a dummy form for the empty instance to satisfy the
             // requirement of having a parent form for drawing, without affecting the actual application. Close and
@@ -85,14 +84,12 @@ namespace DynamicTimeDraw
             _parentForm.MouseMove += _parentForm_MouseMove;
             _parentForm.MouseUp += _parentForm_MouseUp;
             _parentForm.MouseDown += _parentForm_MouseDown;
-            //_parentForm.Paint += _parentForm_Paint;
             
             _rectangleF = new DRectangleF(RectangleF.Empty, _parentForm.Size);
 
             this.MouseDown += (e, args) => { };      // initialize the event to prevent validate subscribers .
             this.MouseUp += (e, args) => { };        // initialize the event to prevent validate subscribers .
             this.MouseMove += (e, args) => { };      // initialize the event to prevent validate subscribers .
-            //this.FormMouseUp += (e, args) => { };  // initialize the event to prevent validate subscribers .
 
             this.Name = name;
 
@@ -137,10 +134,6 @@ namespace DynamicTimeDraw
         /// Occurs when the mouse pointer is over the this ItemReq.
         /// </summary>
         public event MouseEventHandler MouseMove;
-        /// <summary>
-        /// Occurs when the mouse pointer is moved over the form, but not over this ItemReq.
-        /// </summary>
-        //public event MouseEventHandler FormMouseUp;
 
         #region Updatable Action Properties
         /// <summary>
@@ -329,6 +322,25 @@ namespace DynamicTimeDraw
             }
             _spaceShipsInTow.Clear();
         }
+        //public static string GetShipStatus(bool summary = true)
+        //{
+        //    string status = string.Empty;
+        //    if (summary)
+        //    {
+        //        List<string> combindSummary = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.Raider).Select(s => $"{s.Value.ShipType}, {s.Value.Status}").ToArray();
+        //        var fighters = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.Fighter).Select(s => s.Value.Status).ToArray();
+        //        var capShips = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.Capital).Select(s => s.Value.Status).ToArray();
+        //        var towRigs = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.TowRig).Select(s => s.Value.CurrentMission).ToArray();
+        //    }
+        //    else
+        //    {
+        //        foreach (var ship in _allSpaceShips)
+        //            status += $"Name: {ship.Value.Name}, Type: {ship.Value.ShipType}, Status: {ship.Value.Status}, " +
+        //                      $"Location: {ship.Value.Location}, Power: {ship.Value.Power}, HitBox: {ship.Value.HitBox}, " +
+        //                      $"CurrentMission: {ship.Value.CurrentMission}\n";
+        //    }
+        //    return status;
+        //}
         /// <summary>
         /// Sets the type of the spaceship.
         /// </summary>
@@ -1049,19 +1061,6 @@ namespace DynamicTimeDraw
         #endregion
 
         #region Event handlers for parent form events to trigger redraws
-        /// <summary>
-        /// Handles the Paint event for the parent form, updating the visual state based on mouse interaction.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">A PaintEventArgs that contains the event data.</param>
-        private void _parentForm_Paint(object? sender, PaintEventArgs e)
-        {
-            Graphics g = e.Graphics;
-            if (_eventStatus.Get($"{Name}_MouseOver") || !this.InActiveHide)
-                DrawItem(g);
-            else
-                _eventStatus.Set($"{Name}_MouseDown", false);
-        }
         /// <summary>
         /// Handles mouse movement over the parent form to determine if the cursor is within the close button's
         /// interactive area.
