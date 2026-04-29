@@ -39,4 +39,9 @@
     /// and a width of 2 pixels.
     /// </summary>
     public static readonly Pen DEF_LASER_LINE = new Pen(Color.FromArgb(255, Color.Red), 2);
+    /// <summary>
+    /// Represents the default pen used for drawing tow laser lines.  Default a solid blue color 
+    /// and a width of 2 pixels.
+    /// </summary>
+    public static readonly Pen DEF_TOW_LASER_LINE = new Pen(Color.FromArgb(255, Color.Blue), 2);
 }

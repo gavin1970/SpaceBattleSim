@@ -823,7 +823,8 @@ namespace DynamicTimeDraw
                             if (!_lastTargetLocation.IsEmpty &&
                                 (DateTime.UtcNow - _lastCombatTime).TotalMilliseconds < 300)
                             {
-                                g.DrawLine(DEF_LASER_LINE, new PointF(shipCx, shipCy), _lastTargetLocation);
+                                var pen = _spaceShip.IsTowRig ? DDefaults.DEF_TOW_LASER_LINE : DDefaults.DEF_LASER_LINE;
+                                g.DrawLine(pen, new PointF(shipCx, shipCy), _lastTargetLocation);
                             }
                             else if ((DateTime.UtcNow - _lastCombatTime).TotalMilliseconds >= 300)
                             {
