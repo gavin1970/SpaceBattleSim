@@ -102,7 +102,7 @@ namespace DynamicTimeDraw
 
             _logger = new TextLogger($"{name}_ItemReq", @".\logs")
             {
-                EnabledLogLevels = LogLevel.Debug | LogLevel.Trace | LogLevel.Information | LogLevel.Error,
+                EnabledLogLevels = LogLevel.Debug | LogLevel.Error,
                 KeepLogDays = TimeSpan.FromDays(1)
             };
 
@@ -370,7 +370,7 @@ namespace DynamicTimeDraw
         /// <summary>
         /// So we don't have than 1 ship on tow for the same fighter.
         /// </summary>
-        private static readonly ConcurrentDictionary<string, SpaceShip> _spaceShipsInTow = new ConcurrentDictionary<string, SpaceShip>();
+        internal static ConcurrentDictionary<string, SpaceShip> _spaceShipsInTow = new ConcurrentDictionary<string, SpaceShip>();
 
         /// <summary>
         /// Draws a Item with a shadow, background, border, and an 'X' symbol onto the specified graphics
@@ -385,12 +385,18 @@ namespace DynamicTimeDraw
                 int boxShadowDepth = this.BoxShadowing ? (this.ShadowDepth == 0 ? _alternateShadowDepth : (int)this.ShadowDepth) : 0;
                 if (DLine.DrawList.Count > 0 && DLine.HasAnchor && this.HomeBaseLocation.IsEmpty)
                     this.HomeBaseLocation = DLine.DrawList.First().Start;
+                
+                _allSpaceShips.TryGetValue(this.Name, out SpaceShip? val);
 
-                if (!this.Animation && _allSpaceShips.TryGetValue(this.Name, out SpaceShip? val) && !val.IsDead && !val.IsTowRig)
+                if (val != null)
                 {
                     _spaceShip = val;
-                    this.Animation = true;
-                    this.SpaceBattle = true;
+
+                    if (!this.Animation && !val.IsDead && !val.IsTowRig)
+                    {
+                        this.Animation = true;
+                        this.SpaceBattle = true;
+                    }
                 }
 
                 // Calculate the rectangle for the close button based on form size and padding
@@ -433,15 +439,21 @@ namespace DynamicTimeDraw
 
                                 try
                                 {
+                                    var logThis = _spaceShip.Name.Equals("TowRig_000");
                                     var hitBox = (float)_spaceShip.HitBox;
                                     var hitBoxSq = hitBox * hitBox;
                                     var myLoc = this.Center;
 
                                     if (!string.IsNullOrEmpty(_activeTargetName))
                                     {
+                                        if (logThis)
+                                            _logger.WriteLine(LogLevel.Debug, $"Has Target: {_activeTargetName}");
                                         // Verify locked target is still alive; steer toward it and deal damage if in range.
                                         if (_allSpaceShips.TryGetValue(_activeTargetName, out var locked) && (_spaceShip.IsTowRig ? locked.IsDead : !locked.IsDead))
                                         {
+                                            if (logThis)
+                                                _logger.WriteLine(LogLevel.Debug, $"Target Found: {_activeTargetName}, Status: {locked.Status}, Location: {locked.Location}, MyLocation: {_spaceShip.Center}");
+
                                             // Using distance squared (distSq) for comparison to avoid the overhead of
                                             // calculating the square root when determining proximity to targets. Better
                                             // use of memory and CPU than Math.sqrt() when we only need relative distances
@@ -450,15 +462,24 @@ namespace DynamicTimeDraw
 
                                             if (distSq <= hitBoxSq)
                                             {
+                                                if (logThis)
+                                                    _logger.WriteLine(LogLevel.Debug, $"Close enough to response target: {_activeTargetName}, Status: {locked.Status}");
+
                                                 _lastTargetLocation = locked.Location;
                                                 _lastCombatTime = DateTime.UtcNow;
                                                 if (!_spaceShip.IsTowRig)
                                                 {
+                                                    if (logThis)
+                                                        _logger.WriteLine(LogLevel.Debug, $"#1: Should not be fighting against: {_activeTargetName}, Status: {locked.Status}");
+
                                                     locked.TakeDamage(_spaceShip.Power, this.Name);
                                                     _allSpaceShips[_activeTargetName] = locked;
                                                 }
                                                 else
                                                 {
+                                                    if (logThis)
+                                                        _logger.WriteLine(LogLevel.Debug, $"Restting status for: {_activeTargetName}, Status: {locked.Status}");
+
                                                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
                                                     _allSpaceShips[_activeTargetName].ResetStats();
                                                     _activeTargetName = string.Empty;
@@ -469,6 +490,9 @@ namespace DynamicTimeDraw
                                             }
                                             else if (_spaceShip.IsTowRig)
                                             {
+                                                if (logThis)
+                                                    _logger.WriteLine(LogLevel.Debug, $"Still cruising towards: {_activeTargetName}, Location: {locked.Location}");
+
                                                 // TowRig can still pull from range, so update
                                                 // destination even if not in hit box.
                                                 _lastTargetLocation = _pendingDestination;
@@ -477,6 +501,9 @@ namespace DynamicTimeDraw
                                             }
                                             else
                                             {
+                                                if (logThis)
+                                                    _logger.WriteLine(LogLevel.Debug, $"#2: Should not be here: {_activeTargetName}, Location: {locked.Location}");
+
                                                 // Break lock if target is out of range, so the ship can
                                                 // search for a new one instead of chasing a lost cause.
                                                 _activeTargetName = string.Empty;
@@ -484,19 +511,30 @@ namespace DynamicTimeDraw
                                         }
                                         else
                                         {
+                                            if (logThis)
+                                                _logger.WriteLine(LogLevel.Debug, $"No target found, clearning name: {_activeTargetName}");
                                             // Target is dead or gone — clear lock.
                                             _activeTargetName = string.Empty;
                                         }
                                     }
                                     else if (_spaceShip.IsTowRig && _spaceShip.CurrentMission == ShipMission.HeadingHome)
                                     {
+                                        if (logThis)
+                                            _logger.WriteLine(LogLevel.Debug, $"Heading home, MyLocation: {_spaceShip.Location}, NextDestination: {this.NextDestination}");
+
                                         if (_spaceShip.DistanceFrom(HomeBaseLocation) <= (_spaceShip.HitBox * 2))
                                         {
-                                            _lastTargetLocation = _pendingDestination;
-                                            _pendingDestination = this.HomeBaseLocation;
-                                            this.NextDestination = this.HomeBaseLocation;
+                                            if (logThis)
+                                                _logger.WriteLine(LogLevel.Debug, $"Found home, Location: {_spaceShip.Location}");
+                                            this.Animation = false;
                                             _spaceShip.CurrentMission = ShipMission.Idle;
+                                            _spaceShip.ResetStats();
+                                            _activeTargetName = string.Empty;
                                         }
+
+                                        //_lastTargetLocation = _pendingDestination;
+                                        //_pendingDestination = this.HomeBaseLocation;
+                                        this.NextDestination = this.HomeBaseLocation;
                                     }
                                     else if (_spaceShip.IsTowRig && _spaceShip.CurrentMission == ShipMission.Idle)
                                     {
@@ -507,11 +545,20 @@ namespace DynamicTimeDraw
 
                                         if (allShips.Count == 0)
                                         {
+                                            if (logThis)
+                                                _logger.WriteLine(LogLevel.Debug, $"No dead ships found, Location: {_spaceShip.Location}");
+
+                                            this.Animation = false;
                                             _activeTargetName = string.Empty;
-                                            if (_pendingDestination != this.HomeBaseLocation)
+                                            if (this.NextDestination != this.HomeBaseLocation)
                                             {
+                                                if (logThis)
+                                                    _logger.WriteLine(LogLevel.Debug, $"Resetting next destination.  Current: {this.NextDestination}, Location: {_spaceShip.Location}");
+
+                                                _spaceShip.CurrentMission = ShipMission.Idle;
                                                 _lastTargetLocation = _pendingDestination;
                                                 _pendingDestination = this.HomeBaseLocation;
+                                                this.NextDestination = this.HomeBaseLocation;
                                             }
                                         }
                                         else
@@ -520,26 +567,43 @@ namespace DynamicTimeDraw
                                             {
                                                 if (_spaceShipsInTow.TryAdd(kvp.Name, _spaceShip))
                                                 {
+                                                    if (logThis)
+                                                        _logger.WriteLine(LogLevel.Debug, $"Found dead ship. {kvp.Name}, Location: {kvp.Location}, Center: {kvp.Center}");
+
+                                                    float distSq = _allSpaceShips[kvp.Name].DistanceFrom(myLoc);
+                                                    _allSpaceShips[kvp.Name].SetTower(_spaceShip.Name, distSq);
+                                                    this.NextDestination = kvp.Center;
+
                                                     this.Animation = true;
                                                     _spaceShip.CurrentMission = ShipMission.OnTow;
                                                     _activeTargetName = kvp.Name;
 
-                                                    Debug.WriteLine($"'{Name}' heading to towing '{kvp.Name}' @ {kvp.Location} / Center: {kvp.Center}");
+                                                    Debug.WriteLine($"'{Name}' heading to towing '{kvp.Name}' @ {distSq} meters away");
+
                                                     _lastTargetLocation = _pendingDestination;
                                                     _pendingDestination = kvp.Center;
-                                                    this.NextDestination = kvp.Center;
 
-                                                    float distSq = kvp.DistanceFrom(myLoc);
-                                                    kvp.SetTower(_spaceShip.Name, distSq);
-
-                                                    _allSpaceShips[kvp.Name] = kvp;
                                                     _lastCombatTime = DateTime.UtcNow;
                                                 }
+                                            }
+
+                                            if(_spaceShip.CurrentMission != ShipMission.OnTow && _spaceShip.CurrentMission != ShipMission.HeadingHome)
+                                            {
+                                                if (logThis)
+                                                    _logger.WriteLine(LogLevel.Debug, $"Setting missiong to idle. Location: {_spaceShip.Location}, Center: {_spaceShip.Center}");
+
+                                                _spaceShip.CurrentMission = ShipMission.Idle;
+                                                _lastTargetLocation = _pendingDestination;
+                                                _pendingDestination = this.HomeBaseLocation;
+                                                this.NextDestination = this.HomeBaseLocation;
                                             }
                                         }
                                     }
                                     else
                                     {
+                                        if (logThis)
+                                            _logger.WriteLine(LogLevel.Debug, $"I should be here..");
+
                                         // No locked target — scan for any enemy in detection range.
                                         SpaceShip? closest = null;
                                         List<SpaceShip> allShips = new List<SpaceShip>();
@@ -590,12 +654,15 @@ namespace DynamicTimeDraw
                                         }
                                     }
 
+                                    // keep it up to date for other threads, even if it didn't change here,
+                                    // so the latest status is always visible to the UI and other tasks.
+                                    _allSpaceShips[_spaceShip.Name] = _spaceShip;
+
                                     if (_spaceShip.IsDead)
                                     {
                                         this.Animation = false;
                                         this.SpaceBattle = false;
                                         this._dText.Text = $"{this._dText.DeadDisplay}";
-                                        // _logger.WriteLine(LogLevel.Debug, $"'{Name}' is dead, stopping animation.");
                                     }
                                 }
                                 finally
