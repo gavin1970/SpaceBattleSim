@@ -343,7 +343,7 @@ namespace Chizl.ThreadSupport
         /// </summary>
         /// <param name="obj">The object to compare with the current ADateTime instance.</param>
         /// <returns>true if the specified object is an ADateTime and is equal to the current instance; otherwise, false.</returns>
-        public override bool Equals(object obj) => (obj is ADateTime adt && Equals(adt)) ||
+        public override bool Equals(object? obj) => (obj is ADateTime adt && Equals(adt)) ||
                                                    (obj is DateTime dt && Equals(dt));
         /// <summary>
         /// Serves as the default hash function.
@@ -363,7 +363,7 @@ namespace Chizl.ThreadSupport
         /// </summary>
         /// <param name="other">The ADateTime object to compare with the current instance.</param>
         /// <returns>true if the objects represent the same point in time; otherwise, false.</returns>
-        public bool Equals(ADateTime other)
+        public bool Equals(ADateTime? other)
         {
             if (ReferenceEquals(other, null)) return false;
             if (ReferenceEquals(this, other)) return true;

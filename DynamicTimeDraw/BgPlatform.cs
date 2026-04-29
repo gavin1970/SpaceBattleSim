@@ -16,58 +16,74 @@ namespace DynamicTimeDraw
         static bool _transparentBG = true;
 #endif
 
-        const string _appTitle = "Gavin's Animation Demo";
+        const string _appTitle = "WinForm Random Battleground";
+        const string _appInfo = "Version: v1.0.0\nRight click on title\nto reset the dead.";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
 
-        const uint _borderWidth = 2;        // Default border width for controls
-        const int _matrixCellSize = 40;     // Size of the matrix grid (50pxx50px)
-
-        // Character to use for the first set of flingX items (e.g., "X", "❿", "⬤", etc.)
-        const string _fighterShip = "⬙";
-        const string _raiderShip = "⥺"; //⭄
+        // Default border width for controls
+        const uint _borderWidth = 2;
+        // Size of the matrix grid (50pxx50px)
+        const int _matrixCellSize = 40;
         // Total number of flighters and Raiders combined.
         const int _flierCount = 30;
-
-        // Character to use for the second set of flingX items (e.g., "⧉", "⭄", "❖", "⬙", "⬤", "❿", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
-        const string _capitalShip = "⧉";
         // Number of capital shipss to create
         const int _capShipCount = (_flierCount / 7);
-
-        // TowRig are for towing Dead ships back to the HomeBase. They don't have a lot of power,
-        // but have a lot of shields. They are anchored to the HomeBase like the Captital Ships and
-        // can be attacked by Raiders.
-        const string _towRigShip = "❖";
         // Number of TowRig ships to create
         const int _towRigCount = (_flierCount / 5);
 
-        const float _moveX = 0.0f;          // Moves X position of HomeBase and _capitalShip anchor points if changed.
-                                            // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
-        const float _moveY = 0.0f;          // Moves Y position of HomeBase and _capitalShip anchor points if changed.
-                                            // Center Screen: 0.0f, Far Top: -455.0f, Far Bottom: 450.0f.
-        const float _anchorX = 758.0f;      // _capitalShip Lines: - Base X anchor point of lines to the large flingX moving items.
-        const float _anchorY = 540.0f;      // _capitalShip Lines: - Base Y anchor point of lines to the large flingX moving items.
+        // Character to use for the first set of BattleShips shapes. If you use things like '⣮ ⣭ ⣪', remember,
+        // you must make the size wider and lower the height to see them side by side. If you want them
+        // stacked, then make the size taller and narrower. You can use any Unicode character for the ship
+        // shapes, so feel free to experiment with different symbols to find ones that you like and that fit
+        // well with the overall design of the ships look.
+        // I found the font Arial shows these characters well, but you may want to experiment with other fonts
+        // to find the best look for your ships. Some good resources for finding interesting Unicode characters
+        // include websites like UnicodeTable.com.
+        // I wrote a EmojiLive library found on https://github.com/gavin1970/Chizl.EmojiLive, where it will
+        // provide 4098 different Unicode characters and allow you to save as an image. You can use some of
+        // these for your ships, including a wide variety of symbols, shapes, and icons that can add visual
+        // interest and variety to your animation. You can browse through the available characters in the
+        // library and experiment with different combinations
+        // (e.g., "X", "❿", "⬤", "⧉", "⭄", "❖", "⬙", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
+        readonly string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
+        readonly string _raiderShip = char.ConvertFromUtf32(10618);     // 10618 - ⥺ = \u293a
+        readonly string _capitalShip = char.ConvertFromUtf32(11159);    // 11159 - ⮗ = \u2b97
+        readonly string _towRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
 
+        // Moves X position of HomeBase and _capitalShip anchor points if changed.
+        const float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
+        // Moves Y position of HomeBase and _capitalShip anchor points if changed.
+        const float _moveY = 0.0f;          // Center Screen: 0.0f, Far Top: -455.0f, Far Bottom: 450.0f.
+        // _capitalShip Lines: - Base X anchor point of lines to the large BattleShips moving items.
+        const float _anchorX = 758.0f;
+        // _capitalShip Lines: - Base Y anchor point of lines to the large BattleShips moving items.
+        const float _anchorY = 540.0f;
+        // Tuple to hold the shadow color and depth for consistent styling across controls.
         readonly (Color color, uint depth) _shadowStyle = (Color.FromArgb(64, Color.White), 5);
+        // Fonts for different controls, using Arial as a common font for simplicity. Adjust sizes and styles as needed.
         readonly Font _smallFlierFont = new Font("Arial", 12, FontStyle.Regular);
         readonly Font _largeFlierFont = new Font("Arial", 16, FontStyle.Regular);
         readonly Font _closeBtnFont = new Font("Arial", 22, FontStyle.Regular);
         readonly Font _titleFont = new Font("Arial", 14, FontStyle.Bold);
-
+        // Colors for different ship types to provide visual distinction between them.
         readonly Color _raiderColor = Color.FromArgb(255, 255, 255, 255);
         readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
         readonly Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
         readonly Color _towRigShipColor = Color.FromArgb(255, 255, 0, 255);
-        readonly Color _homeBaseLinkColor = Color.FromArgb(32, 0, 255, 0);
-
+        readonly Color _homeBaseLinkCapColor = Color.FromArgb(32, 0, 255, 0);
+        readonly Color _homeBaseLinkTowColor = Color.FromArgb(32, 255, 255, 255);
+        // Thread-Safe - EventStatus object to track whether the form has already been
+        // closed, preventing multiple closure attempts.
         readonly EventStatus _eventStatus = new EventStatus();
-
+        // ItemReq objects for the various controls to paint on the form. These are initialized in the BuildObjects method.
         internal static ItemReq CloseButton = ItemReq.Empty;
         internal static ItemReq MatrixArray = ItemReq.Empty;
         internal static ItemReq TitleText = ItemReq.Empty;
         internal static ItemReq HomeBase = ItemReq.Empty;
-        internal static List<ItemReq> FlingX = new List<ItemReq>();
+
+        internal static List<ItemReq> BattleShips = new List<ItemReq>();
 
         public BgPlatform()
         {
@@ -85,34 +101,30 @@ namespace DynamicTimeDraw
             // delay to ensure the form is fully initialized.
             BuildObjects(100);
 
-            this.Paint += BgPlatform_Paint;
-            this.MouseMove += (s, e) => {
+            this.MouseMove += (s, e) =>
+            {
                 // Direct call to all ships to check their hitboxes
-                foreach (var ship in FlingX) ship.IsMouseInRect(e.Location);
+                //foreach (var ship in BattleShips) 
+                //    ship.IsMouseInRect(e.Location);
                 CloseButton.IsMouseInRect(e.Location);
             };
         }
 
         private void BgPlatform_Paint(object sender, PaintEventArgs e)
         {
-            if (this.Cursor == Cursors.Hand)
-            {
-                this.Cursor.Draw(e.Graphics, _customCursor);
-            }
-            else if (this.Cursor == Cursors.No)
-            {
-                this.Cursor = Cursors.Default;
-                this.Cursor.Draw(e.Graphics, _customCursor);
-            }
+            var g = e.Graphics;
+
             // 1. Set global quality once for the whole frame
-            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
             // 2. Draw the grid background
             if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
 
+            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left, this.FormSize.Height - Padding.Bottom - 60));
+
             // 3. Draw the Space Battle (Fighters & Raiders)
-            foreach (var ship in FlingX)
+            foreach (var ship in BattleShips)
             {
                 if (ship.Visible) ship.DrawItem(e.Graphics);
             }
@@ -232,7 +244,7 @@ namespace DynamicTimeDraw
                 }));
             }
         }
-        private Rectangle _customCursor = new Rectangle(0, 0, 1, 1);
+
         /// <summary>
         /// Initializes and displays a close button in the top-right corner of the view
         /// if it does not already exist.
@@ -285,7 +297,7 @@ namespace DynamicTimeDraw
                         if (CloseButton.IsMouseInRect(args.Location))
                             this.Cursor = Cursors.Hand;
                         else if (this.Cursor == Cursors.Hand)
-                            this.Cursor = Cursors.No;
+                            this.Cursor = Cursors.Cross;
                     };
 
                     CloseButton.MouseUp += (e, args) =>
@@ -345,7 +357,7 @@ namespace DynamicTimeDraw
         }
         /// <summary>
         /// Initializes and adds animated close button items
-        /// to the FlingX collection if it is empty.
+        /// to the BattleShips collection if it is empty.
         /// </summary>
         /// <remarks>
         ///    Each item is positioned randomly near the center of the form and can display 
@@ -353,12 +365,23 @@ namespace DynamicTimeDraw
         /// </remarks>
         private void BuildFliers()
         {
-            if (FlingX.Count == 0)
+            if (BattleShips.Count == 0)
             {
                 // Size of the flier button
-                var flierSize = new Size(30, 30);
+                var flierSize = new Size(20, 20);
                 var capSize = new Size(100, 100);
-                var towSize = new Size(20, 30);
+                var towSize = new Size(20, 20);
+
+                //*
+                int raiderCodePoint = char.ConvertToUtf32(_raiderShip, 0);
+                int fighterCodePoint = char.ConvertToUtf32(_fighterShip, 0);
+                int capitalCodePoint = char.ConvertToUtf32(_capitalShip, 0);
+                int towRigCodePoint = char.ConvertToUtf32(_towRigShip, 0);
+                string raiderChar = char.ConvertFromUtf32(raiderCodePoint);
+                string fighterChar = char.ConvertFromUtf32(fighterCodePoint);
+                string capitalChar = char.ConvertFromUtf32(capitalCodePoint);
+                string towRigChar = char.ConvertFromUtf32(towRigCodePoint);
+                /**/
 
                 // Calculate the X/Y Location of the close button that will be in the top-right corner
                 // of the screen. Accounting for top and right padding along with the MatrixArray border
@@ -369,18 +392,19 @@ namespace DynamicTimeDraw
                 this.Invoke(new Action(() =>
                 {
                     int x, y;
+
                     // Create x amount of  animated "X" items that will fling out
                     // from the center of the form when triggered.
                     for (int cnt = 0; cnt < _flierCount; cnt++)
                     {
-                        // Randomly position the flingX items within the bounds of the form
+                        // Randomly position the BattleShips items within the bounds of the form
                         x = Random.Shared.Next(0, w + 1);
                         y = Random.Shared.Next(0, h + 1);
 
                         // Alternate between two different ship characters for visual variety
                         var shipImg = (x % 2) == 0 ? _raiderShip : _fighterShip;
                         var shipType = (x % 2) == 0 ? ShipType.Raider : ShipType.Fighter;
-                        var shipColor = (x % 2) == 0 ? _raiderColor : _fighterColor;   
+                        var shipColor = (x % 2) == 0 ? _raiderColor : _fighterColor;
                         var partName = $"{shipType}";
 
                         var fly = new ItemReq(this, $"{partName}_{cnt:000}")
@@ -395,7 +419,6 @@ namespace DynamicTimeDraw
                                 ShadowColor = Color.FromArgb(32, shipColor),
                             },
                             DestinationRange = (uint)this.Width / 2,
-                            // DrunkEffect = true,
                             Animation = true,
                             Visible = true
                         };
@@ -403,7 +426,7 @@ namespace DynamicTimeDraw
                         fly.SpaceBattle = _useBattlegrounds;
                         fly.SetShiptType(shipType, shipColor);
 
-                        FlingX.Add(fly);
+                        BattleShips.Add(fly);
                     }
 
                     // Create x amount of  animated "X" items that will fling out
@@ -430,7 +453,7 @@ namespace DynamicTimeDraw
                             DLine =
                             {
                                 // used for the lines in the matrix grid.
-                                Pen = new Pen(_homeBaseLinkColor, 2),
+                                Pen = new Pen(_homeBaseLinkCapColor, 2),
                                 // Set HasAnchor to true to indicate that the line should be anchored
                                 // to a specific point (the center of the form in this case).
                                 HasAnchor = true,
@@ -443,7 +466,7 @@ namespace DynamicTimeDraw
                         fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                         fly.SpaceBattle = _useBattlegrounds;
                         fly.SetShiptType(ShipType.Capital, _capitalShipColor);
-                        FlingX.Add(fly);
+                        BattleShips.Add(fly);
                     }
 
                     // Create x amount of  animated "X" items that will fling out
@@ -470,7 +493,7 @@ namespace DynamicTimeDraw
                             DLine =
                             {
                                 // used for the lines in the matrix grid.
-                                Pen = new Pen(_homeBaseLinkColor, 2),
+                                Pen = new Pen(_homeBaseLinkTowColor, 2),
                                 // Set HasAnchor to true to indicate that the line should be anchored
                                 // to a specific point (the center of the form in this case).
                                 HasAnchor = true,
@@ -483,7 +506,7 @@ namespace DynamicTimeDraw
                         fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                         fly.SpaceBattle = _useBattlegrounds;
                         fly.SetShiptType(ShipType.TowRig, _towRigShipColor);
-                        FlingX.Add(fly);
+                        BattleShips.Add(fly);
                     }
 
                     //const string _towRigShip = "▢";
@@ -606,6 +629,14 @@ namespace DynamicTimeDraw
                         }
                     };
 
+                    TitleText.MouseMove += (e, args) =>
+                    {
+                        if (TitleText.IsMouseInRect(args.Location))
+                            this.Cursor = Cursors.Hand;
+                        else if (this.Cursor == Cursors.Hand)
+                            this.Cursor = Cursors.Cross;
+                    };
+
                     TitleText.MouseUp += (sender, e) =>
                     {
                         this.Invoke(new Action(() =>
@@ -631,17 +662,16 @@ namespace DynamicTimeDraw
                             {
                                 // Static reset of all ships to their original positions and states.
                                 // This allows the user to click on the title text to reset the animation
-                                // and return all flingX items back to their starting positions, providing
+                                // and return all BattleShips items back to their starting positions, providing
                                 // a way to restart the animation without having to close and reopen the form.
                                 ItemReq.ResetDeadShips();
 
-                                foreach (var flier in FlingX)
+                                foreach (var flier in BattleShips)
                                 {
                                     if (!flier.SpaceBattle)
                                     {
                                         flier.Animation = true;
                                         flier.SpaceBattle = _useBattlegrounds;
-                                        //flier.Refresh();
                                     }
                                 }
                             }));
