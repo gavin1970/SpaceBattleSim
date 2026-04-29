@@ -486,6 +486,7 @@ namespace DynamicTimeDraw
                                                     _lastTargetLocation = _pendingDestination;
                                                     _pendingDestination = this.HomeBaseLocation;
                                                     this.NextDestination = this.HomeBaseLocation;
+                                                    _spaceShipsInTow.TryRemove(_activeTargetName, out _);
                                                 }
                                             }
                                             else if (_spaceShip.IsTowRig)
