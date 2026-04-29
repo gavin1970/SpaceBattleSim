@@ -17,7 +17,7 @@ namespace DynamicTimeDraw
 #endif
 
         const string _appTitle = "WinForm Random Battleground";
-        const string _appInfo = "Version: v1.0.0\nRight click on title\nto reset the dead.";
+        const string _appInfo = "Version: v6.4.29.0525\nRight click on title\nto reset the dead.";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
