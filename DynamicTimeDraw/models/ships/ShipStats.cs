@@ -7,7 +7,7 @@
         {
             { ShipType.TowRig, (2000, 1, 30, 2.0f) },
             { ShipType.Transport, (1000, 0, 40, 2.0f) },
-            { ShipType.Raider, (200, 4, 50, 1.0f) },
+            { ShipType.Raider, (400, 16, 50, 1.0f) },
             { ShipType.Fighter, (200, 4, 50, 1.0f) },
             { ShipType.Bomber, (400, 6, 60, 0.5f) },
             { ShipType.Capital, (800, 8, 75, 0.3f) }

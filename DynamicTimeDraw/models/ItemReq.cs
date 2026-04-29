@@ -2,6 +2,7 @@
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Numerics;
 using static DDefaults;
 
 namespace DynamicTimeDraw
@@ -17,13 +18,15 @@ namespace DynamicTimeDraw
         /// <summary>
         /// Provides a StringFormat configured to center text both horizontally and vertically.
         /// </summary>
-        static readonly StringFormat _centerText = new() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+        internal static readonly StringFormat _centerText = new() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
         internal static readonly ConcurrentDictionary<string, SpaceShip> _allSpaceShips = new ConcurrentDictionary<string, SpaceShip>();
+        // By making FormStatus static, we can have a shared event status across all instances of ItemReq,
+        // which can be useful for tracking global refresh and states that affect all items.
+        internal static readonly EventStatus _formStatus = new();
+        private TextLogger _logger = TextLogger.Empty;
+        private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
         private ABool _isInBattleCheck = ABool.False;
         private ABool _isSpaceBattle = ABool.False;
-        private TextLogger _logger = TextLogger.Empty;
-
-        private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
 
         // default vars
         private char _shadowOpacity = DEF_SHDW_OPACITY;
@@ -37,11 +40,7 @@ namespace DynamicTimeDraw
 
         // side fun, watch ships fight each other, when enabled by SpaceBattle property.
         private SpaceShip _spaceShip = new SpaceShip(string.Empty, ShipType.TowRig, Color.White);
-
         private readonly EventStatus _eventStatus = new();
-        // By making FormStatus static, we can have a shared event status across all instances of ItemReq,
-        // which can be useful for tracking global refresh and states that affect all items.
-        internal static readonly EventStatus _formStatus = new();
 
         #region Constructors
         /// <summary>
@@ -354,6 +353,7 @@ namespace DynamicTimeDraw
         // Stores the last engaged target's location and the time of the last attack so a
         // laser flash line can be drawn on the UI thread during the next Paint pass.
         private PointF _lastTargetLocation = PointF.Empty;
+        private int _lastTargetLocationCount = 0;
         private DateTime _lastCombatTime = DateTime.MinValue;
         // Cached next destination set by the background battle task so the synchronous
         // movement code can act on it in the same frame instead of always wandering.
@@ -384,13 +384,14 @@ namespace DynamicTimeDraw
                 if (DLine.DrawList.Count > 0 && DLine.HasAnchor && this.HomeBaseLocation.IsEmpty)
                     this.HomeBaseLocation = DLine.DrawList.First().Start;
                 
-                _allSpaceShips.TryGetValue(this.Name, out SpaceShip? val);
-
-                if (val != null)
+                if(_allSpaceShips.TryGetValue(this.Name, out _))
                 {
-                    _spaceShip = val;
-
-                    if (!this.Animation && !val.IsDead && !val.IsTowRig)
+                    // if animation was off, that means it was dead, its not dead anymore,
+                    // meaning this ship was repaired, but the _spaceShip doesn't have
+                    // access to this class, so lets reset it's state.  TowRigs are an
+                    // exception, they can be repaired but not fight, so they don't get
+                    // the animation treatment.
+                    if (!this.Animation && !_spaceShip.IsDead && !_spaceShip.IsTowRig)
                     {
                         this.Animation = true;
                         this.SpaceBattle = true;
@@ -407,9 +408,6 @@ namespace DynamicTimeDraw
 
                     if (this.NextDestination.IsEmpty)
                         this.NextDestination = this.Location;
-
-                    var x = this.Location.X;
-                    var y = this.Location.Y;
 
                     // by using X or Y instead of both, we can create a more dynamic movement
                     // pattern where the item can move in straight lines along the axes,
@@ -440,7 +438,7 @@ namespace DynamicTimeDraw
                                     var logThis = _spaceShip.Name.Equals("TowRig_000");
                                     var hitBox = (float)_spaceShip.HitBox;
                                     var hitBoxSq = hitBox * hitBox;
-                                    var myLoc = this.Center;
+                                    var myLoc = _spaceShip.Location;        // _spaceShip.Location is the same as this.Center
 
                                     if (!string.IsNullOrEmpty(_activeTargetName))
                                     {
@@ -449,15 +447,15 @@ namespace DynamicTimeDraw
                                         // Verify locked target is still alive; steer toward it and deal damage if in range.
                                         if (_allSpaceShips.TryGetValue(_activeTargetName, out var locked) && (_spaceShip.IsTowRig ? locked.IsDead : !locked.IsDead))
                                         {
-                                            if (logThis)
-                                                _logger.WriteLine(LogLevel.Debug, $"Target Found: {_activeTargetName}, Status: {locked.Status}, Location: {locked.Location}, MyLocation: {_spaceShip.Center}");
+                                            //if (logThis)
+                                                _logger.WriteLine(LogLevel.Debug, $"Target Found: {_activeTargetName}, ItStatus: {locked.Status}, ItCenter: {locked.Center}, ItLocation: {locked.Location}, MyLocation: {myLoc}");
 
                                             // Using distance squared (distSq) for comparison to avoid the overhead of
                                             // calculating the square root when determining proximity to targets. Better
                                             // use of memory and CPU than Math.sqrt() when we only need relative distances
                                             // for comparison against hitBoxSq and closestDist.
                                             float distSq = locked.DistanceFrom(myLoc);
-
+                                            _logger.WriteLine(LogLevel.Debug, $"Distance: {distSq}, hitBoxSq: {hitBoxSq}");
                                             if (distSq <= hitBoxSq)
                                             {
                                                 if (logThis)
@@ -480,22 +478,24 @@ namespace DynamicTimeDraw
 
                                                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
                                                     _allSpaceShips[_activeTargetName].ResetStats();
-                                                    _activeTargetName = string.Empty;
-                                                    _lastTargetLocation = _pendingDestination;
-                                                    _pendingDestination = this.HomeBaseLocation;
-                                                    this.NextDestination = this.HomeBaseLocation;
                                                     _spaceShipsInTow.TryRemove(_activeTargetName, out _);
+                                                    _spaceShipsInTow.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInTow.TryRemove(s.Key, out _));
+
+                                                    _activeTargetName = string.Empty;
+                                                    //_lastTargetLocation = _pendingDestination;
+                                                    //_pendingDestination = this.HomeBaseLocation;
+                                                    this.NextDestination = this.HomeBaseLocation;
                                                 }
                                             }
                                             else if (_spaceShip.IsTowRig)
                                             {
-                                                if (logThis)
-                                                    _logger.WriteLine(LogLevel.Debug, $"Still cruising towards: {_activeTargetName}, Location: {locked.Location}");
+                                                //if (logThis)
+                                                    _logger.WriteLine(LogLevel.Debug, $"Still cruising towards: {_activeTargetName}, ItLocation: {locked.Location}, MyLocation: {myLoc}, Distance: {distSq}");
 
                                                 // TowRig can still pull from range, so update
                                                 // destination even if not in hit box.
-                                                _lastTargetLocation = _pendingDestination;
-                                                _pendingDestination = locked.Location;
+                                                //_lastTargetLocation = _pendingDestination;
+                                                //_pendingDestination = locked.Location;
                                                 this.NextDestination = locked.Location;
                                             }
                                             else
@@ -518,13 +518,23 @@ namespace DynamicTimeDraw
                                     }
                                     else if (_spaceShip.IsTowRig && _spaceShip.CurrentMission == ShipMission.HeadingHome)
                                     {
-                                        if (logThis)
-                                            _logger.WriteLine(LogLevel.Debug, $"Heading home, MyLocation: {_spaceShip.Location}, NextDestination: {this.NextDestination}");
+                                        //if (logThis)
+                                            _logger.WriteLine(LogLevel.Debug, $"Heading home, MyLocation: {myLoc}, NextDestination: {this.NextDestination}, HomeBaseLocation: {HomeBaseLocation}");
 
-                                        if (_spaceShip.DistanceFrom(HomeBaseLocation) <= (_spaceShip.HitBox * 2))
+                                        if (!_lastTargetLocation.Equals(myLoc))
                                         {
-                                            if (logThis)
-                                                _logger.WriteLine(LogLevel.Debug, $"Found home, Location: {_spaceShip.Location}");
+                                            _lastTargetLocation = myLoc;
+                                            _lastTargetLocationCount = 1;
+                                        }
+                                        else
+                                            _lastTargetLocationCount++;
+
+                                        float distSq = _spaceShip.DistanceFrom(HomeBaseLocation);
+                                        //if (_spaceShip.DistanceFrom(HomeBaseLocation) <= (_spaceShip.HitBox * 2))
+                                        if (distSq <= hitBoxSq || _lastTargetLocationCount > 1000)
+                                        {
+                                            //if (logThis)
+                                                _logger.WriteLine(LogLevel.Debug, $"Found home, MyLocation: {myLoc}");
                                             this.Animation = false;
                                             _spaceShip.CurrentMission = ShipMission.Idle;
                                             _spaceShip.ResetStats();
@@ -545,14 +555,14 @@ namespace DynamicTimeDraw
                                         if (allShips.Count == 0)
                                         {
                                             if (logThis)
-                                                _logger.WriteLine(LogLevel.Debug, $"No dead ships found, Location: {_spaceShip.Location}");
+                                                _logger.WriteLine(LogLevel.Debug, $"No dead ships found, Location: {myLoc}");
 
                                             this.Animation = false;
                                             _activeTargetName = string.Empty;
                                             if (this.NextDestination != this.HomeBaseLocation)
                                             {
                                                 if (logThis)
-                                                    _logger.WriteLine(LogLevel.Debug, $"Resetting next destination.  Current: {this.NextDestination}, Location: {_spaceShip.Location}");
+                                                    _logger.WriteLine(LogLevel.Debug, $"Resetting next destination.  Current: {this.NextDestination}, MyLocation: {myLoc}");
 
                                                 _spaceShip.CurrentMission = ShipMission.Idle;
                                                 _lastTargetLocation = _pendingDestination;
@@ -570,7 +580,7 @@ namespace DynamicTimeDraw
                                                         _logger.WriteLine(LogLevel.Debug, $"Found dead ship. {kvp.Name}, Location: {kvp.Location}, Center: {kvp.Center}");
 
                                                     float distSq = _allSpaceShips[kvp.Name].DistanceFrom(myLoc);
-                                                    _allSpaceShips[kvp.Name].SetTower(_spaceShip.Name, distSq);
+                                                    _allSpaceShips[kvp.Name].SetTower(this.Name, distSq);
                                                     this.NextDestination = kvp.Center;
 
                                                     this.Animation = true;
@@ -589,7 +599,7 @@ namespace DynamicTimeDraw
                                             if(_spaceShip.CurrentMission != ShipMission.OnTow && _spaceShip.CurrentMission != ShipMission.HeadingHome)
                                             {
                                                 if (logThis)
-                                                    _logger.WriteLine(LogLevel.Debug, $"Setting missiong to idle. Location: {_spaceShip.Location}, Center: {_spaceShip.Center}");
+                                                    _logger.WriteLine(LogLevel.Debug, $"Setting missiong to idle. MyLocation: {myLoc}");
 
                                                 _spaceShip.CurrentMission = ShipMission.Idle;
                                                 _lastTargetLocation = _pendingDestination;
@@ -678,6 +688,9 @@ namespace DynamicTimeDraw
                         }
                     }
 
+                    var x = this.Location.X;
+                    var y = this.Location.Y;
+
                     // Consume any pending destination from the combat scan above every frame,
                     // so steering toward an enemy overrides the current path immediately.
                     if (!_pendingDestination.IsEmpty && !_spaceShip.IsTowRig)
@@ -732,9 +745,15 @@ namespace DynamicTimeDraw
 
                     if (_isSpaceBattle)
                     {
+                        // Location based on the center of the ship instead of the top-left
+                        // corner of the rectangle, so movement and hit detection are more
+                        // intuitive and visually aligned with the ship's position.
                         _spaceShip.Location = this.Center;
+                        // update the shared ship info with the latest position and
+                        // status so other ships can see it during their async scans.
                         _allSpaceShips[Name] = _spaceShip;
                     }
+
                     clsBtnRect = this.Rectangle;
                 }
 
@@ -975,7 +994,6 @@ namespace DynamicTimeDraw
         public float Right
         {
             get { return _rectangleF.Right; }
-            set { _rectangleF.Right = value; }
         }
         public float Top
         {
@@ -985,7 +1003,6 @@ namespace DynamicTimeDraw
         public float Bottom
         {
             get { return _rectangleF.Bottom; }
-            set { _rectangleF.Bottom = value; }
         }
         public float Width
         {
@@ -1002,181 +1019,6 @@ namespace DynamicTimeDraw
             get { return _rectangleF.Center; }
         }
         #endregion
-
-        /**
-        #region Rectangle, Location and Size properties with synchronization
-        /// <summary>
-        /// Represents the rectangle area with an default origin at (0, 0) and a size of 100x100. This property<br/>
-        /// will set and keep in sync with the Location and Size properties. Any updates to any of the<br/>
-        /// properties (Location, Size, Left, Top, Right, Bottom, Width, Height) will keep this rectangle in<br/>
-        /// sync and update accordingly.<br/>
-        /// </summary>
-        /// <remarks>
-        ///    Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public RectangleF Rectangle
-        {
-            get { return _rectangle; }
-            set
-            {
-                (bool loc, bool sz) updated = (false, false);
-
-                if ((value.Location.X >= 0 && value.Location.Y >= 0) &&
-                     value.Location.X < _parentForm.Width &&
-                     value.Location.Y < _parentForm.Height)
-                {
-                    this.Location = value.Location;
-                    updated.loc = true;
-                }
-
-                if ((value.Size.Width >= 0 && value.Size.Height >= 0) 
-                    && ((value.Location.X + value.Size.Width)  < ParentSize.Width) 
-                    && ((value.Location.Y + value.Size.Height) < ParentSize.Height)) 
-                { 
-                    this.Size = value.Size; 
-                    updated.sz = true;
-                }
-            }
-        }
-        /// <summary>
-        /// Gets or sets the coordinates of the upper-left corner of the rectangle.<br/>
-        /// Rectangle property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public PointF Location
-        {
-            get { return this.Rectangle.Location; }
-            set 
-            {
-                if (value.X >= 0 && value.Y >= 0 && value.X < ParentSize.Width && value.Y < ParentSize.Height)
-                {
-                    _rectangle.Location = value;
-                }
-            }
-        }
-        /// <summary>
-        /// Gets the center point of the overall rectangle, calculated based on the current 
-        /// Location and Size properties. This is a read-only property that provides a convenient 
-        /// way to access the center coordinates of the rectangle for drawing or hit testing 
-        /// purposes. The center point is calculated as:<br/>
-        /// (Location.X + Size.Width / 2, Location.Y + Size.Height / 2) and is updated whenever 
-        /// the Location or Size properties are changed to ensure it always reflects the current 
-        /// state of the rectangle.
-        /// </summary>
-        public PointF LocationCenter
-        {
-            get 
-            {
-                if (_locationCenter.X != this.Location.X || _locationCenter.Y != this.Location.Y)
-                    _locationCenter = new PointF(this.Location.X + (this.Size.Width / 2), this.Location.Y + (this.Size.Height / 2));
-
-                return _locationCenter; 
-            }
-        }
-        /// <summary>
-        /// Gets or sets the size of the rectangle.<br/>
-        /// Rectangle property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public SizeF Size
-        {
-            get { return this.Rectangle.Size; }
-            set 
-            { 
-                if (value.Width >= 0 && value.Height >= 0 && (this.Left + value.Width) < ParentSize.Width && (this.Top + value.Height) < ParentSize.Height) 
-                { 
-                    _rectangle.Size = value;
-                    // if the size is too small, we can consider it as not visible to avoid
-                    // drawing issues or clutter. Enabling will be up to the user.
-                    if (value.Height < 10 || value.Width < 10)  
-                        this.Visible = false;
-                }
-            }
-        }
-        #endregion
-
-        #region Convenience properties for edges with synchronization
-        /// <summary>
-        /// Gets or sets the x-coordinate of the left edge of the object.<br/>
-        /// Location property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public float Left
-        {
-            get { return this.Location.X; }
-            set { if (value >= 0 && value < ParentSize.Width) this.Location = new PointF(value, this.Top); }
-        }
-        /// <summary>
-        /// Gets or sets the y-coordinate of the upper-left corner of the object.<br/>
-        /// Location property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public float Top
-        {
-            get { return this.Location.Y; }
-            set { if (value >= 0 && value < ParentSize.Height) this.Location = new PointF(this.Left, value); }
-        }
-        /// <summary>
-        /// Gets or sets the x-coordinate of the right edge of the rectangle.<br/>
-        /// Size property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public float Right
-        {
-            get { return this.Left + this.Width; }
-            set { if (value >= this.Left && value < ParentSize.Width) this.Size = new SizeF(value - this.Left, this.Height); }
-        }
-        /// <summary>
-        /// Gets or sets the y-coordinate of the bottom edge of the rectangle.<br/>
-        /// Size property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public float Bottom
-        {
-            get { return this.Top + this.Height; }
-            set { if (value >= this.Top && value < ParentSize.Height) this.Size = new SizeF(this.Width, value - this.Top); }
-        }
-        #endregion
-
-        #region Convenience properties for dimensions with synchronization
-        /// <summary>
-        /// Gets or sets the width component of the size.<br/>
-        /// Size property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public float Width
-        {
-            get { return this.Size.Width; }
-            set { if (value >= 0 && (this.Left + value) < ParentSize.Width) this.Size = new SizeF(value, this.Height); }
-        }
-        /// <summary>
-        /// Gets or sets the height component of the size.<br/>
-        /// Size property will also be updated when this property is set.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Any attempt to set the rectangle with negative coordinates or passed bounds of the form will be ignored to maintain valid drawing parameters.
-        /// </remarks>
-        public float Height
-        {
-            get { return this.Size.Height; }
-            set { if (value >= 0 && (this.Top + value) < ParentSize.Height) this.Size = new SizeF(this.Width, value); }
-        }
-        #endregion
-        /**/
 
         #region Public Methods
         /// <summary>
@@ -1204,7 +1046,6 @@ namespace DynamicTimeDraw
             //}
         }
         #endregion
-
 
         #region Event handlers for parent form events to trigger redraws
         /// <summary>

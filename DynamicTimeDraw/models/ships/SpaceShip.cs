@@ -1,6 +1,8 @@
 ﻿using Chizl.ColorExtension;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
+using System.Net.Sockets;
+using System.Numerics;
 
 namespace DynamicTimeDraw
 {
@@ -290,20 +292,24 @@ namespace DynamicTimeDraw
             return false;
         }
         /// <summary>
-        /// Calculates the squared Euclidean distance from the center of the ship to the specified point.
+        /// Calculates the squared Euclidean distance from the current location to the specified point.
         /// </summary>
-        /// <remarks>This method returns the squared distance rather than the actual distance. To obtain
-        /// the true Euclidean distance, take the square root of the returned value. Using the squared distance can be
-        /// more efficient when only relative distances are needed.</remarks>
-        /// <param name="point">The point to which the squared distance from the ship's center is calculated.</param>
-        /// <returns>The squared distance between the ship's center and the specified point.</returns>
+        /// <remarks>This method returns the squared distance rather than the actual distance. Use this
+        /// value for comparisons or performance-sensitive scenarios where the exact distance is not required.</remarks>
+        /// <param name="point">The target point to which the squared distance is calculated.</param>
+        /// <returns>The squared distance between the current location and the specified point.</returns>
         public float DistanceFrom(PointF point)
         {
+            //var shipLoc = new Vector2(this.Location.X, this.Location.Y);
+            //var targetLoc = new Vector2(point.X, point.Y);
+
+            //return Vector2.DistanceSquared(shipLoc, targetLoc);
+
             var shipLoc = this.Location;
             var dx = point.X - shipLoc.X;
             var dy = point.Y - shipLoc.Y;
 
-            return (dx * dx) + (dy * dy);
+            return dx * dx + dy * dy;
         }
         /// <summary>
         /// Applies damage to the ship, reducing its shields and power accordingly. The ship's status is updated<br/>

@@ -167,17 +167,17 @@
         public PointF Center
         {
             get => new(_rect.X + (_rect.Width / 2), _rect.Y + (_rect.Height / 2));
-            set
-            {
-                // Calculate the new top-left corner based on the desired center position
-                var newX = value.X - (_rect.Width / 2);
-                var newY = value.Y - (_rect.Height / 2);
-                // Clamp the new location to ensure the rectangle stays within the boundary
-                var x = Math.Clamp(newX, 0, _boundary.Width - _rect.Width);
-                var y = Math.Clamp(newY, 0, _boundary.Height - _rect.Height);
-                // Update the rectangle's location to the new clamped position
-                _rect.Location = new PointF(x, y);
-            }
+            //set
+            //{
+            //    // Calculate the new top-left corner based on the desired center position
+            //    var newX = value.X - (_rect.Width / 2);
+            //    var newY = value.Y - (_rect.Height / 2);
+            //    // Clamp the new location to ensure the rectangle stays within the boundary
+            //    var x = Math.Clamp(newX, 0, _boundary.Width - _rect.Width);
+            //    var y = Math.Clamp(newY, 0, _boundary.Height - _rect.Height);
+            //    // Update the rectangle's location to the new clamped position
+            //    _rect.Location = new PointF(x, y);
+            //}
         }
         /// <summary>
         /// Gets or sets the x-coordinate of the right edge of the rectangle.
@@ -187,20 +187,20 @@
         /// the current left edge, the rectangle's left edge is moved to maintain the width.</remarks>
         public float Right {
             get => _rect.Right;
-            set
-            {
-                // If the new right edge is less than the current left edge,
-                // adjust the left edge to maintain the width
-                if (value < _rect.X)
-                {
-                    // Calculate the new left edge based on the desired right edge and current width
-                    var left = value - _rect.Width;
-                    // Clamp the new left edge to ensure the rectangle stays within the boundary
-                    _rect.X = Math.Clamp(left, 0, _boundary.Width - _rect.Width);
-                }
-                // Adjust the width to ensure the right edge is at the specified value and within the boundary
-                _rect.Width = Math.Clamp(value - _rect.X, 0, _boundary.Width - _rect.X);
-            }
+            //set
+            //{
+            //    // If the new right edge is less than the current left edge,
+            //    // adjust the left edge to maintain the width
+            //    if (value < _rect.X)
+            //    {
+            //        // Calculate the new left edge based on the desired right edge and current width
+            //        var left = value - _rect.Width;
+            //        // Clamp the new left edge to ensure the rectangle stays within the boundary
+            //        _rect.X = Math.Clamp(left, 0, _boundary.Width - _rect.Width);
+            //    }
+            //    // Adjust the width to ensure the right edge is at the specified value and within the boundary
+            //    _rect.Width = Math.Clamp(value - _rect.X, 0, _boundary.Width - _rect.X);
+            //}
         }
         /// <summary>
         /// Gets or sets the y-coordinate of the bottom edge of the rectangle, in local coordinates.
@@ -212,19 +212,19 @@
         public float Bottom
         {
             get => _rect.Bottom;
-            set
-            {
-                // If the new bottom edge is less than the current top edge, adjust the top edge to maintain the height
-                if (value < _rect.Y)
-                {
-                    // Calculate the new top edge based on the desired bottom edge and current height
-                    var top = value - _rect.Height;
-                    // Clamp the new top edge to ensure the rectangle stays within the boundary
-                    _rect.Y = Math.Clamp(top, 0, _boundary.Height - _rect.Y);
-                }
-                // Adjust the height to ensure the bottom edge is at the specified value and within the boundary
-                _rect.Height = Math.Clamp(value - _rect.Y, 0, _boundary.Height - _rect.Y);
-            }
+            //set
+            //{
+            //    // If the new bottom edge is less than the current top edge, adjust the top edge to maintain the height
+            //    if (value < _rect.Y)
+            //    {
+            //        // Calculate the new top edge based on the desired bottom edge and current height
+            //        var top = value - _rect.Height;
+            //        // Clamp the new top edge to ensure the rectangle stays within the boundary
+            //        _rect.Y = Math.Clamp(top, 0, _boundary.Height - _rect.Y);
+            //    }
+            //    // Adjust the height to ensure the bottom edge is at the specified value and within the boundary
+            //    _rect.Height = Math.Clamp(value - _rect.Y, 0, _boundary.Height - _rect.Y);
+            //}
         }
     }
 }
