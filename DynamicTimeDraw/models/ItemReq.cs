@@ -330,6 +330,7 @@ namespace DynamicTimeDraw
                     _allSpaceShips[ship.Key].ResetStats();
                 }
             }
+            _spaceShipsInTow.Clear();
         }
         /// <summary>
         /// Sets the type of the spaceship.

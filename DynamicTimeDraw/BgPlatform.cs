@@ -27,7 +27,7 @@ namespace DynamicTimeDraw
         // Size of the matrix grid (50pxx50px)
         const int _matrixCellSize = 40;
         // Total number of flighters and Raiders combined.
-        const int _flierCount = 30;
+        const int _flierCount = 50;
         // Number of capital shipss to create
         const int _capShipCount = (_flierCount / 7);
         // Number of TowRig ships to create
