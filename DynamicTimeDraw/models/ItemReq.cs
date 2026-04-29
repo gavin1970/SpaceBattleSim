@@ -667,6 +667,11 @@ namespace DynamicTimeDraw
                                         this._dText.Text = $"{this._dText.DeadDisplay}";
                                     }
                                 }
+                                catch(Exception ex)
+                                {
+                                    _logger.WriteLine(LogLevel.Error, $"Error in combat scan for '{Name}': {ex}");
+                                    this.NextDestination = this.HomeBaseLocation;
+                                }
                                 finally
                                 {
                                     // Only reached if TrySetTrue() succeeded above, so SetFalse() is always safe here.
@@ -678,8 +683,10 @@ namespace DynamicTimeDraw
 
                     // Consume any pending destination from the combat scan above every frame,
                     // so steering toward an enemy overrides the current path immediately.
-                    if (!_pendingDestination.IsEmpty)
+                    if (!_pendingDestination.IsEmpty && !_spaceShip.IsTowRig)
                     {
+                        // we don't want _spaceShip.IsTowRig random walking around, they should only move toward targets and home base.
+
                         var lX = Math.Min(_pendingDestination.X, this.ShipInfo.Location.X);
                         var hX = Math.Min(_pendingDestination.X, this.ShipInfo.Location.X);
                         var lY = Math.Min(_pendingDestination.Y, this.ShipInfo.Location.Y);
@@ -694,9 +701,11 @@ namespace DynamicTimeDraw
                             Math.Clamp(rY, 0, ParentSize.Height - this.Height));
                         _pendingDestination = PointF.Empty;
                     }
-                    else if (this.Location.X == this.NextDestination.X ||
-                             this.Location.Y == this.NextDestination.Y)
+                    else if ((this.Location.X == this.NextDestination.X ||
+                             this.Location.Y == this.NextDestination.Y) && !_spaceShip.IsTowRig) 
                     {
+                        // we don't want _spaceShip.IsTowRig random walking around, they should only move toward targets and home base.
+
                         // Reached the current waypoint with no new target — pick a random one.
                         //if (string.IsNullOrEmpty(_activeTargetName))
                         {
