@@ -1,8 +1,7 @@
 ﻿using Chizl.ColorExtension;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
-using System.Net.Sockets;
-using System.Numerics;
+// using System.Numerics; //Vector2 is not used in the current implementation, but it can be useful for future enhancements or alternative distance calculations.
 
 namespace DynamicTimeDraw
 {
@@ -300,15 +299,13 @@ namespace DynamicTimeDraw
         /// <returns>The squared distance between the current location and the specified point.</returns>
         public float DistanceFrom(PointF point)
         {
+            /// Also works, but creates extra Vector2 objects and is less efficient than just doing the math directly.
             //var shipLoc = new Vector2(this.Location.X, this.Location.Y);
             //var targetLoc = new Vector2(point.X, point.Y);
-
             //return Vector2.DistanceSquared(shipLoc, targetLoc);
 
-            var shipLoc = this.Location;
-            var dx = point.X - shipLoc.X;
-            var dy = point.Y - shipLoc.Y;
-
+            var dx = point.X - this.Location.X;
+            var dy = point.Y - this.Location.Y;
             return dx * dx + dy * dy;
         }
         /// <summary>
@@ -324,7 +321,6 @@ namespace DynamicTimeDraw
             
             var afterDmg = _shields - damage;
             // log incoming data, trying to figure out why no damage is being taken, but ships are still dying.
-            // _logger.WriteLine(LogLevel.Debug, $"Ship '{Name}' @ '{Location}' is taking damage '{damage}' from '{byWho}'.  Shields are now '{afterDmg}'");
             _lastAttack.AdjustTime(DateTime.UtcNow);
 
             // Reduce the ship's shields by the damage taken, and update the power based on the new shield level.

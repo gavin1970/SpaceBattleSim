@@ -98,7 +98,8 @@ namespace DynamicTimeDraw
 
             _logger = new TextLogger($"{name}_ItemReq", @".\logs")
             {
-                EnabledLogLevels = LogLevel.Debug | LogLevel.Error,
+                //EnabledLogLevels = LogLevel.Debug | LogLevel.Error,
+                EnabledLogLevels = LogLevel.Error,
                 KeepLogDays = TimeSpan.FromDays(1)
             };
 
