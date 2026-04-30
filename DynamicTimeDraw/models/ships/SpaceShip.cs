@@ -23,6 +23,7 @@ namespace DynamicTimeDraw
         private uint _orgPower = 0;
         private uint _power = 0;
         private float _speed = 0.5f;
+        private int _recovery = 0;
         // The last attack time is stored as an Atomic DateTime, which can be used
         // to track if currently in battle. This allows for cooldown management,
         // attack rate limiting, and other time-based mechanics in the game or
@@ -80,6 +81,7 @@ namespace DynamicTimeDraw
 
                 _isTowRig = type == ShipType.TowRig;
                 _isRaider = type == ShipType.Raider;
+                _recovery = (int)shipStats.Recovery;
 
                 _orgShipColor = shipColor;
                 _shipsColor = shipColor;
@@ -126,6 +128,14 @@ namespace DynamicTimeDraw
         /// contexts such as gameplay mechanics or visual representations in a game or simulation.<br/>
         /// </summary>
         public uint HitBox => _hitBox;
+        /// <summary>
+        /// The order in which a ship is recovered after being destroyed. The recovery order 
+        /// can be used to determine the priority of repairs or salvage operations, with 
+        /// higher recovery orders indicating a higher priority for recovery. This allows for 
+        /// strategic decision-making in various contexts, such as demand, mechanics or 
+        /// resource management in simulation.<br/>
+        /// </summary>
+        public int Recovery => _recovery;
         /// <summary>
         /// Gets the bounding rectangle that defines the hit box area around the outside of the ship.
         /// </summary>

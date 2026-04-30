@@ -525,6 +525,15 @@ namespace DynamicTimeDraw
                                         {
                                             if (logThis)
                                                 _logger.WriteLine(LogLevel.Debug, $"No target found, clearning name: {_activeTargetName}");
+
+                                            if (_spaceShip.IsTowRig)
+                                            {
+                                                _spaceShipsInTow.TryRemove(_activeTargetName, out _);
+                                                _spaceShipsInTow.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInTow.TryRemove(s.Key, out _));
+                                                _spaceShip.CurrentMission = ShipMission.Idle;
+                                                _spaceShipsInTow[this.Name].CurrentMission = ShipMission.Idle;
+                                            }
+
                                             // Target is dead or gone — clear lock.
                                             _activeTargetName = string.Empty;
                                         }
@@ -543,8 +552,7 @@ namespace DynamicTimeDraw
                                             _lastTargetLocationCount++;
 
                                         float distSq = _spaceShip.DistanceFrom(HomeBaseLocation);
-                                        //if (_spaceShip.DistanceFrom(HomeBaseLocation) <= (_spaceShip.HitBox * 2))
-                                        if (distSq <= hitBoxSq || _lastTargetLocationCount > 1000)
+                                        if (distSq <= hitBoxSq || _lastTargetLocationCount > 100)
                                         {
                                             //if (logThis)
                                                 _logger.WriteLine(LogLevel.Debug, $"Found home, MyLocation: {myLoc}");
@@ -563,7 +571,8 @@ namespace DynamicTimeDraw
                                         List<SpaceShip> allShips = new List<SpaceShip>();
                                         allShips = _allSpaceShips.Where(w =>
                                                                         !w.Value.IsEmpty && w.Value.Name != this.Name &&
-                                                                        w.Value.IsDead && !w.Value.IsRaider).Select(s => s.Value).ToList();
+                                                                        w.Value.IsDead && !w.Value.IsRaider)
+                                                                 .Select(s => s.Value).ToList();
 
                                         if (allShips.Count == 0)
                                         {
@@ -585,7 +594,7 @@ namespace DynamicTimeDraw
                                         }
                                         else
                                         {
-                                            foreach (var kvp in allShips)
+                                            foreach (var kvp in allShips.OrderByDescending(o => o.Recovery))
                                             {
                                                 if (_spaceShipsInTow.TryAdd(kvp.Name, _spaceShip))
                                                 {
@@ -624,7 +633,7 @@ namespace DynamicTimeDraw
                                     else
                                     {
                                         if (logThis)
-                                            _logger.WriteLine(LogLevel.Debug, $"I should be here..");
+                                            _logger.WriteLine(LogLevel.Debug, $"TowRigh's shouldn't be here..");
 
                                         // No locked target — scan for any enemy in detection range.
                                         SpaceShip? closest = null;
