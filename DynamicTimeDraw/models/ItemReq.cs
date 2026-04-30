@@ -619,6 +619,7 @@ namespace DynamicTimeDraw
                                                     _pendingDestination = kvp.Center;
 
                                                     _lastCombatTime = DateTime.UtcNow;
+                                                    break;
                                                 }
                                             }
 
