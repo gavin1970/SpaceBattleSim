@@ -1,6 +1,42 @@
 ﻿namespace DynamicTimeDraw
 {
     /// <summary>
+    /// Specifies the relative priority or severity for recovery operations.
+    /// </summary>
+    /// <remarks>Use this enumeration to indicate the order in which recovery actions should be performed,
+    /// with higher values representing greater urgency. The values range from <see cref="RecoverOrder.None"/> (no
+    /// recovery required) to <see cref="RecoverOrder.Critical"/> (highest priority for recovery).</remarks>
+    public enum RecoverOrder
+    {
+        /// <summary>
+        /// Not to be recovered.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Indicates a low level of severity or priority, typically used for grunt / Fighter ships that can 
+        /// fight, but are not critical to the overall success of the mission. They can take some damage, but 
+        /// are not as durable as other ship types.
+        /// </summary>
+        Low = 1,
+        /// <summary>
+        /// Indicates a medium level of severity or priority, typically used for ships that can take more 
+        /// and provide heavier damaged than fighters, but less than Capital ships.
+        /// </summary>
+        Medium = 2,
+        /// <summary>
+        /// Indicates a high level of severity or priority, typically used for ships that can take more 
+        /// and provide heavier damaged than other, such as Capital ships.
+        /// </summary>
+        High = 3,
+        /// <summary>
+        /// Indicates a critical severity level, typically used for Healers/TowRigs that require immediate attention.
+        /// </summary>
+        /// <remarks>Use this value to represent the most severe level like healers,
+        /// where the home team may be unable to continue running without immediate intervention.</remarks>
+        Critical = 4
+    }
+
+    /// <summary>
     /// Represents the various statuses a spaceship can have, ranging from fully operational to completely destroyed.
     /// </summary>
     public enum ShipStatus
