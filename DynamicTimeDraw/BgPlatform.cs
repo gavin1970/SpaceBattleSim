@@ -10,7 +10,7 @@ namespace DynamicTimeDraw
         // while keeping the grid lines visible.
         static bool _transparentBG = false;
         const string _appTitle = "WinForm Random Battleground";
-        static string _appInfo = "Version: {0} - Right click on title to reset the dead.";
+        static string _appInfo = "Version: {0} - Right click on title to reset the dead.\nPress F1 or F2 for more info.";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
@@ -77,6 +77,7 @@ namespace DynamicTimeDraw
         internal static ItemReq HomeBase = ItemReq.Empty;
 
         internal static List<ItemReq> BattleShips = new List<ItemReq>();
+        private static string[] _shipInfo = { };
 
         public BgPlatform()
         {
@@ -111,30 +112,61 @@ namespace DynamicTimeDraw
                 if (!CloseButton.IsMouseInRect(e.Location))
                     CloseButton.InActiveHide = true;
             };
+            this.KeyDown += (s, e) =>
+            {
+                var isF1 = e.KeyCode == Keys.F1;    //details
+                var isF2 = e.KeyCode == Keys.F2;    //summary
+                if (isF1 || isF2)
+                {
+                    // Use Invoke to ensure we're on the UI thread when closing the form
+                    this.Invoke(new Action(() => {
+                        // if not F1, then F2
+                        _shipInfo = ItemReq.GetShipStatus(isF1);
+                    }));
+                }
+            };
+            this.KeyUp += (s, e) =>
+            {
+                var isF1 = e.KeyCode == Keys.F1;
+                var isF2 = e.KeyCode == Keys.F2;
+                if (isF1 || isF2)
+                {
+                    // Use Invoke to ensure we're on the UI thread when closing the form
+                    this.Invoke(new Action(() => {
+                        _shipInfo = new string[]{ };
+                    }));
+                }
+            };
         }
 
         private void BgPlatform_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
 
-            // 1. Set global quality once for the whole frame
+            // Set global quality once for the whole frame
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            // 2. Draw the grid background
+            // Draw the grid background
             if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
 
-            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30));
-
-            // 3. Draw the Space Battle (Fighters & Raiders)
-            foreach (var ship in BattleShips)
+            if (_shipInfo.Length > 0)
             {
-                if (ship.Visible) ship.DrawItem(e.Graphics);
+                for (int i = 0; i < _shipInfo.Length; i++)
+                    g.DrawString(_shipInfo[i], _smallFlierFont, Brushes.Yellow, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30 - ((i + 1) * 20)));
             }
+            else
+            {
+                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 50));
 
-            // 4. Draw the Infrastructure (HomeBase & UI)
-            if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
-            if (!TitleText.IsEmpty) TitleText.DrawItem(e.Graphics);
+                // Draw the Space Battle (Fighters & Raiders)
+                foreach (var ship in BattleShips)
+                    if (ship.Visible) ship.DrawItem(e.Graphics);
+
+                // Draw the Infrastructure (HomeBase & UI)
+                if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
+                if (!TitleText.IsEmpty) TitleText.DrawItem(e.Graphics);
+            }
             if (!CloseButton.IsEmpty) CloseButton.DrawItem(e.Graphics);
         }
 
@@ -207,44 +239,41 @@ namespace DynamicTimeDraw
             // Use Invoke to ensure we're on the UI thread when creating controls
             if (MatrixArray.IsEmpty)
             {
-                this.Invoke(new Action(() =>
+                // Create a grid of ItemReq objects for the matrix background
+                int cols = this.ViewSize.Width / _matrixCellSize;
+                int rows = this.ViewSize.Height / _matrixCellSize;
+
+                MatrixArray = new ItemReq(this, $"MatrixArray")
                 {
-                    // Create a grid of ItemReq objects for the matrix background
-                    int cols = this.ViewSize.Width / _matrixCellSize;
-                    int rows = this.ViewSize.Height / _matrixCellSize;
-
-                    MatrixArray = new ItemReq(this, $"MatrixArray")
+                    Location = new PointF(this.Padding.Left, this.Padding.Top),
+                    Size = new Size(this.ViewSize.Width, this.ViewSize.Height),
+                    BGColor = Color.FromArgb(255, this.BackColor),
+                    BorderColor = _shadowStyle.color,
+                    BorderWidth = _borderWidth,
+                    ShadowDepth = _shadowStyle.depth,
+                    BoxShadowing = true,
+                    Visible = true,
+                    DLine =
                     {
-                        Location = new PointF(this.Padding.Left, this.Padding.Top),
-                        Size = new Size(this.ViewSize.Width, this.ViewSize.Height),
-                        BGColor = Color.FromArgb(255, this.BackColor),
-                        BorderColor = _shadowStyle.color,
-                        BorderWidth = _borderWidth,
-                        ShadowDepth = _shadowStyle.depth,
-                        BoxShadowing = true,
-                        Visible = true,
-                        DLine =
-                        {
-                            // used for the lines in the matrix grid.
-                            Pen = new Pen(Color.FromArgb(64, Color.White), 1),
-                        },
-                    };
+                        // used for the lines in the matrix grid.
+                        Pen = new Pen(Color.FromArgb(64, Color.White), 1),
+                    },
+                };
 
-                    for (int row = 0; row < rows; row++)
+                for (int row = 0; row < rows; row++)
+                {
+                    for (int col = 0; col < cols; col++)
                     {
-                        for (int col = 0; col < cols; col++)
-                        {
-                            MatrixArray.DLine.ItemType = ItemType.Custom;
-                            // Add a line for each cell in the grid to create the matrix effect. The +1px creates a dot at the
-                            // intersection of the grid lines. No way do we want to create a circle or square for each cell in the
-                            // grid, so we use a custom line with a single pixel length to create the dot effect at the grid
-                            // intersections.
-                            var left = this.Padding.Left + col * _matrixCellSize;
-                            var top = this.Padding.Top + row * _matrixCellSize;
-                            MatrixArray.DLine.Add(new PointF(left, top), new PointF(left + 1, top + 1));
-                        }
+                        MatrixArray.DLine.ItemType = ItemType.Custom;
+                        // Add a line for each cell in the grid to create the matrix effect. The +1px creates a dot at the
+                        // intersection of the grid lines. No way do we want to create a circle or square for each cell in the
+                        // grid, so we use a custom line with a single pixel length to create the dot effect at the grid
+                        // intersections.
+                        var left = this.Padding.Left + col * _matrixCellSize;
+                        var top = this.Padding.Top + row * _matrixCellSize;
+                        MatrixArray.DLine.Add(new PointF(left, top), new PointF(left + 1, top + 1));
                     }
-                }));
+                }
             }
         }
 

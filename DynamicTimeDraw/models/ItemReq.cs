@@ -3,7 +3,9 @@ using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Numerics;
+using System.Text;
 using static DDefaults;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DynamicTimeDraw
 {
@@ -95,8 +97,8 @@ namespace DynamicTimeDraw
 
             _logger = new TextLogger($"{name}_ItemReq", @".\logs")
             {
-                EnabledLogLevels = LogLevel.Debug | LogLevel.Error,
-                //EnabledLogLevels = LogLevel.Error,
+                //EnabledLogLevels = LogLevel.Debug | LogLevel.Error,
+                EnabledLogLevels = LogLevel.Error,
                 KeepLogDays = TimeSpan.FromDays(1)
             };
 
@@ -322,25 +324,39 @@ namespace DynamicTimeDraw
             }
             _spaceShipsInTow.Clear();
         }
-        //public static string GetShipStatus(bool summary = true)
-        //{
-        //    string status = string.Empty;
-        //    if (summary)
-        //    {
-        //        List<string> combindSummary = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.Raider).Select(s => $"{s.Value.ShipType}, {s.Value.Status}").ToArray();
-        //        var fighters = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.Fighter).Select(s => s.Value.Status).ToArray();
-        //        var capShips = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.Capital).Select(s => s.Value.Status).ToArray();
-        //        var towRigs = _allSpaceShips.Where(w => w.Value.ShipType == ShipType.TowRig).Select(s => s.Value.CurrentMission).ToArray();
-        //    }
-        //    else
-        //    {
-        //        foreach (var ship in _allSpaceShips)
-        //            status += $"Name: {ship.Value.Name}, Type: {ship.Value.ShipType}, Status: {ship.Value.Status}, " +
-        //                      $"Location: {ship.Value.Location}, Power: {ship.Value.Power}, HitBox: {ship.Value.HitBox}, " +
-        //                      $"CurrentMission: {ship.Value.CurrentMission}\n";
-        //    }
-        //    return status;
-        //}
+        /// <summary>
+        /// Retrieves the status information for all spaceships, either as detailed records or as grouped summaries.
+        /// </summary>
+        /// <remarks>When details is set to true, each element in the returned array contains the name,
+        /// type, status, location, power, hit box, and, if applicable, the current mission of a spaceship. When details
+        /// is false, each element summarizes the count of ships by type and status.</remarks>
+        /// <param name="details">true to return detailed information for each spaceship; false to return grouped summaries by ship type and
+        /// status. The default is true.</param>
+        /// <returns>An array of strings containing either detailed status information for each spaceship or grouped summaries,
+        /// depending on the value of the details parameter.</returns>
+        public static string[] GetShipStatus(bool details = true)
+        {
+            string[] status = { };
+            List<string> retVal = new List<string>();
+
+            if (details)
+            {
+                retVal = _allSpaceShips.OrderBy(o => o.Value.ShipType)
+                                       .Select(s => $"Name: {s.Value.Name}, Type: {s.Value.ShipType}, Status: {s.Value.Status}, " +
+                                                    $"Location: {s.Value.Location}, Power: {s.Value.Power}, HitBox: {s.Value.HitBox}" +
+                                                    $"{(s.Value.IsTowRig ? $", CurrentMission: {s.Value.CurrentMission}" : "")}")
+                                       .ToList();
+            }
+            else
+            {
+                retVal = (from ships in _allSpaceShips
+                          group ships by new { ships.Value.ShipType, ships.Value.Status } into g
+                          orderby g.Key.ShipType, g.Key.Status
+                          select $"Type: {g.Key.ShipType}, Status: {g.Key.Status}, Count: {g.Count()}").ToList();
+            }
+
+            return retVal.ToArray();
+        }
         /// <summary>
         /// Sets the type of the spaceship.
         /// </summary>
