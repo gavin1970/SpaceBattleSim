@@ -28,10 +28,6 @@
                 if (bgColor.A <= 1)
                     bgColor = Color.FromArgb(255, bgColor);
 
-                // set properties based arguments
-                var bColor = bgColor;
-                var fColor = fgColor.A >= bgColor.A ? Color.FromArgb((int)(bgColor.A * 0.5f), fgColor) : fgColor;
-
                 // normalize alpha
                 double alpha = fgColor.A / 255.0;
 
