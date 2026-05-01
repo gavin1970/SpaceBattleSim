@@ -80,9 +80,8 @@ namespace DynamicTimeDraw
                 throw new ArgumentNullException(nameof(parentForm), "Parent form cannot be null.");
 
             _parentForm = parentForm;
-            _parentForm.FormClosing += _parentForm_FormClosing;
-            _parentForm.Resize += _parentForm_ClientSizeChanged;
-            _parentForm.ClientSizeChanged += _parentForm_ClientSizeChanged;
+            // Mouse events are used for interaction with the item, such
+            // as clicking animations, so we subscribe to them here.
             _parentForm.MouseMove += _parentForm_MouseMove;
             _parentForm.MouseUp += _parentForm_MouseUp;
             _parentForm.MouseDown += _parentForm_MouseDown;
@@ -954,8 +953,12 @@ namespace DynamicTimeDraw
 
                 // If the rectangle is empty or not visible, we can immediately
                 // return false without performing any calculations.
-                if (this.IsEmpty || !Visible)
+                if (this.IsEmpty)
                     return false;
+
+                // If right over the rectangle, we can return true immediately without needing to calculate the expanded hit area.
+                if (this.Rectangle.Contains(mousePos))
+                    return true;
 
                 // Ensure HitBox is non-negative and does not exceed half of the
                 // smaller dimension of the rectangle to prevent invalid expansion.
@@ -1189,28 +1192,6 @@ namespace DynamicTimeDraw
             // a short delay to allow the user to see the the release effect.
             if (_eventStatus.Get($"{Name}_MouseInRectangle"))
                 this.MouseUp?.Invoke(this, e);
-        }
-        /// <summary>
-        /// FUTURE: If any thread/timers are still referencing this specific class ItemReq, clean them up.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _parentForm_FormClosing(object? sender, FormClosingEventArgs e)
-        {
-            // If the parent form is closing, stop any ongoing animations or timers
-            // related to this item to prevent them from trying to access the form
-            // after it has been closed, which could lead to exceptions or memory leaks.
-            this.Animation = false;
-        }
-        /// <summary>
-        /// Handles changes to the parent form's client size.
-        /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The event data.</param>
-        private void _parentForm_ClientSizeChanged(object? sender, EventArgs e)
-        {
-            // If the parent form's client size changes, we may need to adjust the
-            // rectangle or other properties.
         }
         #endregion
 

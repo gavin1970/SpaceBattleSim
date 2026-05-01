@@ -20,11 +20,11 @@ namespace DynamicTimeDraw
         // Size of the matrix grid (50pxx50px)
         const int _matrixCellSize = 40;
         // Total number of flighters and Raiders combined.
-        const int _flierCount = 75;
+        const int _flierCount = 100;
         // Number of capital shipss to create
-        const int _capShipCount = (_flierCount / 7);
+        const int _capShipCount = (_flierCount / 10);
         // Number of TowRig ships to create
-        const int _towRigCount = (_flierCount / 5);
+        const int _towRigCount = (_flierCount / 10);
 
         // Character to use for the first set of BattleShips shapes. If you use things like '⣮ ⣭ ⣪', remember,
         // you must make the size wider and lower the height to see them side by side. If you want them
@@ -70,10 +70,12 @@ namespace DynamicTimeDraw
         // closed, preventing multiple closure attempts.
         readonly EventStatus _eventStatus = new EventStatus();
         // ItemReq objects for the various controls to paint on the form. These are initialized in the BuildObjects method.
-        internal static ItemReq CloseButton = ItemReq.Empty;
-        internal static ItemReq MatrixArray = ItemReq.Empty;
-        internal static ItemReq TitleText = ItemReq.Empty;
-        internal static ItemReq HomeBase = ItemReq.Empty;
+        private static ItemReq CloseButton = ItemReq.Empty;
+        private static ItemReq MatrixArray = ItemReq.Empty;
+        private static ItemReq TitleText = ItemReq.Empty;
+        private static ItemReq HomeBase = ItemReq.Empty;
+        private static Point _mouseLoc = new Point(0, 0);
+
 
         internal static List<ItemReq> BattleShips = new List<ItemReq>();
         private static string[] _shipInfo = { };
@@ -108,9 +110,17 @@ namespace DynamicTimeDraw
                 // Direct call to all ships to check their hitboxes
                 //foreach (var ship in BattleShips) 
                 //    ship.IsMouseInRect(e.Location);
-                if (!CloseButton.IsMouseInRect(e.Location))
-                    CloseButton.InActiveHide = true;
+                if (CloseButton.IsMouseInRect(e.Location))
+                    CloseButton.Visible = true;
+                else
+                    CloseButton.Visible = false;
+
+                if (TitleText.IsMouseInRect(e.Location))
+                    TitleText.Visible = true;
+                else
+                    TitleText.Visible = false;
             };
+
             this.KeyDown += (s, e) =>
             {
                 var isF1 = e.KeyCode == Keys.F1;    //details
@@ -169,9 +179,9 @@ namespace DynamicTimeDraw
 
                 // Draw the Infrastructure (HomeBase & UI)
                 if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
-                if (!TitleText.IsEmpty) TitleText.DrawItem(e.Graphics);
+                if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
             }
-            if (!CloseButton.IsEmpty) CloseButton.DrawItem(e.Graphics);
+            if (CloseButton.Visible) CloseButton.DrawItem(e.Graphics);
         }
 
         /// <summary>
