@@ -2,10 +2,7 @@
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Numerics;
-using System.Text;
 using static DDefaults;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DynamicTimeDraw
 {
@@ -188,6 +185,17 @@ namespace DynamicTimeDraw
         /// Creates a drunk effect as the item moves, causing it to sway or wobble unpredictably.
         /// </summary>
         public bool DrunkEffect { get; set; } = false;
+        /// <summary>
+        /// Gets or sets a value indicating whether the item has a directional sprite for the 
+        /// ship.  Only use if the ship has a directional view, otherwise it will just be a 
+        /// square.  This is used to determine whether to rotate the sprite based on the movement 
+        /// direction, or to keep it static.  If true, the item will rotate to face the direction 
+        /// of movement, creating a more dynamic and visually engaging animation effect.  If false, 
+        /// the item will maintain its original orientation regardless of movement direction, 
+        /// which can be suitable for items that do not have a specific facing direction or when 
+        /// a simpler visual style is desired.
+        /// </summary>
+        public bool HasDirectionalSprite { get; set; } = false;
         #endregion
 
         #region Readonly Identification Properties
@@ -738,7 +746,8 @@ namespace DynamicTimeDraw
                                 catch(Exception ex)
                                 {
                                     _logger.WriteLine(LogLevel.Error, $"Error in combat scan for '{Name}': {ex}");
-                                    this.NextDestination = this.HomeBaseLocation;
+                                    if (_spaceShip.IsTowRig)
+                                        this.NextDestination = this.HomeBaseLocation;
                                 }
                                 finally
                                 {
@@ -867,14 +876,78 @@ namespace DynamicTimeDraw
                 // content that can be toggled on or off without affecting the underlying properties.
                 if (this._dText.IsEnabled)
                 {
-                    if (this._dText.HasShadowing)
+                    if (this._dText.HasShadowing && !_spaceShip.IsRaider)
                     {
                         clsBtnShdwRect = new RectangleF(clsBtnRect.X + (int)this.ShadowDepth, clsBtnRect.Y + (int)this.ShadowDepth, clsBtnRect.Width, clsBtnRect.Height);
-                        g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
+                        //if (this.HasDirectionalSprite)
+                        //{
+                        //    var state = g.Save();
+                        //    g.TranslateTransform(clsBtnShdwRect.X, clsBtnShdwRect.Y);
+                            
+                        //    float deltaX = this.NextDestination.X - this.Center.X;
+                        //    float deltaY = this.NextDestination.Y - this.Center.Y;
+                        //    double radians = Math.Atan2(deltaY, deltaX);
+                        //    double degrees = radians * (180.0 / Math.PI);
+                        //    var headingDegrees = (float)degrees;
+
+                        //    g.RotateTransform(headingDegrees);
+                        //    g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
+                        //    g.Restore(state);
+                        //}
+                        //else
+                            g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
                     }
 
                     if (_isSpaceBattle)
+                    {
+                        /* <- Change to //* to uncomment
+                        // NOTE: THIS DOES NOT WORK CORRECTLY..  It's still being worked on, so it's disabled for now.
+                        if (_spaceShip.RotateShip > 0)
+                        {
+                            var state = g.Save();
+                            g.TranslateTransform(_spaceShip.Location.X, _spaceShip.Location.Y);
+
+                            // Calculate the 'intended' movement for this tick
+                            float moveX = this.NextDestination.X - this.Location.X;
+                            float moveY = this.NextDestination.Y - this.Location.Y;
+
+                            // Only update rotation if there is actual movement
+                            if (Math.Abs(moveX) > 0 || Math.Abs(moveY) > 0)
+                            {
+                                // Math.Atan2(y, x) returns the angle of the current vector
+                                double radians = Math.Atan2(moveY, moveX);
+                                double degrees = radians * (180.0 / Math.PI);
+
+                                // Update the ship's rotation property
+                                //_spaceShip.RotateShip = (float)degrees;
+                                g.RotateTransform((float)degrees);
+                            }
+
+                            //var state = g.Save();
+                            //// Move the "Paper" so (0,0) is at the ship's center
+                            //// Use the center of your rectangle for a smoother rotation
+                            //float centerX = clsBtnRect.X + (clsBtnRect.Width / 2);
+                            //float centerY = clsBtnRect.Y + (clsBtnRect.Height / 2);
+                            //g.TranslateTransform(centerX, centerY);
+
+                            //// Calculate heading
+                            //float deltaX = this.NextDestination.X - clsBtnRect.X;
+                            //float deltaY = this.NextDestination.Y - clsBtnRect.Y;
+                            ////double degrees = Math.Atan2(deltaY, deltaX) * (180.0 / Math.PI);
+                            //degrees = Math.Atan2(deltaY, deltaX) * (180.0 / Math.PI);
+
+                            //g.RotateTransform((float)degrees + _spaceShip.RotateShip);
+
+                            // CRITICAL: Draw at (0,0) because the coordinate system was moved TO the ship.
+                            // We offset by half the width/height to make sure the middle of the text 
+                            // is on the pivot point.
+                            g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, 0, 0, _centerText);
+                            g.Restore(state);
+                        }
+                        else
+                        /**/
                         g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
+                    }
                     else
                         g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
 

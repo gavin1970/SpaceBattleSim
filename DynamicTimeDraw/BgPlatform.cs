@@ -40,10 +40,10 @@ namespace DynamicTimeDraw
         // interest and variety to your animation. You can browse through the available characters in the
         // library and experiment with different combinations
         // (e.g., "X", "❿", "⬤", "⧉", "⭄", "❖", "⬙", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
-        readonly string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
-        readonly string _raiderShip = char.ConvertFromUtf32(10618);     // 10618 - ⥺ = \u293a
-        readonly string _capitalShip = char.ConvertFromUtf32(11159);    // 11159 - ⮗ = \u2b97
-        readonly string _towRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
+        //readonly string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
+        //readonly string _raiderShip = char.ConvertFromUtf32(10618);     // 10618 - ⥺ = \u293a
+        //readonly string _capitalShip = char.ConvertFromUtf32(11159);    // 11159 - ⮗ = \u2b97
+        //readonly string _towRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
 
         // Moves X position of HomeBase and _capitalShip anchor points if changed.
         const float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
@@ -290,7 +290,6 @@ namespace DynamicTimeDraw
                 }
             }
         }
-
         /// <summary>
         /// Initializes and displays a close button in the top-right corner of the view
         /// if it does not already exist.
@@ -437,6 +436,8 @@ namespace DynamicTimeDraw
 
                 this.Invoke(new Action(() =>
                 {
+                    var raidImage = new ShipStats(ShipType.Raider).ShipView;
+                    var fighterImage = new ShipStats(ShipType.Fighter).ShipView;
                     int x, y;
 
                     // Create x amount of  animated "X" items that will fling out
@@ -453,7 +454,7 @@ namespace DynamicTimeDraw
                         // value and the conditions to create different patterns of ship
                         // types (e.g., every 2nd item is a fighter, every 5th item is a raider, etc.)
                         // depending on the look you want to achieve.
-                        var shipImg = (x % 3) == 0 ? _fighterShip: _raiderShip;
+                        var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
                         var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
                         var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
                         var partName = $"{shipType}";
@@ -480,6 +481,7 @@ namespace DynamicTimeDraw
                         BattleShips.Add(fly);
                     }
 
+                    var capImage = new ShipStats(ShipType.Capital).ShipView;
                     // Create x amount of  animated "X" items that will fling out
                     // from the center of the form when triggered.
                     for (int cnt = 0; cnt < _capShipCount; cnt++)
@@ -495,7 +497,7 @@ namespace DynamicTimeDraw
                             SpaceBattle = _useBattlegrounds,
                             DText = {
                                 Font = _largeFlierFont,
-                                Text = _capitalShip,
+                                Text = capImage,
                                 ShadowDepth = _shadowStyle.depth,
                                 ShadowColor = Color.FromArgb(64, _capitalShipColor),
                             },
@@ -511,6 +513,7 @@ namespace DynamicTimeDraw
                         BattleShips.Add(fly);
                     }
 
+                    var towImage = new ShipStats(ShipType.TowRig).ShipView;
                     // Create x amount of  animated "X" items that will fling out
                     // from the center of the form when triggered.
                     for (int cnt = 0; cnt < _towRigCount; cnt++)
@@ -526,7 +529,7 @@ namespace DynamicTimeDraw
                             SpaceBattle = _useBattlegrounds,
                             DText = {
                                 Font = _smallFlierFont,
-                                Text = _towRigShip,
+                                Text = towImage,
                                 ShadowDepth = _shadowStyle.depth,
                                 ShadowColor = Color.FromArgb(64, _towRigShipColor),
                             },

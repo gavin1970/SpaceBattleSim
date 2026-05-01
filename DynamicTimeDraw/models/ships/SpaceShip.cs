@@ -24,6 +24,8 @@ namespace DynamicTimeDraw
         private uint _power = 0;
         private float _speed = 0.5f;
         private int _recovery = 0;
+        private string _shipsView = string.Empty;
+        private float _rotate = 0.0f;
         // The last attack time is stored as an Atomic DateTime, which can be used
         // to track if currently in battle. This allows for cooldown management,
         // attack rate limiting, and other time-based mechanics in the game or
@@ -83,6 +85,9 @@ namespace DynamicTimeDraw
                 _isRaider = type == ShipType.Raider;
                 _recovery = (int)shipStats.Recovery;
 
+                _shipsView = shipStats.ShipView;
+                _rotate = shipStats.Rotate;
+
                 _orgShipColor = shipColor;
                 _shipsColor = shipColor;
                 // Provides a pre-built dynamic visual representations of the ship's shield status.
@@ -120,6 +125,23 @@ namespace DynamicTimeDraw
             get { return !IsEmpty && _isEnabled; } 
             set { _isEnabled = value; } 
         }
+        /// <summary>
+        /// Gets the current view representation of the ship or ships.
+        /// </summary>
+        public string ShipView => _shipsView;
+        /// <summary>
+        /// Gets the current rotation value of the ship.   If the ship by default is facing up, then a rotation 
+        /// of 90 means the ship is rotated 90 degrees to the right, 180 means it is facing down, and 270 means 
+        /// it is facing left. The rotation value can be used to determine the ship's orientation in various 
+        /// contexts, such as visual representations in a game or simulation, or for calculating movement and 
+        /// interactions based on the ship's facing direction.<br/>
+        /// </summary>
+        public float RotateShip 
+        { 
+            get { return _rotate; } 
+            set { _rotate = Math.Clamp(value, 0, 359); } 
+        }
+
         /// <summary>
         /// Gets the hit box value. The hit box represents the ship's radar distance to pick up other ships, and<br/>
         /// it drops as the ship takes damage. The hit box is determined based on the ship's current shield<br/>

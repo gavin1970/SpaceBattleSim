@@ -23,6 +23,7 @@
 		
   <ItemGroup>
     <Content Include="Chizl_Atomic_Blue_512.ico" />
+    <None Include="..\README.md" />
   </ItemGroup>
 
   <ItemGroup>

@@ -12,32 +12,42 @@ namespace DynamicTimeDraw
     /// order.</remarks>
     public class ShipStats
     {
-        static private readonly Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery)> _shipsAvailable = 
-                            new Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery)>()
+        readonly static string _towRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
+        readonly static string _capitalShip = char.ConvertFromUtf32(11790);    // 11790 - ⸎ = \u2e4e    -- // 11159 - ⮗ = \u2b97
+        readonly static string _bomberShip = char.ConvertFromUtf32(11258);     // 11258 - ⯺ = \u2bfa
+        readonly static string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
+        readonly static string _transportShip = char.ConvertFromUtf32(11213);  // 11213 - ⯍ = \u2b5d
+        //readonly static string _raiderShip = char.ConvertFromUtf32(11501);     // 11501 - Ⳮ = \u2cd5
+        readonly static string _raiderShip = char.ConvertFromUtf32(10618);   // 10618 - ⥺ = \u293a  -- attempting rotation to face the direction it's heading. Still in the works.
+
+        static private readonly Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, float Rotate)> _shipsAvailable = 
+                            new Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, float Rotate)>()
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.
-            { ShipType.TowRig, (400, 1, 20, 2.0f, RecoverOrder.Critical) },
+            { ShipType.TowRig, (400, 1, 20, 2.0f, RecoverOrder.Critical, _towRigShip, 0.0f) },
             // The most durable and powerful ship as a whole, but also the slowest.
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.
-            { ShipType.Capital, (800, 8, 75, 0.3f, RecoverOrder.High) },
+            { ShipType.Capital, (800, 8, 75, 0.3f, RecoverOrder.High, _capitalShip, 0.0f) },
             // Curent not used.
-            { ShipType.Bomber, (400, 6, 60, 0.5f, RecoverOrder.Medium) },
+            { ShipType.Bomber, (400, 6, 60, 0.5f, RecoverOrder.Medium, _bomberShip, 0.0f) },
             // Small random ship to protect the home base.
-            { ShipType.Fighter, (200, 4, 50, 1.0f, RecoverOrder.Low) },
+            { ShipType.Fighter, (200, 4, 50, 1.0f, RecoverOrder.Low, _fighterShip, 0.0f) },
             // Current not used.
-            { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low) },
+            { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, 0.0f) },
             // Half the shield of a Captial ship and twice as much power.
             // The same hitbox and speed as a Fighter, but no recovery since
-            // they are not on the home team.
-            { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None) },
+            // they are not on the home team.  Rotation needs work, leave 0.0f for now.
+            { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None, _raiderShip, 0.0f) }, //90.0f
         };
 
         private uint _shields = 0;
         private uint _power = 0;
         private float _speed = 0.0f;
         private uint _hitbox = 0;
+        private string _shipView = string.Empty;
+        private float _rotate = 0;
         private RecoverOrder _recovery = RecoverOrder.None;
 
         /// <summary>
@@ -50,13 +60,18 @@ namespace DynamicTimeDraw
         public ShipStats(ShipType type)
         {
             Type = type;
-            if (_shipsAvailable.TryGetValue(type, out (uint shields, uint power, uint hitBox, float speed, RecoverOrder recovery) value))
+            if (_shipsAvailable.TryGetValue(type, out (uint shields, uint power, uint hitBox, float speed, RecoverOrder recovery, string shipView, float rotate) value))
             {
                 _shields = value.shields;
                 _power = value.power;
                 _speed = value.speed;
                 _hitbox = value.hitBox;
                 _recovery = value.recovery;
+                _shipView = value.shipView;
+                //make sure, we didn't mess up the rotation value in the dictionary,
+                //which should be 0 to 359, where 0 means no rotation and 90 means a 90
+                //degree rotation, etc.
+                _rotate = Math.Clamp(value.rotate, 0, 359);
             }
         }
         /// <summary>
@@ -83,5 +98,15 @@ namespace DynamicTimeDraw
         /// Gets the current hitbox size for the ship.
         /// </summary>
         public uint Hitbox { get { return _hitbox; } }
+        /// <summary>
+        /// Gets the current ship in text representation.
+        /// </summary>
+        public string ShipView { get { return _shipView; } }
+        /// <summary>
+        /// Float returns current rotation value for the ship.<br/>
+        /// 0 indicates that the ship doesn't rotate, to skip. 
+        /// 0 to 359 are the valid options for rotation.
+        /// </summary>
+        public float Rotate { get { return _rotate; } }
     }
 }
