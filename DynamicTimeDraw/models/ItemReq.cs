@@ -361,10 +361,17 @@ namespace DynamicTimeDraw
             }
             else
             {
-                retVal = (from ships in _allSpaceShips
+                retVal.AddRange((from ships in _allSpaceShips
                           group ships by new { ships.Value.ShipType, ships.Value.Status } into g
                           orderby g.Key.ShipType, g.Key.Status
-                          select $"Type: {g.Key.ShipType}, Status: {g.Key.Status}, Count: {g.Count()}").ToList();
+                          select $"Type: {g.Key.ShipType}, Status: {g.Key.Status}, Count: {g.Count()}").ToList());
+
+                retVal.Add(new string('-', 75));
+
+                retVal.AddRange((from ships in _allSpaceShips
+                                 group ships by new { ships.Value.ShipType } into g
+                                 orderby g.Key.ShipType
+                                 select $"Type: {g.Key.ShipType}, Count: {g.Count()}").ToList());
             }
 
             return retVal.ToArray();

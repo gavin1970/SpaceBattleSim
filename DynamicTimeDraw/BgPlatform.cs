@@ -438,9 +438,14 @@ namespace DynamicTimeDraw
                         y = Random.Shared.Next(0, h + 1);
 
                         // Alternate between two different ship characters for visual variety
-                        var shipImg = (x % 2) == 0 ? _raiderShip : _fighterShip;
-                        var shipType = (x % 2) == 0 ? ShipType.Raider : ShipType.Fighter;
-                        var shipColor = (x % 2) == 0 ? _raiderColor : _fighterColor;
+                        // By use 3, it there will be more raiders than fighters, which adds more
+                        // visual interest and variety to the animation. You can adjust the modulo
+                        // value and the conditions to create different patterns of ship
+                        // types (e.g., every 2nd item is a fighter, every 5th item is a raider, etc.)
+                        // depending on the look you want to achieve.
+                        var shipImg = (x % 3) == 0 ? _fighterShip: _raiderShip;
+                        var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
+                        var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
                         var partName = $"{shipType}";
 
                         var fly = new ItemReq(this, $"{partName}_{cnt:000}")
