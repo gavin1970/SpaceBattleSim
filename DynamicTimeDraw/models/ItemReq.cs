@@ -305,6 +305,18 @@ namespace DynamicTimeDraw
         #endregion
 
         #region User Controler Methods, e.g. Mouse Hit Testing
+        public static bool NeedsDeadReset()
+        {
+            var allRaders = _allSpaceShips.Where(w => w.Value.IsRaider).Select(s => s.Value.Status).ToList();
+            if (allRaders.Any() && allRaders.Where(w => w == ShipStatus.Dead).Count() == allRaders.Count())
+                return true;
+
+            var allTowRigs = _allSpaceShips.Where(w => w.Value.IsTowRig).Select(s => s.Value.Status).ToList();
+            if (allTowRigs.Any() && allTowRigs.Where(w => w == ShipStatus.Dead).Count() == allTowRigs.Count())
+                return true;
+
+            return false;
+        }
         /// <summary>
         /// Resets only the ships that are currently marked as Dead, 
         /// allowing them to be reused without affecting the status of 

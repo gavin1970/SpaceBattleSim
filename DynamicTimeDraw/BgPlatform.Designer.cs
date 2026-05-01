@@ -32,6 +32,7 @@ namespace DynamicTimeDraw
         {
             components = new System.ComponentModel.Container();
             RefreshTimer = new System.Windows.Forms.Timer(components);
+            AutoResetTimer = new System.Windows.Forms.Timer(components);
             SuspendLayout();
             // 
             // RefreshTimer
@@ -39,6 +40,12 @@ namespace DynamicTimeDraw
             RefreshTimer.Enabled = true;
             RefreshTimer.Interval = 30;
             RefreshTimer.Tick += RefreshTimer_Tick;
+            // 
+            // AutoResetTimer
+            // 
+            AutoResetTimer.Enabled = true;
+            AutoResetTimer.Interval = 30000;
+            AutoResetTimer.Tick += AutoResetTimer_Tick;
             // 
             // BgPlatform
             // 
@@ -57,5 +64,6 @@ namespace DynamicTimeDraw
         #endregion
 
         private System.Windows.Forms.Timer RefreshTimer;
+        private System.Windows.Forms.Timer AutoResetTimer;
     }
 }

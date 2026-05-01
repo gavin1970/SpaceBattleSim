@@ -10,7 +10,7 @@ namespace DynamicTimeDraw
         // while keeping the grid lines visible.
         static bool _transparentBG = false;
         const string _appTitle = "WinForm Random Battleground";
-        static string _appInfo = "Version: {0} - Right click on title to reset the dead.\nPress F1 or F2 for more info.";
+        static string _appInfo = "Version: {0} - Press F5 reset the dead.\nPress F1 or F2 for Ship Info/Stats.";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
@@ -65,7 +65,6 @@ namespace DynamicTimeDraw
         readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
         readonly Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
         readonly Color _towRigShipColor = Color.FromArgb(255, 255, 0, 255);
-        readonly Color _homeBaseLinkCapColor = Color.FromArgb(32, 0, 255, 0);
         readonly Color _homeBaseLinkTowColor = Color.FromArgb(32, 255, 255, 255);
         // Thread-Safe - EventStatus object to track whether the form has already been
         // closed, preventing multiple closure attempts.
@@ -119,7 +118,8 @@ namespace DynamicTimeDraw
                 if (isF1 || isF2)
                 {
                     // Use Invoke to ensure we're on the UI thread when closing the form
-                    this.Invoke(new Action(() => {
+                    this.Invoke(new Action(() =>
+                    {
                         // if not F1, then F2
                         _shipInfo = ItemReq.GetShipStatus(isF1);
                     }));
@@ -127,15 +127,19 @@ namespace DynamicTimeDraw
             };
             this.KeyUp += (s, e) =>
             {
+                var isF5 = e.KeyCode == Keys.F5;    //refresh
                 var isF1 = e.KeyCode == Keys.F1;
                 var isF2 = e.KeyCode == Keys.F2;
                 if (isF1 || isF2)
                 {
                     // Use Invoke to ensure we're on the UI thread when closing the form
-                    this.Invoke(new Action(() => {
-                        _shipInfo = new string[]{ };
+                    this.Invoke(new Action(() =>
+                    {
+                        _shipInfo = new string[] { };
                     }));
                 }
+                else if (isF5)
+                    ItemReq.ResetDeadShips();
             };
         }
 
@@ -679,26 +683,6 @@ namespace DynamicTimeDraw
                             else
                                 this.Invoke(new Action(() => { this.TransparencyKey = Color.Empty; }));
                         }
-                        else
-                        {
-                            this.Invoke(new Action(() =>
-                            {
-                                // Static reset of all ships to their original positions and states.
-                                // This allows the user to click on the title text to reset the animation
-                                // and return all BattleShips items back to their starting positions, providing
-                                // a way to restart the animation without having to close and reopen the form.
-                                ItemReq.ResetDeadShips();
-
-                                foreach (var flier in BattleShips)
-                                {
-                                    if (!flier.SpaceBattle)
-                                    {
-                                        flier.Animation = true;
-                                        flier.SpaceBattle = _useBattlegrounds;
-                                    }
-                                }
-                            }));
-                        }
                     };
                 }));
             }
@@ -727,6 +711,15 @@ namespace DynamicTimeDraw
         private void RefreshTimer_Tick(object sender, EventArgs e)
         {
             this.Invalidate();
+        }
+
+        /// <summary>
+        /// Runs ever 30sec to see if a reset is needed.
+        /// </summary>
+        private void AutoResetTimer_Tick(object sender, EventArgs e)
+        {
+            if (ItemReq.NeedsDeadReset())
+                ItemReq.ResetDeadShips();
         }
         #endregion
 
