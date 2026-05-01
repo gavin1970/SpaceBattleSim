@@ -23,8 +23,9 @@
 		
   <ItemGroup>
     <Content Include="Chizl_Atomic_Blue_512.ico" />
-    <None Include="..\README.md" />
-  </ItemGroup>
+			<None Include="..\README.md" />
+			<None Include="..\imgs\**\*.*" />
+	</ItemGroup>
 
   <ItemGroup>
     <None Include="Chizl_Atomic_Blue_512.png">

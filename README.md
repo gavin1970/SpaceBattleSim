@@ -1,4 +1,4 @@
-﻿# DynamicTimeDraw — WinForm Random Battleground
+﻿# DynamicTimeDraw — Space Battleground Simulation
 
 A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — ships, lasers, tow-beams, the grid, shadow effects, and colour blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols).
 
@@ -24,15 +24,19 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 ## What It Is
 
-**DynamicTimeDraw** spawns a configurable fleet of spaceships on a dark grid and lets them fight autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get towed home by a healer. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering.
+**DynamicTimeDraw** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid and lets them fight autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get towed home by a healer. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering.
 
-> Run the project in Visual Studio (F5) to see the live simulation.
+![Battleground full-screen view](imgs/full_screen_view.png)
+
+> Can run by itself or with project in Visual Studio.  Press (F5) at any time to respawn all the dead.  This will happen automatically within 30 seconds of all healers or all raiders being destroyed, but you can also trigger it manually with F5. The F1 and F2 keys show different levels of ship info overlays.
+
+> AI keeps telling me to do things differently in some places, but any time it's done, it destorys the simulation and rendering doesn't work anymore.  So I have to keep it the way it is, even if it's not how I would do it if I were writing it from scratch.  It's a bit of a mess as there are things I need to break up into other classes/methods, but it works, it's fast, and that's the point of the project — to show how to build a real-time simulation with pure `System.Drawing` without any game engine or rendering framework.
 
 ---
 
 ## Features
 
-- **Pure `System.Drawing` rendering** — no Unity, MonoGame, SkiaSharp, or similar.
+- **Flawless and Pure `System.Drawing` rendering** — no Unity, MonoGame, SkiaSharp, or similar.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
 - **4 active ship classes** — TowRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behaviour.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
@@ -184,13 +188,14 @@ DynamicTimeDraw/
 
 ---
 
-## Dependencies
+## Dependencies, no external libraries
 
-| Package | Purpose |
-|---------|---------|
-| `Chizl.ThreadSupport` | Atomic primitives (`ABool`, `ADateTime`, `EventStatus`) for lock-free thread safety |
-| `Chizl.ColorExtension` | Colour manipulation helpers used during dynamic ship colour updates |
-| `Chizl.Applications` | Application metadata helpers (`About`) |
+| Package | Purpose | Found in... |
+|---------|---------|-------------|
+| `Chizl.ThreadSupport` | Atomic primitives (`ABool`, `ADateTime`, `EventStatus`) for lock-free thread safety | [`DynamicTimeDraw/utils/atomic/`](DynamicTimeDraw/utils/atomic/) |
+| `Chizl.ColorExtension` | Colour manipulation helpers used during dynamic ship colour merging | [`DynamicTimeDraw/services/ColorConvert.cs`](DynamicTimeDraw/services/ColorConvert.cs) |
+| `Chizl.Applications` | Application metadata helpers (`About`) | [`DynamicTimeDraw/utils/About.cs`](DynamicTimeDraw/utils/About.cs) |
+| `Chizl.IO.Logging` | Async Chizl.TextLogger (DLL) | [`github.com`](https://github.com/gavin1970/Chizl.IO.Logging) |
 
 > All dependencies are first-party [Chizl](https://github.com/gavin1970) libraries — no third-party game engines or rendering frameworks are used.
 
