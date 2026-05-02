@@ -24,13 +24,13 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 ## What It Is
 
-**DynamicTimeDraw** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid and lets them fight autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get towed home by a healer. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering.
+**DynamicTimeDraw** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with stars, a flying comet, and lets them fight autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
 
 ![Battleground full-screen view](imgs/full_screen_view.png)
 
-> Can run by itself or with project in Visual Studio.  Press (F5) at any time to respawn all the dead.  This will happen automatically within 30 seconds of all healers or all raiders being destroyed, but you can also trigger it manually with F5. The F1 and F2 keys show different levels of ship info overlays.
+> Can run by itself or with project in Visual Studio.  Press (F5) at any time to revive all the dead.  This will happen automatically within 30 seconds of all healers or all raiders being destroyed, but you can also trigger it manually with F5. The F1 and F2 keys show different levels of ship info overlays.
 
-> AI keeps telling me to do things differently in some places, but any time it's done, it destorys the simulation and rendering doesn't work anymore.  So I have to keep it the way it is, even if it's not how I would do it if I were writing it from scratch.  It's a bit of a mess as there are things I need to break up into other classes/methods, but it works, it's fast, and that's the point of the project — to show how to build a real-time simulation with pure `System.Drawing` without any game engine or rendering framework.
+> AI keeps telling me to do things differently in some places, but any time it's done, it destroys the simulation and rendering doesn't work anymore.  So I have to keep it the way it is, even if it's not how I would do it if I were writing it from scratch.  It's a bit of a mess as there are things I need to break up into other classes/methods, but it works, it's fast, and that's the point of the project — to show how to build a real-time simulation with pure `System.Drawing` without any game engine or rendering framework.
 
 ---
 
@@ -38,15 +38,15 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 - **Flawless and Pure `System.Drawing` rendering** — no Unity, MonoGame, SkiaSharp, or similar.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
-- **4 active ship classes** — TowRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behaviour.
+- **4 active ship classes** — TowRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behavior.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
 - **Thread-safe shared state** — a `ConcurrentDictionary` tracks every ship's current position and health, readable by all threads simultaneously.
 - **Conflict-free tow assignments** — a second thread-safe dictionary ensures only one TowRig claims a dead ally at a time.
-- **Dynamic colour health indicator** — ship colour shifts as shields drop (green → yellow → orange → red).
+- **Dynamic colour health indicator** — ship colour shifts as shields drop (green → yellow → orange → red → green tombstone).
 - **Laser and tow-beam rendering** — red laser lines for attacks, blue tow-beam lines for recovery.
 - **F-key HUD overlays** — press F1/F2 to view live ship stats; press F5 to instantly revive all dead ships.
-- **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.
-- **Transparent-background mode** — toggle `_transparentBG` to make the grid background transparent.
+- **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [DynamicTimeDraw\models\ships\ShipStats.cs](DynamicTimeDraw/models/ships/ShipStats.cs).
+- **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
 
 ---
 
@@ -57,11 +57,11 @@ All values are defined in `DynamicTimeDraw/models/ships/ShipStats.cs`.
 | Ship Type | Shields | Power | Speed | Hitbox | Recovery Priority | Notes |
 |-----------|---------|-------|-------|--------|-------------------|-------|
 | **TowRig** (Healer) | 400 | 1 | 2.0 | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery |
-| **Capital Ship** | 800 | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, highest durability; half the power of a Raider |
+| **Capital Ship** | 800 | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, Twice Raider shields, but half their power |
 | **Fighter** | 200 | 4 | 1.0 | 50 px | **Low** (3rd) | Balanced grunt unit; home-team protector |
-| **Raider** (Enemy) | 400 | 16 | 1.0 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed |
-| *Bomber* | 400 | 6 | 0.5 | 60 px | Medium | *Reserved — not currently deployed* |
-| *Transport* | 2000 | 0 | 2.0 | 40 px | Low | *Reserved — not currently deployed* |
+| **Raider** (Enemy) | 400 | **16** | 1.0 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed |
+| *Bomber* | 400 | 6 | 0.5 | 60 px | **Medium** | *Reserved — not currently deployed* |
+| *Transport* | 2000 | 0 | 2.0 | 40 px | **Low** | *Reserved — not currently deployed* |
 
 > **Raider vs Capital comparison:** Raiders carry twice the firepower (16 vs 8) but only half the shields (400 vs 800), making them glass-cannon enemies.
 
@@ -77,7 +77,7 @@ const int _capShipCount  = _flierCount / 10;  // 10 Capital Ships
 const int _towRigCount   = _flierCount / 10;  // 10 TowRigs / Healers
 ```
 
-The `_flierCount` is split so that **Raiders outnumber Fighters by roughly 3:1**, creating strong enemy pressure that the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where neither side easily dominates.
+The `_flierCount` is split so that **Raiders outnumber Fighters** by roughly 3:1**, creating strong enemy pressure that the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where neither side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight last around 5-10 minutes before one side is completely wiped out, at which point the (30sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
 
 | Group | Default Count |
 |-------|---------------|
@@ -91,7 +91,7 @@ The `_flierCount` is split so that **Raiders outnumber Fighters by roughly 3:1**
 
 ## Revive / Recovery System
 
-When a home-team ship's shields reach zero it enters the `Dead` state. TowRigs scan for dead allies and tow them back to HomeBase for revival. The order in which they are prioritised is driven by the `RecoverOrder` enum:
+When a home-team ship's shields reach zero it enters the `Dead` state. TowRigs scan for dead allies and tow them back to HomeBase for revival. The order in which they are prioritized is driven by the `RecoverOrder` enum:
 
 | Priority | Value | Ship |
 |----------|-------|------|
