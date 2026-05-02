@@ -361,9 +361,9 @@ namespace DynamicTimeDraw
             if (details)
             {
                 retVal = _allSpaceShips.OrderBy(o => o.Value.ShipType)
-                                       .Select(s => $"Name: {s.Value.Name}, Type: {s.Value.ShipType}, Status: {s.Value.Status}, " +
-                                                    $"Location: {s.Value.Location}, Power: {s.Value.Power}, HitBox: {s.Value.HitBox}" +
-                                                    $"{(s.Value.IsTowRig ? $", CurrentMission: {s.Value.CurrentMission}" : "")}")
+                                       .Select(s => $"Name: {s.Value.Name}, Shields: {s.Value.Shields}, " +
+                                                    $"Power: {s.Value.Power}, HitBox: {s.Value.HitBox}, Status: {s.Value.Status}" +
+                                                    $"{(s.Value.IsTowRig ? $", Mission: {s.Value.CurrentMission}" : "")}")
                                        .ToList();
             }
             else
@@ -378,7 +378,8 @@ namespace DynamicTimeDraw
                 retVal.AddRange((from ships in _allSpaceShips
                                  group ships by new { ships.Value.ShipType } into g
                                  orderby g.Key.ShipType
-                                 select $"Type: {g.Key.ShipType}, Count: {g.Count()}").ToList());
+                                 select $"Type: {g.Key.ShipType}, Count: {g.Count()}, " +
+                                 $"Dead: {g.Count(s => s.Value.Status == ShipStatus.Dead)}").ToList());
             }
 
             return retVal.ToArray();
