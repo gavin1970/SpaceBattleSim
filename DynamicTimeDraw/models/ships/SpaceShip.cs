@@ -52,7 +52,7 @@ namespace DynamicTimeDraw
         private string _shipName = string.Empty;
         private bool _isEnabled = false;
         private bool _isEmpty = true;
-        private bool _isTowRig = false;
+        private bool _isRepairRig = false;
         private bool _isRaider = false;
 
         private ConcurrentDictionary<string, SolidBrush> _customData = new ConcurrentDictionary<string, SolidBrush>();
@@ -81,7 +81,7 @@ namespace DynamicTimeDraw
                                              _hitBox * 2,
                                              _hitBox * 2);
 
-                _isTowRig = type == ShipType.TowRig;
+                _isRepairRig = type == ShipType.RepairRig;
                 _isRaider = type == ShipType.Raider;
                 _recovery = (int)shipStats.Recovery;
 
@@ -178,27 +178,27 @@ namespace DynamicTimeDraw
         /// </summary>
         public ShipType ShipType => _shipType;
         /// <summary>
-        /// TowRig is a special case. 
-        /// Gets a value indicating whether the vehicle is configured as a tow rig.
+        /// RepairRig is a special case. 
+        /// Gets a value indicating whether the vehicle is configured as a RepairRig.
         /// </summary>
-        public bool IsTowRig => _isTowRig;
+        public bool IsRepairRig => _isRepairRig;
         /// <summary>
-        /// Like TowRig, Raiders are a special case. Raiders are aggressive ships that can attack other 
+        /// Like RepairRig, Raiders are a special case. Raiders are aggressive ships that can attack other 
         /// ships and cause damage.  Gets a value indicating whether the entity is classified as a raider.
         /// </summary>
         public bool IsRaider => _isRaider;
         /// <summary>
-        /// Gets or sets a value indicating whether a tow rig is required.
+        /// Gets or sets a value indicating whether a RepairRig is required.
         /// </summary>
-        public ABool NeedTowRig { get; } = ABool.False;
+        public ABool NeedRepairRig { get; } = ABool.False;
         /// <summary>
-        /// Gets or sets the name of the tower.
+        /// Gets or sets the name of the RepairRig.
         /// </summary>
-        public string TowerName { get; private set; } = string.Empty;
+        public string RepairRigName { get; private set; } = string.Empty;
         /// <summary>
-        /// Gets or sets the distance to the tower, measured in units relevant to the application's context.
+        /// Gets or sets the distance to the RepairRig, measured in units relevant to the application's context.
         /// </summary>
-        public float TowerDistance { get; set; } = 0.0f;
+        public float RepairRigDistance { get; set; } = 0.0f;
         /// <summary>
         /// Gets the current mission assigned to the ship.
         /// </summary>
@@ -301,22 +301,22 @@ namespace DynamicTimeDraw
 
         #region Public Methods
         /// <summary>
-        /// Attempts to set the tower name and distance if the current instance is not empty and the tow rig is not
+        /// Attempts to set the RepairRig name and distance if the current instance is not empty and the RepairRig is not
         /// needed.
         /// </summary>
-        /// <param name="towerName">The name of the tower to assign. This value will be set if the operation succeeds.</param>
-        /// <param name="towerDistance">The distance to the tower, in units relevant to the context. This value will be set if the operation
+        /// <param name="repairRigName">The name of the RepairRig to assign. This value will be set if the operation succeeds.</param>
+        /// <param name="repairRigDistance">The distance to the RepairRig, in units relevant to the context. This value will be set if the operation
         /// succeeds.</param>
-        /// <returns>true if the tower name and distance were successfully set; otherwise, false.</returns>
-        public bool SetTower(string towerName, float towerDistance)
+        /// <returns>true if the RepairRig name and distance were successfully set; otherwise, false.</returns>
+        public bool SetRepairRig(string repairRigName, float repairRigDistance)
         {
             if (this.IsEmpty)
                 return false;
 
-            if (NeedTowRig.TrySetFalse())
+            if (NeedRepairRig.TrySetFalse())
             {
-                TowerName = towerName;
-                TowerDistance = towerDistance;
+                RepairRigName = repairRigName;
+                RepairRigDistance = repairRigDistance;
                 return true;
             }
 

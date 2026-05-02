@@ -1,6 +1,5 @@
 ﻿using Chizl.Applications;
 using Chizl.ThreadSupport;
-using System.Net.NetworkInformation;
 using static DynamicTimeDraw.StaticConfig;
 
 namespace DynamicTimeDraw
@@ -24,8 +23,8 @@ namespace DynamicTimeDraw
         const int _flierCount = 100;
         // Number of capital shipss to create
         const int _capShipCount = (_flierCount / 10);
-        // Number of TowRig ships to create
-        const int _towRigCount = (_flierCount / 10);
+        // Number of RepairRig ships to create
+        const int _repairRigCount = (_flierCount / 10);
 
         // Character to use for the first set of BattleShips shapes. If you use things like '⣮ ⣭ ⣪', remember,
         // you must make the size wider and lower the height to see them side by side. If you want them
@@ -44,7 +43,7 @@ namespace DynamicTimeDraw
         //readonly string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
         //readonly string _raiderShip = char.ConvertFromUtf32(10618);     // 10618 - ⥺ = \u293a
         //readonly string _capitalShip = char.ConvertFromUtf32(11159);    // 11159 - ⮗ = \u2b97
-        //readonly string _towRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
+        //readonly string _repairRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
 
         // Moves X position of HomeBase and _capitalShip anchor points if changed.
         const float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
@@ -65,8 +64,8 @@ namespace DynamicTimeDraw
         readonly Color _raiderColor = Color.FromArgb(255, 255, 0, 0);
         readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
         readonly Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
-        readonly Color _towRigShipColor = Color.FromArgb(255, 255, 0, 255);
-        readonly Color _homeBaseLinkTowColor = Color.FromArgb(32, 255, 255, 255);
+        readonly Color _repairRigShipColor = Color.FromArgb(255, 255, 0, 255);
+        readonly Color _homeBaseLinkRepairRigColor = Color.FromArgb(32, 255, 255, 255);
         // Thread-Safe - EventStatus object to track whether the form has already been
         // closed, preventing multiple closure attempts.
         readonly EventStatus _eventStatus = new EventStatus();
@@ -523,17 +522,17 @@ namespace DynamicTimeDraw
             // Size of the flier button
             var flierSize = new Size(20, 20);
             var capSize = new Size(100, 100);
-            var towSize = new Size(20, 20);
+            var repairSize = new Size(20, 20);
 
             /*
             int raiderCodePoint = char.ConvertToUtf32(_raiderShip, 0);
             int fighterCodePoint = char.ConvertToUtf32(_fighterShip, 0);
             int capitalCodePoint = char.ConvertToUtf32(_capitalShip, 0);
-            int towRigCodePoint = char.ConvertToUtf32(_towRigShip, 0);
+            int repairRigCodePoint = char.ConvertToUtf32(_repairRigShip, 0);
             string raiderChar = char.ConvertFromUtf32(raiderCodePoint);
             string fighterChar = char.ConvertFromUtf32(fighterCodePoint);
             string capitalChar = char.ConvertFromUtf32(capitalCodePoint);
-            string towRigChar = char.ConvertFromUtf32(towRigCodePoint);
+            string repairRigChar = char.ConvertFromUtf32(repairRigCodePoint);
             /**/
 
             // Calculate the X/Y Location of the close button that will be in the top-right corner
@@ -621,32 +620,32 @@ namespace DynamicTimeDraw
                     BattleShips.Add(fly);
                 }
 
-                var towImage = new ShipStats(ShipType.TowRig).ShipView;
+                var repairRigImage = new ShipStats(ShipType.RepairRig).ShipView;
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
-                for (int cnt = 0; cnt < _towRigCount; cnt++)
+                for (int cnt = 0; cnt < _repairRigCount; cnt++)
                 {
                     x = Random.Shared.Next((int)(_anchorX - 100.0f), (int)(_anchorX + 100.0f));
                     y = Random.Shared.Next((int)(_anchorY - 100.0f), (int)(_anchorY + 100.0f));
 
-                    var fly = new ItemReq(this, $"TowRig_{cnt:000}")
+                    var fly = new ItemReq(this, $"RepairRig_{cnt:000}")
                     {
                         Location = new PointF(x, y),
-                        Size = towSize,
+                        Size = repairSize,
                         ShadowDepth = _shadowStyle.depth,
                         SpaceBattle = _useBattlegrounds,
                         DText = {
                             Font = _smallFlierFont,
-                            Text = towImage,
+                            Text = repairRigImage,
                             ShadowDepth = _shadowStyle.depth,
-                            ShadowColor = Color.FromArgb(64, _towRigShipColor),
+                            ShadowColor = Color.FromArgb(64, _repairRigShipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
                         Animation = false,
                         DLine =
                         {
                             // used for the lines in the matrix grid.
-                            Pen = new Pen(_homeBaseLinkTowColor, 2),
+                            Pen = new Pen(_homeBaseLinkRepairRigColor, 2),
                             // Set HasAnchor to true to indicate that the line should be anchored
                             // to a specific point (the center of the form in this case).
                             HasAnchor = true,
@@ -658,14 +657,9 @@ namespace DynamicTimeDraw
                     // the anchor location, while the end is dynamic following the ItemRec.
                     fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                     fly.SpaceBattle = _useBattlegrounds;
-                    fly.SetShiptType(ShipType.TowRig, _towRigShipColor);
+                    fly.SetShiptType(ShipType.RepairRig, _repairRigShipColor);
                     BattleShips.Add(fly);
                 }
-
-                //const string _towRigShip = "▢";
-                //// Number of TowRig ships to create
-                //const int _towRigCount = (_flierCount / 5);
-
             }));
         }
         /// <summary>

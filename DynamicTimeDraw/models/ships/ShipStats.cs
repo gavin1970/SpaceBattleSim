@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace DynamicTimeDraw
+﻿namespace DynamicTimeDraw
 {
     /// <summary>
     /// Represents the readonly statistics and configuration for a specific type of ship, including shields, power, speed, hitbox
@@ -12,7 +10,7 @@ namespace DynamicTimeDraw
     /// order.</remarks>
     public class ShipStats
     {
-        readonly static string _towRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
+        readonly static string _repairRigShip = char.ConvertFromUtf32(10070);  // 10070 - ❖ = \u2756
         readonly static string _capitalShip = char.ConvertFromUtf32(11790);    // 11790 - ⸎ = \u2e4e    -- // 11159 - ⮗ = \u2b97
         readonly static string _bomberShip = char.ConvertFromUtf32(11258);     // 11258 - ⯺ = \u2bfa
         readonly static string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
@@ -25,7 +23,7 @@ namespace DynamicTimeDraw
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.
-            { ShipType.TowRig, (400, 1, 20, 2.0f, RecoverOrder.Critical, _towRigShip, 0.0f) },
+            { ShipType.RepairRig, (400, 1, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, 0.0f) },
             // The most durable and powerful ship as a whole, but also the slowest.
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.

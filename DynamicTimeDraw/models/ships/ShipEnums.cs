@@ -29,7 +29,7 @@
         /// </summary>
         High = 3,
         /// <summary>
-        /// Indicates a critical severity level, typically used for Healers/TowRigs that require immediate attention.
+        /// Indicates a critical severity level, typically used for RepairRig that require immediate attention.
         /// </summary>
         /// <remarks>Use this value to represent the most severe level like healers,
         /// where the home team may be unable to continue running without immediate intervention.</remarks>
@@ -67,9 +67,9 @@
         /// </summary>
         Operational = 4,
         /// <summary>
-        /// Indicates that the Fighter is currently being towed back to HomeBase.
+        /// Indicates that the Fighter is currently being repaired.
         /// </summary>
-        BeingTowed = 5,
+        BeingRepaired = 5,
     }
 
     /// <summary>
@@ -89,9 +89,9 @@
         /// </summary>
         Active = 1,
         /// <summary>
-        /// TowRig ships are currently on a towing mission, assisting disabled ships by towing them to safety or back to base for repairs.
+        /// RepairRig ships are currently on a repair mission, assisting disabled ships by repairing them.
         /// </summary>
-        OnTow = 2,
+        OnRepair = 2,
         /// <summary>
         /// Heading back to home base.
         /// </summary>
@@ -107,8 +107,8 @@
     public enum ShipRole
     {
         /// <summary>
-        /// Support ships provide assistance to other ships, such as repairs, resupply, or
-        /// towing. They are not designed for combat and may have limited offensive capabilities.
+        /// Support ships provide assistance to other ships, such as repairs, resupply. 
+        /// They are not designed for combat and may have limited offensive capabilities.
         /// </summary>
         Support = 0,
         /// <summary>
@@ -131,12 +131,12 @@
     public enum ShipType
     {
         /// <summary>
-        /// TowRig ships are specialized in towing ships after they are disabled.  They have no 
+        /// RepairRig ships are specialized in repairing ships after they are disabled.  They have no 
         /// guns and will not be fired apon, but they are also very slow and have low shields. 
         /// They are used to salvage disabled ships and bring them back to HomeBase for tear 
         /// down for parts.
         /// </summary>
-        TowRig = 0,
+        RepairRig = 0,
         /// <summary>
         /// Transport ships are designed for carrying cargo and personnel. They have moderate 
         /// shields and power, but are not equipped for combat. They are used to transport 
