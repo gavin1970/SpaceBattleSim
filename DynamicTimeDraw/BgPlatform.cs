@@ -1,5 +1,6 @@
 ﻿using Chizl.Applications;
 using Chizl.ThreadSupport;
+using System.Net.NetworkInformation;
 using static DynamicTimeDraw.StaticConfig;
 
 namespace DynamicTimeDraw
@@ -74,7 +75,9 @@ namespace DynamicTimeDraw
         private static ItemReq MatrixArray = ItemReq.Empty;
         private static ItemReq TitleText = ItemReq.Empty;
         private static ItemReq HomeBase = ItemReq.Empty;
-        private static Point _mouseLoc = new Point(0, 0);
+        //private static ItemReq SpaceAndTime = ItemReq.Empty;
+        private static DShapes _spaceShapes = new DShapes();
+        private static DShapes _cometShapes = new DShapes();
 
 
         internal static List<ItemReq> BattleShips = new List<ItemReq>();
@@ -153,6 +156,10 @@ namespace DynamicTimeDraw
             };
         }
 
+        private static float _xCounter = 0.0f;
+        private static float _yCounter = 0.0f;
+        private static Point _lastStartPoint = Point.Empty;
+
         private void BgPlatform_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -163,6 +170,42 @@ namespace DynamicTimeDraw
 
             // Draw the grid background
             if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
+
+            // Draw the static space background (stars, nebulae, comet) above the grid
+            foreach (var (start, end, pen) in _spaceShapes.DrawList)
+                g.DrawLine(pen, start, end);
+
+            // if comet is off the screen, lets reset it.
+            if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
+            {
+                _xCounter = -110.0f;
+                _yCounter = 0.0f;
+            }
+            else
+            {
+                _xCounter += 0.1f;
+                _yCounter += 0.05f;
+            }
+
+            foreach (var (start, end, pen) in _cometShapes.DrawList)
+            {
+                var xStart = start.X + _xCounter;
+                var yStart = start.Y + _yCounter;
+
+                var sPf = new PointF(xStart, yStart);
+                var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
+
+                // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
+                _lastStartPoint = new Point((int)xStart, (int)yStart);
+
+                g.DrawLine(pen, sPf, ePf);
+            }
+
+            //if(this.ClientRectangle.Contains(_lastStartPoint) && this.ClientRectangle.Contains(_lastStartPoint))
+            //{
+            //    // Draw a bright head for the comet
+            //    g.FillEllipse(Brushes.White, _lastStartPoint.X - 4, _lastStartPoint.Y - 4, 8, 8);
+            //}
 
             if (_shipInfo.Length > 0)
             {
@@ -181,6 +224,7 @@ namespace DynamicTimeDraw
                 if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
                 if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
             }
+
             if (CloseButton.Visible) CloseButton.DrawItem(e.Graphics);
         }
 
@@ -212,6 +256,15 @@ namespace DynamicTimeDraw
                 // first object created so it appears behind the others
                 BuildMatrixArray();
 
+                //Build out stars, planets, and other space objects in the background before building the HomeBase
+                //and BattleShips to create a sense of depth and immersion in the space battle scene. By drawing
+                //these elements first, they will appear behind the HomeBase and BattleShips, enhancing the visual
+                //complexity and making the overall scene more engaging. You can use simple shapes like circles for
+                //stars and planets, or even use images for more detailed backgrounds. Consider adding subtle animations
+                //to these background elements (e.g., twinkling stars or slowly rotating planets) to further enhance
+                //the dynamic feel of the scene.
+                BuildSpaceTime();
+
                 // =================================================================
                 // Build other controls on top of the matrix background, but in the order of which layer they should appear.
                 BuildHomeBase();
@@ -239,7 +292,60 @@ namespace DynamicTimeDraw
 #endif
         }
 
+
         #region Build Paint Objects
+        /// <summary>
+        /// Builds the static space background — star field, nebulae, and a comet —
+        /// into <c>_spaceShapes</c> once so it can be replayed every paint frame.
+        /// </summary>
+        private void BuildSpaceTime()
+        {
+            if (_spaceShapes.DrawList.Count == 0)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    var rng = Random.Shared;
+                    var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
+                                               this.ViewSize.Width, this.ViewSize.Height);
+
+                    // --- Star field: two passes for depth ---
+                    // Distant, dim stars scattered across the full canvas
+                    SpaceBackground.AddStarField(_spaceShapes, bounds, 350, rng);
+                    // Brighter, sparser foreground stars in a tighter inner region
+                    var innerBounds = new RectangleF(bounds.X + 60, bounds.Y + 60,
+                                                     bounds.Width - 120, bounds.Height - 120);
+                    SpaceBackground.AddStarField(_spaceShapes, innerBounds, 80, rng);
+
+                    // --- Nebulae ---
+                    // Purple/blue nebula — upper-left quadrant
+                    SpaceBackground.AddNebula(_spaceShapes,
+                        new PointF(bounds.Width * 0.22f, bounds.Height * 0.28f),
+                        radius: 140, Color.FromArgb(22, 60, 0, 180), density: 300, rng);
+                    // Red/orange emission nebula — lower-right quadrant
+                    SpaceBackground.AddNebula(_spaceShapes,
+                        new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
+                        radius: 110, Color.FromArgb(22, 180, 40, 0), density: 240, rng);
+                    // Faint teal cloud — upper-right
+                    SpaceBackground.AddNebula(_spaceShapes,
+                        new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
+                        radius: 80, Color.FromArgb(16, 0, 140, 130), density: 160, rng);
+                }));
+            }
+
+            if(_cometShapes.DrawList.Count==0)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
+                                               this.ViewSize.Width, this.ViewSize.Height);
+
+                    // --- Comet: travelling toward lower-right ---
+                    SpaceBackground.AddComet(_cometShapes,
+                        head: new PointF(bounds.Width * 0.15f, bounds.Height * 0.18f),
+                        direction: new PointF(1f, 0.45f), tailLength: 160f, rays: 10);
+                }));
+            }
+        }
         /// <summary>
         /// Initializes the MatrixArray control as a grid of ItemReq objects
         /// representing the matrix background if it is empty.
@@ -251,45 +357,46 @@ namespace DynamicTimeDraw
         private void BuildMatrixArray()
         {
             // Use Invoke to ensure we're on the UI thread when creating controls
-            if (MatrixArray.IsEmpty)
+            if (!MatrixArray.IsEmpty)
+                return;
+
+            // Create a grid of ItemReq objects for the matrix background
+            int cols = this.ViewSize.Width / _matrixCellSize;
+            int rows = this.ViewSize.Height / _matrixCellSize;
+
+            MatrixArray = new ItemReq(this, $"MatrixArray")
             {
-                // Create a grid of ItemReq objects for the matrix background
-                int cols = this.ViewSize.Width / _matrixCellSize;
-                int rows = this.ViewSize.Height / _matrixCellSize;
-
-                MatrixArray = new ItemReq(this, $"MatrixArray")
+                Location = new PointF(this.Padding.Left, this.Padding.Top),
+                Size = new Size(this.ViewSize.Width, this.ViewSize.Height),
+                BGColor = Color.FromArgb(255, this.BackColor),
+                BorderColor = _shadowStyle.color,
+                BorderWidth = _borderWidth,
+                ShadowDepth = _shadowStyle.depth,
+                BoxShadowing = true,
+                Visible = true,
+                DLine =
                 {
-                    Location = new PointF(this.Padding.Left, this.Padding.Top),
-                    Size = new Size(this.ViewSize.Width, this.ViewSize.Height),
-                    BGColor = Color.FromArgb(255, this.BackColor),
-                    BorderColor = _shadowStyle.color,
-                    BorderWidth = _borderWidth,
-                    ShadowDepth = _shadowStyle.depth,
-                    BoxShadowing = true,
-                    Visible = true,
-                    DLine =
-                    {
-                        // used for the lines in the matrix grid.
-                        Pen = new Pen(Color.FromArgb(64, Color.White), 1),
-                    },
-                };
+                    // used for the lines in the matrix grid.
+                    Pen = new Pen(Color.FromArgb(64, Color.White), 1),
+                },
+            };
 
-                for (int row = 0; row < rows; row++)
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
                 {
-                    for (int col = 0; col < cols; col++)
-                    {
-                        MatrixArray.DLine.ItemType = ItemType.Custom;
-                        // Add a line for each cell in the grid to create the matrix effect. The +1px creates a dot at the
-                        // intersection of the grid lines. No way do we want to create a circle or square for each cell in the
-                        // grid, so we use a custom line with a single pixel length to create the dot effect at the grid
-                        // intersections.
-                        var left = this.Padding.Left + col * _matrixCellSize;
-                        var top = this.Padding.Top + row * _matrixCellSize;
-                        MatrixArray.DLine.Add(new PointF(left, top), new PointF(left + 1, top + 1));
-                    }
+                    MatrixArray.DLine.ItemType = ItemType.Custom;
+                    // Add a line for each cell in the grid to create the matrix effect. The +1px creates a dot at the
+                    // intersection of the grid lines. No way do we want to create a circle or square for each cell in the
+                    // grid, so we use a custom line with a single pixel length to create the dot effect at the grid
+                    // intersections.
+                    var left = this.Padding.Left + col * _matrixCellSize;
+                    var top = this.Padding.Top + row * _matrixCellSize;
+                    MatrixArray.DLine.Add(new PointF(left, top), new PointF(left + 1, top + 1));
                 }
             }
         }
+
         /// <summary>
         /// Initializes and displays a close button in the top-right corner of the view
         /// if it does not already exist.
@@ -300,105 +407,105 @@ namespace DynamicTimeDraw
         /// </remarks>
         private void BuildCloseButton()
         {
-            if (CloseButton.IsEmpty)
+            if (!CloseButton.IsEmpty)
+                return;
+
+            // Size of the close button
+            var closeSize = new Size(30, 30);
+            // Set to true to use lines instead of text for the "X" button
+            var useLines = true;
+            // Border width for the close button
+            var factorButtonSize = (closeSize.Width + this.Padding.Right + _shadowStyle.depth + MatrixArray.BorderWidth);
+
+            // Calculate the X/Y Location of the close button that will be in the
+            // top-right corner of the screen. Accounting for top and right padding along
+            // with the MatrixArray border width to ensure it doesn't overlap with the
+            // matrix grid lines
+            var x = (int)(this.FormSize.Width - factorButtonSize);
+            var y = (int)(this.Padding.Top + MatrixArray.BorderWidth);
+
+            this.Invoke(new Action(() =>
             {
-                // Size of the close button
-                var closeSize = new Size(30, 30);
-                // Set to true to use lines instead of text for the "X" button
-                var useLines = true;
-                // Border width for the close button
-                var factorButtonSize = (closeSize.Width + this.Padding.Right + _shadowStyle.depth + MatrixArray.BorderWidth);
-
-                // Calculate the X/Y Location of the close button that will be in the
-                // top-right corner of the screen. Accounting for top and right padding along
-                // with the MatrixArray border width to ensure it doesn't overlap with the
-                // matrix grid lines
-                var x = (int)(this.FormSize.Width - factorButtonSize);
-                var y = (int)(this.Padding.Top + MatrixArray.BorderWidth);
-
-                this.Invoke(new Action(() =>
+                var bgColor = Color.FromArgb(64, Color.Red);
+                CloseButton = new ItemReq(this, "CloseButton")
                 {
-                    var bgColor = Color.FromArgb(64, Color.Red);
-                    CloseButton = new ItemReq(this, "CloseButton")
-                    {
-                        Location = new PointF(x, y),
-                        Size = closeSize,
-                        HitBox = 30,
-                        BGColor = bgColor,
-                        MouseOverColor = Color.FromArgb(255, Color.Red),
-                        BorderWidth = _borderWidth,
-                        BorderColor = Color.White,
-                        BoxShadowing = true,
-                        ShadowColor = _shadowStyle.color,
-                        ShadowDepth = _shadowStyle.depth,
-                        InActiveHide = true,
-                        AnimateClick = true,
-                        Visible = true
-                    };
+                    Location = new PointF(x, y),
+                    Size = closeSize,
+                    HitBox = 30,
+                    BGColor = bgColor,
+                    MouseOverColor = Color.FromArgb(255, Color.Red),
+                    BorderWidth = _borderWidth,
+                    BorderColor = Color.White,
+                    BoxShadowing = true,
+                    ShadowColor = _shadowStyle.color,
+                    ShadowDepth = _shadowStyle.depth,
+                    InActiveHide = true,
+                    AnimateClick = true,
+                    Visible = true
+                };
 
-                    CloseButton.MouseMove += (e, args) =>
-                    {
-                        // Change the cursor to a hand when hovering over the close button for better UX
-                        if (CloseButton.IsMouseInRect(args.Location))
-                            this.Cursor = Cursors.Hand;
-                        else if (this.Cursor == Cursors.Hand)
-                            this.Cursor = Cursors.Cross;
-                    };
+                CloseButton.MouseMove += (e, args) =>
+                {
+                    // Change the cursor to a hand when hovering over the close button for better UX
+                    if (CloseButton.IsMouseInRect(args.Location))
+                        this.Cursor = Cursors.Hand;
+                    else if (this.Cursor == Cursors.Hand)
+                        this.Cursor = Cursors.Cross;
+                };
 
-                    CloseButton.MouseUp += (e, args) =>
-                    {
-                        // Only respond to left mouse button clicks to prevent accidental
-                        // form closure from right-clicks or other mouse buttons.
-                        if (args.Button != MouseButtons.Left)
-                            return;
+                CloseButton.MouseUp += (e, args) =>
+                {
+                    // Only respond to left mouse button clicks to prevent accidental
+                    // form closure from right-clicks or other mouse buttons.
+                    if (args.Button != MouseButtons.Left)
+                        return;
 
-                        // Set the form closed event status to true. This ensures that if the
-                        // user clicks the close button multiple times, the form will only
-                        // attempt to close once.
-                        if (_eventStatus.Set(_formClosing, true))
+                    // Set the form closed event status to true. This ensures that if the
+                    // user clicks the close button multiple times, the form will only
+                    // attempt to close once.
+                    if (_eventStatus.Set(_formClosing, true))
+                    {
+                        CloseButton.BGColor = bgColor;
+                        // wait 1/2 second to allow user to see the button release effect
+                        // before closing the form
+                        Task.Delay(500).ContinueWith(_ =>
                         {
-                            CloseButton.BGColor = bgColor;
-                            // wait 1/2 second to allow user to see the button release effect
-                            // before closing the form
-                            Task.Delay(500).ContinueWith(_ =>
-                            {
-                                // Use Invoke to ensure we're on the UI thread when closing the form
-                                this.Invoke(new Action(() => { this.Close(); }));
-                            });
-                        }
-                    };
-
-                    CloseButton.MouseDown += (e, args) =>
-                    {
-                        // Only respond to left mouse button clicks to prevent accidental
-                        // form closure from right-clicks or other mouse buttons.
-                        if (args.Button != MouseButtons.Left)
-                            return;
-
-                        // Change the background color on mouse down for visual feedback
-                        CloseButton.BGColor = Color.FromArgb(128, Color.BurlyWood);
-                        _ = Task.Delay(1000).ContinueWith(_ =>
-                        {
-                            // Change the background color back to the original color after 1 second
-                            CloseButton.BGColor = bgColor;
+                            // Use Invoke to ensure we're on the UI thread when closing the form
+                            this.Invoke(new Action(() => { this.Close(); }));
                         });
-                    };
+                    }
+                };
 
-                    if (useLines)
+                CloseButton.MouseDown += (e, args) =>
+                {
+                    // Only respond to left mouse button clicks to prevent accidental
+                    // form closure from right-clicks or other mouse buttons.
+                    if (args.Button != MouseButtons.Left)
+                        return;
+
+                    // Change the background color on mouse down for visual feedback
+                    CloseButton.BGColor = Color.FromArgb(128, Color.BurlyWood);
+                    _ = Task.Delay(1000).ContinueWith(_ =>
                     {
-                        // Button text: "X" in the middle of the button
-                        CloseButton.DLine.Pen = new Pen(Color.White, 2);
-                        CloseButton.DLine.Add(new PointF(CloseButton.Left, CloseButton.Top), new PointF(CloseButton.Right, CloseButton.Bottom));
-                        CloseButton.DLine.Add(new PointF(CloseButton.Left, CloseButton.Bottom), new PointF(CloseButton.Right, CloseButton.Top));
-                    }
-                    else
-                    {
-                        CloseButton.DText.Text = "X";
-                        CloseButton.DText.Font = _closeBtnFont;
-                        CloseButton.DText.TextColor = Color.White;
-                    }
-                }));
-            }
+                        // Change the background color back to the original color after 1 second
+                        CloseButton.BGColor = bgColor;
+                    });
+                };
+
+                if (useLines)
+                {
+                    // Button text: "X" in the middle of the button
+                    CloseButton.DLine.Pen = new Pen(Color.White, 2);
+                    CloseButton.DLine.Add(new PointF(CloseButton.Left, CloseButton.Top), new PointF(CloseButton.Right, CloseButton.Bottom));
+                    CloseButton.DLine.Add(new PointF(CloseButton.Left, CloseButton.Bottom), new PointF(CloseButton.Right, CloseButton.Top));
+                }
+                else
+                {
+                    CloseButton.DText.Text = "X";
+                    CloseButton.DText.Font = _closeBtnFont;
+                    CloseButton.DText.TextColor = Color.White;
+                }
+            }));
         }
         /// <summary>
         /// Initializes and adds animated close button items
@@ -410,156 +517,156 @@ namespace DynamicTimeDraw
         /// </remarks>
         private void BuildFliers()
         {
-            if (BattleShips.Count == 0)
+            if (BattleShips.Count > 0)
+                return;
+
+            // Size of the flier button
+            var flierSize = new Size(20, 20);
+            var capSize = new Size(100, 100);
+            var towSize = new Size(20, 20);
+
+            /*
+            int raiderCodePoint = char.ConvertToUtf32(_raiderShip, 0);
+            int fighterCodePoint = char.ConvertToUtf32(_fighterShip, 0);
+            int capitalCodePoint = char.ConvertToUtf32(_capitalShip, 0);
+            int towRigCodePoint = char.ConvertToUtf32(_towRigShip, 0);
+            string raiderChar = char.ConvertFromUtf32(raiderCodePoint);
+            string fighterChar = char.ConvertFromUtf32(fighterCodePoint);
+            string capitalChar = char.ConvertFromUtf32(capitalCodePoint);
+            string towRigChar = char.ConvertFromUtf32(towRigCodePoint);
+            /**/
+
+            // Calculate the X/Y Location of the close button that will be in the top-right corner
+            // of the screen. Accounting for top and right padding along with the MatrixArray border
+            // width to ensure it doesn't overlap with the matrix grid lines
+            var w = this.FormSize.Width;
+            var h = this.FormSize.Height;
+
+            this.Invoke(new Action(() =>
             {
-                // Size of the flier button
-                var flierSize = new Size(20, 20);
-                var capSize = new Size(100, 100);
-                var towSize = new Size(20, 20);
+                var raidImage = new ShipStats(ShipType.Raider).ShipView;
+                var fighterImage = new ShipStats(ShipType.Fighter).ShipView;
+                int x, y;
 
-                /*
-                int raiderCodePoint = char.ConvertToUtf32(_raiderShip, 0);
-                int fighterCodePoint = char.ConvertToUtf32(_fighterShip, 0);
-                int capitalCodePoint = char.ConvertToUtf32(_capitalShip, 0);
-                int towRigCodePoint = char.ConvertToUtf32(_towRigShip, 0);
-                string raiderChar = char.ConvertFromUtf32(raiderCodePoint);
-                string fighterChar = char.ConvertFromUtf32(fighterCodePoint);
-                string capitalChar = char.ConvertFromUtf32(capitalCodePoint);
-                string towRigChar = char.ConvertFromUtf32(towRigCodePoint);
-                /**/
-
-                // Calculate the X/Y Location of the close button that will be in the top-right corner
-                // of the screen. Accounting for top and right padding along with the MatrixArray border
-                // width to ensure it doesn't overlap with the matrix grid lines
-                var w = this.FormSize.Width;
-                var h = this.FormSize.Height;
-
-                this.Invoke(new Action(() =>
+                // Create x amount of  animated "X" items that will fling out
+                // from the center of the form when triggered.
+                for (int cnt = 0; cnt < _flierCount; cnt++)
                 {
-                    var raidImage = new ShipStats(ShipType.Raider).ShipView;
-                    var fighterImage = new ShipStats(ShipType.Fighter).ShipView;
-                    int x, y;
+                    // Randomly position the BattleShips items within the bounds of the form
+                    x = Random.Shared.Next(0, w + 1);
+                    y = Random.Shared.Next(0, h + 1);
 
-                    // Create x amount of  animated "X" items that will fling out
-                    // from the center of the form when triggered.
-                    for (int cnt = 0; cnt < _flierCount; cnt++)
+                    // Alternate between two different ship characters for visual variety
+                    // By use 3, it there will be more raiders than fighters, which adds more
+                    // visual interest and variety to the animation. You can adjust the modulo
+                    // value and the conditions to create different patterns of ship
+                    // types (e.g., every 2nd item is a fighter, every 5th item is a raider, etc.)
+                    // depending on the look you want to achieve.
+                    var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
+                    var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
+                    var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
+                    var partName = $"{shipType}";
+
+                    var fly = new ItemReq(this, $"{partName}_{cnt:000}")
                     {
-                        // Randomly position the BattleShips items within the bounds of the form
-                        x = Random.Shared.Next(0, w + 1);
-                        y = Random.Shared.Next(0, h + 1);
-
-                        // Alternate between two different ship characters for visual variety
-                        // By use 3, it there will be more raiders than fighters, which adds more
-                        // visual interest and variety to the animation. You can adjust the modulo
-                        // value and the conditions to create different patterns of ship
-                        // types (e.g., every 2nd item is a fighter, every 5th item is a raider, etc.)
-                        // depending on the look you want to achieve.
-                        var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
-                        var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
-                        var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
-                        var partName = $"{shipType}";
-
-                        var fly = new ItemReq(this, $"{partName}_{cnt:000}")
-                        {
-                            Location = new PointF(x, y),
-                            Size = flierSize,
+                        Location = new PointF(x, y),
+                        Size = flierSize,
+                        ShadowDepth = _shadowStyle.depth,
+                        DText = {
+                            Font = _smallFlierFont,
+                            Text = shipImg,
                             ShadowDepth = _shadowStyle.depth,
-                            DText = {
-                                Font = _smallFlierFont,
-                                Text = shipImg,
-                                ShadowDepth = _shadowStyle.depth,
-                                ShadowColor = Color.FromArgb(32, shipColor),
-                            },
-                            DestinationRange = (uint)this.Width / 2,
-                            Animation = true,
-                            Visible = true
-                        };
+                            ShadowColor = Color.FromArgb(32, shipColor),
+                        },
+                        DestinationRange = (uint)this.Width / 2,
+                        Animation = true,
+                        Visible = true
+                    };
 
-                        fly.SpaceBattle = _useBattlegrounds;
-                        fly.SetShiptType(shipType, shipColor);
+                    fly.SpaceBattle = _useBattlegrounds;
+                    fly.SetShiptType(shipType, shipColor);
 
-                        BattleShips.Add(fly);
-                    }
+                    BattleShips.Add(fly);
+                }
 
-                    var capImage = new ShipStats(ShipType.Capital).ShipView;
-                    // Create x amount of  animated "X" items that will fling out
-                    // from the center of the form when triggered.
-                    for (int cnt = 0; cnt < _capShipCount; cnt++)
+                var capImage = new ShipStats(ShipType.Capital).ShipView;
+                // Create x amount of  animated "X" items that will fling out
+                // from the center of the form when triggered.
+                for (int cnt = 0; cnt < _capShipCount; cnt++)
+                {
+                    x = Random.Shared.Next(0, w + 1);
+                    y = Random.Shared.Next(0, h + 1);
+
+                    var fly = new ItemReq(this, $"Capital_{cnt:000}")
                     {
-                        x = Random.Shared.Next(0, w + 1);
-                        y = Random.Shared.Next(0, h + 1);
-
-                        var fly = new ItemReq(this, $"Capital_{cnt:000}")
-                        {
-                            Location = new PointF(x, y),
-                            Size = capSize,
+                        Location = new PointF(x, y),
+                        Size = capSize,
+                        ShadowDepth = _shadowStyle.depth,
+                        SpaceBattle = _useBattlegrounds,
+                        DText = {
+                            Font = _largeFlierFont,
+                            Text = capImage,
                             ShadowDepth = _shadowStyle.depth,
-                            SpaceBattle = _useBattlegrounds,
-                            DText = {
-                                Font = _largeFlierFont,
-                                Text = capImage,
-                                ShadowDepth = _shadowStyle.depth,
-                                ShadowColor = Color.FromArgb(64, _capitalShipColor),
-                            },
-                            DestinationRange = (uint)this.Width / 2,
-                            Animation = true,
-                            Visible = true
-                        };
+                            ShadowColor = Color.FromArgb(64, _capitalShipColor),
+                        },
+                        DestinationRange = (uint)this.Width / 2,
+                        Animation = true,
+                        Visible = true
+                    };
 
-                        // When anchoring lines and using Animation, the start of the line is
-                        // the anchor location, while the end is dynamic following the ItemRec.
-                        fly.SpaceBattle = _useBattlegrounds;
-                        fly.SetShiptType(ShipType.Capital, _capitalShipColor);
-                        BattleShips.Add(fly);
-                    }
+                    // When anchoring lines and using Animation, the start of the line is
+                    // the anchor location, while the end is dynamic following the ItemRec.
+                    fly.SpaceBattle = _useBattlegrounds;
+                    fly.SetShiptType(ShipType.Capital, _capitalShipColor);
+                    BattleShips.Add(fly);
+                }
 
-                    var towImage = new ShipStats(ShipType.TowRig).ShipView;
-                    // Create x amount of  animated "X" items that will fling out
-                    // from the center of the form when triggered.
-                    for (int cnt = 0; cnt < _towRigCount; cnt++)
+                var towImage = new ShipStats(ShipType.TowRig).ShipView;
+                // Create x amount of  animated "X" items that will fling out
+                // from the center of the form when triggered.
+                for (int cnt = 0; cnt < _towRigCount; cnt++)
+                {
+                    x = Random.Shared.Next((int)(_anchorX - 100.0f), (int)(_anchorX + 100.0f));
+                    y = Random.Shared.Next((int)(_anchorY - 100.0f), (int)(_anchorY + 100.0f));
+
+                    var fly = new ItemReq(this, $"TowRig_{cnt:000}")
                     {
-                        x = Random.Shared.Next((int)(_anchorX - 100.0f), (int)(_anchorX + 100.0f));
-                        y = Random.Shared.Next((int)(_anchorY - 100.0f), (int)(_anchorY + 100.0f));
-
-                        var fly = new ItemReq(this, $"TowRig_{cnt:000}")
-                        {
-                            Location = new PointF(x, y),
-                            Size = towSize,
+                        Location = new PointF(x, y),
+                        Size = towSize,
+                        ShadowDepth = _shadowStyle.depth,
+                        SpaceBattle = _useBattlegrounds,
+                        DText = {
+                            Font = _smallFlierFont,
+                            Text = towImage,
                             ShadowDepth = _shadowStyle.depth,
-                            SpaceBattle = _useBattlegrounds,
-                            DText = {
-                                Font = _smallFlierFont,
-                                Text = towImage,
-                                ShadowDepth = _shadowStyle.depth,
-                                ShadowColor = Color.FromArgb(64, _towRigShipColor),
-                            },
-                            DestinationRange = (uint)this.Width / 2,
-                            Animation = false,
-                            DLine =
-                            {
-                                // used for the lines in the matrix grid.
-                                Pen = new Pen(_homeBaseLinkTowColor, 2),
-                                // Set HasAnchor to true to indicate that the line should be anchored
-                                // to a specific point (the center of the form in this case).
-                                HasAnchor = true,
-                            },
-                            Visible = true
-                        };
+                            ShadowColor = Color.FromArgb(64, _towRigShipColor),
+                        },
+                        DestinationRange = (uint)this.Width / 2,
+                        Animation = false,
+                        DLine =
+                        {
+                            // used for the lines in the matrix grid.
+                            Pen = new Pen(_homeBaseLinkTowColor, 2),
+                            // Set HasAnchor to true to indicate that the line should be anchored
+                            // to a specific point (the center of the form in this case).
+                            HasAnchor = true,
+                        },
+                        Visible = true
+                    };
 
-                        // When anchoring lines and using Animation, the start of the line is
-                        // the anchor location, while the end is dynamic following the ItemRec.
-                        fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
-                        fly.SpaceBattle = _useBattlegrounds;
-                        fly.SetShiptType(ShipType.TowRig, _towRigShipColor);
-                        BattleShips.Add(fly);
-                    }
+                    // When anchoring lines and using Animation, the start of the line is
+                    // the anchor location, while the end is dynamic following the ItemRec.
+                    fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
+                    fly.SpaceBattle = _useBattlegrounds;
+                    fly.SetShiptType(ShipType.TowRig, _towRigShipColor);
+                    BattleShips.Add(fly);
+                }
 
-                    //const string _towRigShip = "▢";
-                    //// Number of TowRig ships to create
-                    //const int _towRigCount = (_flierCount / 5);
+                //const string _towRigShip = "▢";
+                //// Number of TowRig ships to create
+                //const int _towRigCount = (_flierCount / 5);
 
-                }));
-            }
+            }));
         }
         /// <summary>
         /// Initializes the HomeBase item with predefined
@@ -567,59 +674,59 @@ namespace DynamicTimeDraw
         /// </summary>
         private void BuildHomeBase()
         {
-            if (HomeBase.IsEmpty)
+            if (!HomeBase.IsEmpty)
+                return;
+
+            this.Invoke(new Action(() =>
             {
-                this.Invoke(new Action(() =>
+                HomeBase = new ItemReq(this, "HomeBase")
                 {
-                    HomeBase = new ItemReq(this, "HomeBase")
+                    DLine =
                     {
-                        DLine =
-                        {
-                            // used for the lines in the matrix grid.
-                            Pen = new Pen(Color.FromArgb(128, Color.White), 2),
-                            // if LineShadowPen is commented, it wil not have a shadow on the lines.
-                            ShadowPen = new Pen(_shadowStyle.color, 2),
-                        },
-                    };
+                        // used for the lines in the matrix grid.
+                        Pen = new Pen(Color.FromArgb(128, Color.White), 2),
+                        // if LineShadowPen is commented, it wil not have a shadow on the lines.
+                        ShadowPen = new Pen(_shadowStyle.color, 2),
+                    },
+                };
 
-                    List<float[]> coordsList = new List<float[]>();
+                List<float[]> coordsList = new List<float[]>();
 
-                    // ---===[ Outer, Top, Left ]===---
-                    coordsList.Add(new float[] { 697, 506, 723, 491, 723, 520, 697, 536 });
-                    // ---===[ Outer, Top ]===---
-                    coordsList.Add(new float[] { 732, 486, 758, 471, 784, 486, 758, 501 });
-                    // ---===[ Outer, Top, Right ]===---
-                    coordsList.Add(new float[] { 793, 491, 819, 506, 819, 536, 793, 521 });
-                    // ---===[ Inner, Top, Left ]===---
-                    coordsList.Add(new float[] { 697, 541, 728, 523, 728, 489, 755, 506, 755, 539, 725.5f, 556 });
-                    // ---===[ Inner, Top, Right ]===---
-                    coordsList.Add(new float[] { 760.5f, 539, 760.5f, 505, 788.5f, 489, 788.5f, 523, 818, 541, 790.5f, 556 });
-                    // ---===[ Outer, Bottom, Left ]===---
-                    coordsList.Add(new float[] { 697, 546, 723, 561, 723, 591, 697, 576 });
-                    // ---===[ Outer, Bottom ]===---
-                    coordsList.Add(new float[] { 732, 596, 758, 581, 784, 596, 758, 611 });
-                    // ---===[ Outer, Bottom, Right ]===---
-                    coordsList.Add(new float[] { 793, 561, 819, 546, 819, 575, 793, 591 });
-                    // ---===[ Inner, Bottom ]===---
-                    coordsList.Add(new float[] { 727.5f, 560, 757.5f, 543, 788, 560, 788, 593, 757.5f, 575, 727.5f, 593 });
+                // ---===[ Outer, Top, Left ]===---
+                coordsList.Add(new float[] { 697, 506, 723, 491, 723, 520, 697, 536 });
+                // ---===[ Outer, Top ]===---
+                coordsList.Add(new float[] { 732, 486, 758, 471, 784, 486, 758, 501 });
+                // ---===[ Outer, Top, Right ]===---
+                coordsList.Add(new float[] { 793, 491, 819, 506, 819, 536, 793, 521 });
+                // ---===[ Inner, Top, Left ]===---
+                coordsList.Add(new float[] { 697, 541, 728, 523, 728, 489, 755, 506, 755, 539, 725.5f, 556 });
+                // ---===[ Inner, Top, Right ]===---
+                coordsList.Add(new float[] { 760.5f, 539, 760.5f, 505, 788.5f, 489, 788.5f, 523, 818, 541, 790.5f, 556 });
+                // ---===[ Outer, Bottom, Left ]===---
+                coordsList.Add(new float[] { 697, 546, 723, 561, 723, 591, 697, 576 });
+                // ---===[ Outer, Bottom ]===---
+                coordsList.Add(new float[] { 732, 596, 758, 581, 784, 596, 758, 611 });
+                // ---===[ Outer, Bottom, Right ]===---
+                coordsList.Add(new float[] { 793, 561, 819, 546, 819, 575, 793, 591 });
+                // ---===[ Inner, Bottom ]===---
+                coordsList.Add(new float[] { 727.5f, 560, 757.5f, 543, 788, 560, 788, 593, 757.5f, 575, 727.5f, 593 });
 
-                    // lines from center point for all corners of the inner HomeBase shape
-                    foreach (var cords in coordsList)
+                // lines from center point for all corners of the inner HomeBase shape
+                foreach (var cords in coordsList)
+                {
+                    // Create the points for the lines based on the
+                    // coordinates and optional movement offsets
+                    var points = CreateCoords(cords, _moveX, _moveY);
+                    // Add lines between each point and the next,
+                    // wrapping around to the first point at the end to
+                    // create a closed shape
+                    for (int i = 0; i < points.Length; i++)
                     {
-                        // Create the points for the lines based on the
-                        // coordinates and optional movement offsets
-                        var points = CreateCoords(cords, _moveX, _moveY);
-                        // Add lines between each point and the next,
-                        // wrapping around to the first point at the end to
-                        // create a closed shape
-                        for (int i = 0; i < points.Length; i++)
-                        {
-                            // Add lines between each point and the next, wrapping around to the first point at the end
-                            HomeBase.DLine.Add(points[i], points[(i == points.Length - 1 ? 0 : i + 1)]);
-                        }
+                        // Add lines between each point and the next, wrapping around to the first point at the end
+                        HomeBase.DLine.Add(points[i], points[(i == points.Length - 1 ? 0 : i + 1)]);
                     }
-                }));
-            }
+                }
+            }));
         }
         /// <summary>
         /// Initializes the title text control if it has not been created.
@@ -630,80 +737,80 @@ namespace DynamicTimeDraw
         /// </remarks>
         private void BuildTitleText()
         {
-            if (TitleText.IsEmpty)
+            if (!TitleText.IsEmpty)
+                return;
+
+            this.Invoke(new Action(() =>
             {
-                this.Invoke(new Action(() =>
+                TitleText = new ItemReq(this, "TitleText")
                 {
-                    TitleText = new ItemReq(this, "TitleText")
-                    {
-                        Location = new PointF(Padding.Left, Padding.Top),
-                        Size = new Size(200, 60),
-                        BGColor = Color.FromArgb(128, Color.Blue),
-                        MouseOverColor = Color.FromArgb(128, Color.Blue),
-                        HitBox = 30,
-                        DText = {
-                                Text = _appTitle,
-                                TextColor = Color.White,
-                                ShadowDepth = _shadowStyle.depth,
-                                ShadowColor = Color.FromArgb(64, Color.White),
-                                Font = _titleFont,
-                            },
-                        BorderWidth = _borderWidth,
-                        BorderColor = Color.White,
-                        BoxShadowing = true,
-                        ShadowColor = _shadowStyle.color,
-                        ShadowDepth = _shadowStyle.depth,
-                        InActiveHide = true,
-                        Visible = true,
-                        AnimateClick = true,
-                        DestinationRange = (uint)Math.Min(ViewSize.Width / 2, ViewSize.Height / 2),
-                    };
+                    Location = new PointF(Padding.Left, Padding.Top),
+                    Size = new Size(200, 60),
+                    BGColor = Color.FromArgb(128, Color.Blue),
+                    MouseOverColor = Color.FromArgb(128, Color.Blue),
+                    HitBox = 30,
+                    DText = {
+                            Text = _appTitle,
+                            TextColor = Color.White,
+                            ShadowDepth = _shadowStyle.depth,
+                            ShadowColor = Color.FromArgb(64, Color.White),
+                            Font = _titleFont,
+                        },
+                    BorderWidth = _borderWidth,
+                    BorderColor = Color.White,
+                    BoxShadowing = true,
+                    ShadowColor = _shadowStyle.color,
+                    ShadowDepth = _shadowStyle.depth,
+                    InActiveHide = true,
+                    Visible = true,
+                    AnimateClick = true,
+                    DestinationRange = (uint)Math.Min(ViewSize.Width / 2, ViewSize.Height / 2),
+                };
 
-                    TitleText.MouseMove += (sender, e) =>
+                TitleText.MouseMove += (sender, e) =>
+                {
+                    if (!TitleText.DText.Text.Equals(_appTitleAbout))
                     {
-                        if (!TitleText.DText.Text.Equals(_appTitleAbout))
+                        TitleText.DText.Text = _appTitleAbout;
+                        Task.Delay(5000).ContinueWith(_ =>
                         {
-                            TitleText.DText.Text = _appTitleAbout;
-                            Task.Delay(5000).ContinueWith(_ =>
+                            this.Invoke(new Action(() =>
                             {
-                                this.Invoke(new Action(() =>
-                                {
-                                    TitleText.DText.Text = _appTitle;
-                                }));
-                            });
-                        }
-                    };
+                                TitleText.DText.Text = _appTitle;
+                            }));
+                        });
+                    }
+                };
 
-                    TitleText.MouseMove += (e, args) =>
+                TitleText.MouseMove += (e, args) =>
+                {
+                    if (TitleText.IsMouseInRect(args.Location))
+                        this.Cursor = Cursors.Hand;
+                    else if (this.Cursor == Cursors.Hand)
+                        this.Cursor = Cursors.Cross;
+                };
+
+                TitleText.MouseUp += (sender, e) =>
+                {
+                    this.Invoke(new Action(() =>
                     {
-                        if (TitleText.IsMouseInRect(args.Location))
-                            this.Cursor = Cursors.Hand;
-                        else if (this.Cursor == Cursors.Hand)
-                            this.Cursor = Cursors.Cross;
-                    };
+                        TitleText.Refresh();
+                    }));
+                };
 
-                    TitleText.MouseUp += (sender, e) =>
+                TitleText.MouseDown += (sender, e) =>
+                {
+                    if (e.Button == MouseButtons.Left)
                     {
-                        this.Invoke(new Action(() =>
-                        {
-                            TitleText.Refresh();
-                        }));
-                    };
+                        _transparentBG = !_transparentBG;
 
-                    TitleText.MouseDown += (sender, e) =>
-                    {
-                        if (e.Button == MouseButtons.Left)
-                        {
-                            _transparentBG = !_transparentBG;
-
-                            if (_transparentBG)
-                                this.Invoke(new Action(() => { this.TransparencyKey = this.BackColor; }));
-                            else
-                                this.Invoke(new Action(() => { this.TransparencyKey = Color.Empty; }));
-                        }
-                    };
-                }));
-            }
+                        if (_transparentBG)
+                            this.Invoke(new Action(() => { this.TransparencyKey = this.BackColor; }));
+                        else
+                            this.Invoke(new Action(() => { this.TransparencyKey = Color.Empty; }));
+                    }
+                };
+            }));
         }
         /// <summary>
         /// Creates an array of Point structures representing the corners of a box, optionally offset by
