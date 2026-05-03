@@ -18,7 +18,7 @@ namespace DynamicTimeDraw
 
         const bool _usePlanets = true;
         const int _planetSize = 100;
-        const float _planetSpinSpeed = 0.5f;
+        const float _planetSpinSpeed = 0.1f;
         private readonly Bitmap _planetTexture = new Bitmap(".\\skins\\fungal_planet.png"); // Load your map here
         private float _xOffset = 0;
         const int _planetWrapWidth = _planetSize * 2;
@@ -184,6 +184,38 @@ namespace DynamicTimeDraw
             //// Draw the grid background
             if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
 
+            // Replace the existing foreach over _spaceShapes.DrawList with this:
+            if (_spaceCache != null)
+                g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
+
+            // if comet is off the screen, lets reset it.
+            if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
+            {
+                _xCounter = -110.0f;
+                _yCounter = 0.0f;
+            }
+            else
+            {
+                _xCounter += 0.1f;
+                _yCounter += 0.05f;
+            }
+
+            foreach (var (start, end, pen) in _cometShapes.DrawList)
+            {
+                var xStart = start.X + _xCounter;
+                var yStart = start.Y + _yCounter;
+
+                var sPf = new PointF(xStart, yStart);
+                var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
+
+                // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
+                _lastStartPoint = new Point((int)xStart, (int)yStart);
+
+                g.DrawLine(pen, sPf, ePf);
+            }
+
+            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
+
             if (_usePlanets)
             {
                 // ############################# PLANETS
@@ -233,38 +265,6 @@ namespace DynamicTimeDraw
                 g.DrawEllipse(Pens.Black, _redPlanetRect);
                 // #############################
             }
-
-            // Replace the existing foreach over _spaceShapes.DrawList with this:
-            if (_spaceCache != null)
-                g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
-
-            // if comet is off the screen, lets reset it.
-            if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
-            {
-                _xCounter = -110.0f;
-                _yCounter = 0.0f;
-            }
-            else
-            {
-                _xCounter += 0.1f;
-                _yCounter += 0.05f;
-            }
-
-            foreach (var (start, end, pen) in _cometShapes.DrawList)
-            {
-                var xStart = start.X + _xCounter;
-                var yStart = start.Y + _yCounter;
-
-                var sPf = new PointF(xStart, yStart);
-                var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
-
-                // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
-                _lastStartPoint = new Point((int)xStart, (int)yStart);
-
-                g.DrawLine(pen, sPf, ePf);
-            }
-
-            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
 
             // Draw the Space Battle (Fighters & Raiders)
             foreach (var ship in BattleShips)
