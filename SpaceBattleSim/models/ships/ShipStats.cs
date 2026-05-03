@@ -37,7 +37,7 @@
             // Half the shield of a Captial ship and twice as much power.
             // The same hitbox and speed as a Fighter, but no recovery since
             // they are not on the home team.  Rotation needs work, leave 0.0f for now.
-            { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None, _raiderShip, 90.0f) }, // rotate 90.0f - not working as intended.
+            { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None, _raiderShip, 0.0f) }, // rotate 90.0f - not working as intended.
         };
 
         private uint _shields = 0;
