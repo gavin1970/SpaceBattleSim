@@ -1,4 +1,4 @@
-﻿# DynamicTimeDraw — Space Battleground Simulation
+﻿# SpaceBattleSim — Space Battleground Simulation
 
 A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — nebulae, stars, ships, lasers, repair-beams, the grid, shadow effects, and colour blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols).
 
@@ -24,7 +24,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 ## What It Is
 
-**DynamicTimeDraw** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, and Raiders against Friendly fighting autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
+**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, and Raiders against Friendly fighting autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
 
 ![Battleground full-screen view](imgs/full_screen_view.png)
 
@@ -46,14 +46,14 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 - **Dynamic colour health indicator** — ship colour shifts as shields drop (green → yellow → orange → red → green tombstone).
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
 - **F-key HUD overlays** — press F1/F2 to view live ship stats; press F5 to instantly revive all dead ships.
-- **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [DynamicTimeDraw\models\ships\ShipStats.cs](DynamicTimeDraw/models/ships/ShipStats.cs).
+- **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
 - **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
 
 ---
 
 ## Ship Types and Stats
 
-All values are defined in `DynamicTimeDraw/models/ships/ShipStats.cs`.
+All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 
 | Ship Type | Shields | Power | Speed | Hitbox | Recovery Priority | Notes |
 |-----------|---------|-------|-------|--------|-------------------|-------|
@@ -147,12 +147,12 @@ To prevent multiple RepairRigs from all rushing the same dead ship, a second thr
 
 ### Run via Visual Studio
 
-Open `DynamicTimeDraw.sln` and press **F5**.
+Open `SpaceBattleSim.sln` and press **F5**.
 
 ### Run via CLI
 
 ```powershell
-cd DynamicTimeDraw
+cd SpaceBattleSim
 dotnet run
 ```
 
@@ -161,7 +161,7 @@ dotnet run
 ## Project Structure
 
 ```
-DynamicTimeDraw/
+SpaceBattleSim/
 ├── BgPlatform.cs              # Main form: rendering loop, fleet init, keyboard handling
 ├── BgPlatform.Designer.cs     # Designer-generated form code
 ├── Program.cs                 # Entry point
@@ -193,10 +193,10 @@ DynamicTimeDraw/
 
 | Package | Purpose | Found in... |
 |---------|---------|-------------|
-| `Chizl.ThreadSupport` | Atomic primitives (`ABool`, `ADateTime`, `EventStatus`) for lock-free thread safety | [`DynamicTimeDraw/utils/atomic/`](DynamicTimeDraw/utils/atomic/) |
-| `Chizl.ColorExtension` | Colour manipulation helpers used during dynamic ship colour merging | [`DynamicTimeDraw/services/ColorConvert.cs`](DynamicTimeDraw/services/ColorConvert.cs) |
-| `Chizl.Applications` | Application metadata helpers (`About`) | [`DynamicTimeDraw/utils/About.cs`](DynamicTimeDraw/utils/About.cs) |
-| `Chizl.StandAloneLogging` | Async thread-safe file logger | [`DynamicTimeDraw/utils/Logger.cs`](DynamicTimeDraw/utils/Logger.cs) |
+| `Chizl.ThreadSupport` | Atomic primitives (`ABool`, `ADateTime`, `EventStatus`) for lock-free thread safety | [`SpaceBattleSim/utils/atomic/`](SpaceBattleSim/utils/atomic/) |
+| `Chizl.ColorExtension` | Colour manipulation helpers used during dynamic ship colour merging | [`SpaceBattleSim/services/ColorConvert.cs`](SpaceBattleSim/services/ColorConvert.cs) |
+| `Chizl.Applications` | Application metadata helpers (`About`) | [`SpaceBattleSim/utils/About.cs`](SpaceBattleSim/utils/About.cs) |
+| `Chizl.StandAloneLogging` | Async thread-safe file logger | [`SpaceBattleSim/utils/Logger.cs`](SpaceBattleSim/utils/Logger.cs) |
 
 > All dependencies are classes from first-party [Chizl](https://github.com/gavin1970) libraries — no third-party game engines or rendering frameworks are used.
 
