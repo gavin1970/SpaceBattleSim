@@ -369,12 +369,22 @@ namespace DynamicTimeDraw
 
             if (details)
             {
-                retVal = _allSpaceShips.Where(w=>!w.Value.IsDead)
-                                       .OrderBy(o => o.Value.ShipType)
-                                       .Select(s => $"Name: {s.Value.Name}, Shields: {s.Value.Shields}, " +
-                                                    $"Power: {s.Value.Power}, HitBox: {s.Value.HitBox}, Status: {s.Value.Status}" +
-                                                    $"{(s.Value.IsRepairRig ? $", Mission: {s.Value.CurrentMission}" : "")}")
-                                       .ToList();
+                foreach(ShipType sType in Enum.GetValues(typeof(ShipType)))
+                {
+                    // unused, skip.
+                    if (sType == ShipType.Transport || sType == ShipType.Bomber)
+                        continue;
+
+                    var shipStats = new ShipStats(sType);
+                    retVal.Add($"Type: {sType}, Shields: {shipStats.Shields}, Power: {shipStats.Power}, HitBox: {shipStats.Hitbox}, Speed: {shipStats.Speed}, Recovery: {shipStats.Recovery}");
+                }
+
+                //retVal = _allSpaceShips.Where(w=>!w.Value.IsDead)
+                //                       .OrderBy(o => o.Value.ShipType)
+                //                       .Select(s => $"Name: {s.Value.Name}, Shields: {s.Value.Shields}, " +
+                //                                    $"Power: {s.Value.Power}, HitBox: {s.Value.HitBox}, Status: {s.Value.Status}" +
+                //                                    $"{(s.Value.IsRepairRig ? $", Mission: {s.Value.CurrentMission}" : "")}")
+                //                       .ToList();
             }
             else
             {
