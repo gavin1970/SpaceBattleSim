@@ -1,6 +1,5 @@
 ﻿using Chizl.Applications;
 using Chizl.ThreadSupport;
-using System.Diagnostics;
 using static DynamicTimeDraw.StaticConfig;
 
 namespace DynamicTimeDraw
@@ -341,9 +340,6 @@ namespace DynamicTimeDraw
                     // Draw all collected segments onto the bitmap
                     foreach (var (start, end, pen) in tmp.DrawList)
                         bg.DrawLine(pen, start, end);
-
-                    Debug.WriteLine(
-                        $"Space cache baked — {tmp.DrawList.Count} segments → 1 bitmap.");
                 }));
             }
 
@@ -562,6 +558,7 @@ namespace DynamicTimeDraw
                 var raidImage = new ShipStats(ShipType.Raider).ShipView;
                 var fighterImage = new ShipStats(ShipType.Fighter).ShipView;
                 int x, y;
+                var fighterCnt = _flierCount / 3;
 
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
@@ -577,9 +574,13 @@ namespace DynamicTimeDraw
                     // value and the conditions to create different patterns of ship
                     // types (e.g., every 2nd item is a fighter, every 5th item is a raider, etc.)
                     // depending on the look you want to achieve.
-                    var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
-                    var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
-                    var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
+                    //var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
+                    //var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
+                    //var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
+                    var shipImg = cnt < fighterCnt ? fighterImage : raidImage;
+                    var shipType = cnt < fighterCnt ? ShipType.Fighter : ShipType.Raider;
+                    var shipColor = cnt < fighterCnt ? _fighterColor : _raiderColor;
+                    // fighterCnt
                     var partName = $"{shipType}";
 
                     var fly = new ItemReq(this, $"{partName}_{cnt:000}")
@@ -798,14 +799,6 @@ namespace DynamicTimeDraw
                         this.Cursor = Cursors.Hand;
                     else if (this.Cursor == Cursors.Hand)
                         this.Cursor = Cursors.Cross;
-                };
-
-                TitleText.MouseUp += (sender, e) =>
-                {
-                    this.Invoke(new Action(() =>
-                    {
-                        TitleText.Refresh();
-                    }));
                 };
 
                 TitleText.MouseDown += (sender, e) =>

@@ -1,13 +1,13 @@
 ﻿using Chizl.StandAloneLogging;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using static DDefaults;
 
 namespace DynamicTimeDraw
 {
     /// <summary>
-    /// Can be used as an abstract or standalone class request for boxing operations, encapsulating properties for identification, z-order,
+    /// Can be used as an abstract or standalone class request for boxing 
+    /// operations, encapsulating properties for identification, z-order,
     /// creation time, and rectangular bounds.
     /// </summary>
     internal class ItemReq
@@ -30,6 +30,7 @@ namespace DynamicTimeDraw
         private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
         private ABool _isInBattleCheck = ABool.False;
         private ABool _isSpaceBattle = ABool.False;
+        private ABool _showFire = ABool.False;
 
         // default vars
         private char _shadowOpacity = DEF_SHDW_OPACITY;
@@ -428,7 +429,6 @@ namespace DynamicTimeDraw
         /// Default: false
         /// </summary>
         public bool SpaceBattle { get; set; } = false;
-        private Color _overlayColor = Color.Transparent;
         // Stores the last engaged target's location and the time of the last attack so a
         // laser flash line can be drawn on the UI thread during the next Paint pass.
         private PointF _lastTargetLocation = PointF.Empty;
@@ -488,10 +488,6 @@ namespace DynamicTimeDraw
                     if (this.NextDestination.IsEmpty)
                         this.NextDestination = this.Location;
 
-                    // by using X or Y instead of both, we can create a more dynamic movement
-                    // pattern where the item can move in straight lines along the axes,
-                    // creating a more varied and less predictable animation effect.
-
                     // --- Per-frame target tracking ---
                     // The combat scan handles both steering (via _pendingDestination) and damage.
                     // It is throttled to _scanInterval to avoid flooding the thread pool when many
@@ -514,7 +510,6 @@ namespace DynamicTimeDraw
 
                                 try
                                 {
-                                    var logThis = _spaceShip.Name.Equals("RepairRig_000");
                                     var hitBox = (float)_spaceShip.HitBox;
                                     var hitBoxSq = hitBox * hitBox;
                                     var myLoc = _spaceShip.Location;        // _spaceShip.Location is the same as this.Center
@@ -546,8 +541,6 @@ namespace DynamicTimeDraw
                                                     _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
 
                                                     _activeTargetName = string.Empty;
-                                                    //_lastTargetLocation = _pendingDestination;
-                                                    //_pendingDestination = this.HomeBaseLocation;
                                                     this.NextDestination = this.HomeBaseLocation;
                                                 }
                                             }
@@ -555,8 +548,6 @@ namespace DynamicTimeDraw
                                             {
                                                 // RepairRig can still pull from range, so update
                                                 // destination even if not in hit box.
-                                                //_lastTargetLocation = _pendingDestination;
-                                                //_pendingDestination = locked.Location;
                                                 this.NextDestination = locked.Location;
                                             }
                                             else
@@ -598,8 +589,6 @@ namespace DynamicTimeDraw
                                             _activeTargetName = string.Empty;
                                         }
 
-                                        //_lastTargetLocation = _pendingDestination;
-                                        //_pendingDestination = this.HomeBaseLocation;
                                         this.NextDestination = this.HomeBaseLocation;
                                     }
                                     else if (_spaceShip.IsRepairRig && _spaceShip.CurrentMission == ShipMission.Idle)
@@ -617,7 +606,6 @@ namespace DynamicTimeDraw
                                             {
                                                 _spaceShip.CurrentMission = ShipMission.Idle;
                                                 _lastTargetLocation = this.NextDestination;
-                                                //_pendingDestination = this.HomeBaseLocation;
                                                 this.NextDestination = this.HomeBaseLocation;
                                             }
                                         }
@@ -676,13 +664,11 @@ namespace DynamicTimeDraw
                                             {
                                                 foreach (var kvp in allShips) 
                                                 {
-                                                    //var dx = kvp.Location.X - myLoc.X;
-                                                    //var dy = kvp.Location.Y - myLoc.Y;
                                                     // Using distance squared (distSq) for comparison to avoid the overhead of
                                                     // calculating the square root when determining proximity to targets. Better
                                                     // use of memory and CPU than Math.sqrt() when we only need relative distances
                                                     // for comparison against hitBoxSq and closestDist.
-                                                    float distSq = kvp.DistanceFrom(myLoc);// (dx * dx) + (dy * dy);
+                                                    float distSq = kvp.DistanceFrom(myLoc);
                                                     if (distSq <= hitBoxSq && distSq < closestDist)
                                                     {
                                                         closestDist = distSq;
@@ -698,9 +684,6 @@ namespace DynamicTimeDraw
                                             _pendingDestination = closest.Location;
                                             _lastTargetLocation = closest.Location;
                                             _lastCombatTime = DateTime.UtcNow;
-
-                                            // closest.TakeDamage(_spaceShip.Power, Name);
-                                            // _allSpaceShips[closest.Name] = closest;
                                             _allSpaceShips[closest.Name].TakeDamage(_spaceShip.Power, Name);
                                         }
                                     }
@@ -731,6 +714,9 @@ namespace DynamicTimeDraw
                         }
                     }
 
+                    // by using X or Y instead of both, we can create a more dynamic movement
+                    // pattern where the item can move in straight lines along the axes,
+                    // creating a more varied and less predictable animation effect.
                     var x = this.Location.X;
                     var y = this.Location.Y;
 
@@ -738,8 +724,8 @@ namespace DynamicTimeDraw
                     // so steering toward an enemy overrides the current path immediately.
                     if (!_pendingDestination.IsEmpty && !_spaceShip.IsRepairRig)
                     {
-                        // we don't want _spaceShip.IsRepairRig random walking around, they should only move toward targets and home base.
-
+                        // we don't want _spaceShip.IsRepairRig random walking around, they
+                        // should only move toward targets and home base.
                         var lX = Math.Min(_pendingDestination.X, this.ShipInfo.Location.X);
                         var hX = Math.Min(_pendingDestination.X, this.ShipInfo.Location.X);
                         var lY = Math.Min(_pendingDestination.Y, this.ShipInfo.Location.Y);
@@ -757,19 +743,13 @@ namespace DynamicTimeDraw
                     else if ((this.Location.X == this.NextDestination.X ||
                              this.Location.Y == this.NextDestination.Y) && !_spaceShip.IsRepairRig) 
                     {
-                        // we don't want _spaceShip.IsRepairRig random walking around, they should only move toward targets and home base.
+                        x += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
+                        y += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
 
-                        // Reached the current waypoint with no new target — pick a random one.
-                        //if (string.IsNullOrEmpty(_activeTargetName))
-                        {
-                            x += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
-                            y += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
-
-                            this.NextDestination = new PointF(
-                                Math.Clamp(x, 0, ParentSize.Width - this.Width),
-                                Math.Clamp(y, 0, ParentSize.Height - this.Height)
-                            );
-                        }
+                        this.NextDestination = new PointF(
+                            Math.Clamp(x, 0, ParentSize.Width - this.Width),
+                            Math.Clamp(y, 0, ParentSize.Height - this.Height)
+                        );
                     }
 
                     if (_isSpaceBattle)
@@ -811,9 +791,11 @@ namespace DynamicTimeDraw
                 // the shadow rectangle for drawing to create a "pressed" effect
                 if (_eventStatus.Get($"{Name}_MouseDown") && this.AnimateClick && this.BoxShadowing)
                 {
-                    // If the button is in the pressed state, we can use the shadow rectangle for drawing to create a "pressed" effect.
+                    // If the button is in the pressed state, we can use the
+                    // shadow rectangle for drawing to create a "pressed" effect.
                     clsBtnRect = new RectangleF(clsBtnShdwRect.Location, clsBtnShdwRect.Size);
-                    // Adjust line to be based on the shadow rectangle's position to keep the lines centered within the pressed Item.
+                    // Adjust line to be based on the shadow rectangle's position
+                    // to keep the lines centered within the pressed Item.
                     lineMoves = (clsBtnRect.X + (clsBtnRect.Width / 2)) - lineMoves;
                 }
                 else
@@ -852,79 +834,14 @@ namespace DynamicTimeDraw
                     if (this._dText.HasShadowing && !_spaceShip.IsRaider)
                     {
                         clsBtnShdwRect = new RectangleF(clsBtnRect.X + (int)this.ShadowDepth, clsBtnRect.Y + (int)this.ShadowDepth, clsBtnRect.Width, clsBtnRect.Height);
-                        //if (this.HasDirectionalSprite)
-                        //{
-                        //    var state = g.Save();
-                        //    g.TranslateTransform(clsBtnShdwRect.X, clsBtnShdwRect.Y);
-                            
-                        //    float deltaX = this.NextDestination.X - this.Center.X;
-                        //    float deltaY = this.NextDestination.Y - this.Center.Y;
-                        //    double radians = Math.Atan2(deltaY, deltaX);
-                        //    double degrees = radians * (180.0 / Math.PI);
-                        //    var headingDegrees = (float)degrees;
-
-                        //    g.RotateTransform(headingDegrees);
-                        //    g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
-                        //    g.Restore(state);
-                        //}
-                        //else
-                            g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
+                        g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
                     }
 
                     if (_isSpaceBattle)
-                    {
-                        /* <- Change to //* to uncomment
-                        // NOTE: THIS DOES NOT WORK CORRECTLY..  It's still being worked on, so it's disabled for now.
-                        if (_spaceShip.RotateShip > 0)
-                        {
-                            var state = g.Save();
-                            g.TranslateTransform(_spaceShip.Location.X, _spaceShip.Location.Y);
-
-                            // Calculate the 'intended' movement for this tick
-                            float moveX = this.NextDestination.X - this.Location.X;
-                            float moveY = this.NextDestination.Y - this.Location.Y;
-
-                            // Only update rotation if there is actual movement
-                            if (Math.Abs(moveX) > 0 || Math.Abs(moveY) > 0)
-                            {
-                                // Math.Atan2(y, x) returns the angle of the current vector
-                                double radians = Math.Atan2(moveY, moveX);
-                                double degrees = radians * (180.0 / Math.PI);
-
-                                // Update the ship's rotation property
-                                //_spaceShip.RotateShip = (float)degrees;
-                                g.RotateTransform((float)degrees);
-                            }
-
-                            //var state = g.Save();
-                            //// Move the "Paper" so (0,0) is at the ship's center
-                            //// Use the center of your rectangle for a smoother rotation
-                            //float centerX = clsBtnRect.X + (clsBtnRect.Width / 2);
-                            //float centerY = clsBtnRect.Y + (clsBtnRect.Height / 2);
-                            //g.TranslateTransform(centerX, centerY);
-
-                            //// Calculate heading
-                            //float deltaX = this.NextDestination.X - clsBtnRect.X;
-                            //float deltaY = this.NextDestination.Y - clsBtnRect.Y;
-                            ////double degrees = Math.Atan2(deltaY, deltaX) * (180.0 / Math.PI);
-                            //degrees = Math.Atan2(deltaY, deltaX) * (180.0 / Math.PI);
-
-                            //g.RotateTransform((float)degrees + _spaceShip.RotateShip);
-
-                            // CRITICAL: Draw at (0,0) because the coordinate system was moved TO the ship.
-                            // We offset by half the width/height to make sure the middle of the text 
-                            // is on the pivot point.
-                            g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, 0, 0, _centerText);
-                            g.Restore(state);
-                        }
-                        else
-                        /**/
                         g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
-                    }
                     else
                         g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
 
-                    //*
                     if (_isSpaceBattle && _spaceShip.Status != ShipStatus.Dead)
                     {
                         // Draw the detection radius as a circle correctly centered on the ship
@@ -939,7 +856,8 @@ namespace DynamicTimeDraw
 
                         // If the ship has recently fired (within the last 300ms), draw a laser line toward the last target
                         // location to visually indicate an attack, creating a dynamic combat effect that shows the direction
-                        // of fire and adds visual feedback to the battle interactions.
+                        // of fire and adds visual feedback to the battle interactions. _showFire is true every other frame,
+                        // causing a blink.
                         if (_showFire.TrySetTrue())
                         {
                             // Draw a brief laser flash line toward the last engaged target.
@@ -959,7 +877,6 @@ namespace DynamicTimeDraw
                             _showFire.SetFalse();
                         }
                     }
-                    /**/
                 }
 
                 // Border of button
@@ -967,17 +884,13 @@ namespace DynamicTimeDraw
             }
             catch (Exception ex)
             {
-                // Handle any exceptions that may occur during drawing, such as issues with graphics context or invalid parameters.
+                // Handle any exceptions that may occur during drawing,
+                // such as issues with graphics context or invalid parameters.
                 _logger.WriteLine(LogLevel.Critical, ex.Message);
                 return false;
             }
 
             return true;
-        }
-        private ABool _showFire = ABool.False;
-        public bool IsBetween(float location, float low, float high)
-        {
-            return location >= low && location <= high;
         }
 
         /// <summary>
@@ -993,7 +906,8 @@ namespace DynamicTimeDraw
                 if (_isSpaceBattle)
                     return false;
 
-                // First, check if the mouse position is within the bounds of the parent form to avoid unnecessary calculations.
+                // First, check if the mouse position is within the bounds of
+                // the parent form to avoid unnecessary calculations.
                 if (mousePos.X < 0 || mousePos.Y < 0 || mousePos.X > ParentSize.Width || mousePos.Y > ParentSize.Height)
                     return false;
 
@@ -1002,7 +916,8 @@ namespace DynamicTimeDraw
                 if (this.IsEmpty)
                     return false;
 
-                // If right over the rectangle, we can return true immediately without needing to calculate the expanded hit area.
+                // If right over the rectangle, we can return true immediately
+                // without needing to calculate the expanded hit area.
                 if (this.Rectangle.Contains(mousePos))
                     return true;
 
@@ -1034,18 +949,12 @@ namespace DynamicTimeDraw
                     // dont want invalidate every time the mouse moves in
                     // the close button area, only when it first enters
                     if (!_eventStatus.Get($"{Name}_MouseOver"))
-                    {
                         _eventStatus.Set($"{Name}_MouseOver", true);
-                        //~this.Refresh();
-                    }
                 }
                 // if mouse out was in Item area and is currently not, then remove
                 // mouseover event and invalidate to redraw.
                 else if (_eventStatus.Get($"{Name}_MouseOver"))
-                {
                     _eventStatus.Set($"{Name}_MouseOver", false);
-                    // this.Refresh();
-                }
 
                 // Truth: mouse position is within the core rectangle, we can return true.
                 // Might use this for something else later.
@@ -1060,14 +969,15 @@ namespace DynamicTimeDraw
             } 
             catch (Exception ex)
             {
-                // Handle any exceptions that may occur during the hit test, such as issues with rectangle calculations or invalid parameters.
+                // Handle any exceptions that may occur during the hit test,
+                // such as issues with rectangle calculations or invalid parameters.
                 _logger.WriteLine(LogLevel.Critical, ex.Message);
                 return false;
             }
         }
         /// <summary>
-        /// Determines whether the mouse pointer is within the rectangle, optionally including the shadow and expanding
-        /// the hit area.
+        /// Determines whether the mouse pointer is within the rectangle, 
+        /// optionally including the shadow and expanding the hit area.
         /// </summary>
         /// <param name="mouseX">The X-coordinate of the mouse pointer.</param>
         /// <param name="mouseY">The Y-coordinate of the mouse pointer.</param>
@@ -1077,7 +987,7 @@ namespace DynamicTimeDraw
         #endregion
 
         /// <summary>
-        /// 
+        /// Gets the DLine associated with this item.
         /// </summary>
         public DLine DLine { get { return _dLine; } }
 
@@ -1131,33 +1041,6 @@ namespace DynamicTimeDraw
         }
         #endregion
 
-        #region Public Methods
-        /// <summary>
-        /// Invalidates the parent form, causing a repaint if a 
-        /// paint event is not already in progress. Since this uses a 
-        /// shared EventStatus to track the paint event, it ensures 
-        /// that we do not trigger multiple invalidations while a paint 
-        /// is already in progress, which can help prevent flickering 
-        /// and improve performance.
-        /// </summary>
-        public void Refresh()
-        {
-            // only 1 invalidation should be triggered while a paint event is
-            // in progress to prevent excessive redraws and potential flickering.
-            //if (!_formStatus.Set("Form_Paint", true))
-            //    return;
-
-            //try
-            //{
-            //    _parentForm.Invalidate();
-            //}
-            //finally
-            //{
-            //    _formStatus.Set("Form_Paint", false);
-            //}
-        }
-        #endregion
-
         #region Event handlers for parent form events to trigger redraws
         /// <summary>
         /// Handles mouse movement over the parent form to determine if the cursor is within the close button's
@@ -1208,7 +1091,6 @@ namespace DynamicTimeDraw
                 if (e.Button == MouseButtons.Left)
                 {
                     _eventStatus.Set($"{Name}_MouseDown", true);
-                    //--this.Refresh();
                 }
                 // Invoke the MouseDown event to allow external handling
                 // of the mouse down action on this item.
@@ -1230,7 +1112,6 @@ namespace DynamicTimeDraw
             if (_eventStatus.Get($"{Name}_MouseDown"))
             {
                 _eventStatus.Set($"{Name}_MouseDown", false);
-                //--this.Refresh();
             }
 
             // If the mouse is released while still within the Item area and the left mouse button
