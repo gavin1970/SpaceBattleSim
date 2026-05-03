@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+		<PropertyGroup>
+				<OutputType>WinExe</OutputType>
+				<TargetFramework>net8.0-windows</TargetFramework>
+				<Nullable>enable</Nullable>
+				<UseWindowsForms>true</UseWindowsForms>
+				<ImplicitUsings>enable</ImplicitUsings>
+		</PropertyGroup>
 
 		<PropertyGroup>
 				<Authors>Chizl</Authors>
@@ -14,25 +14,36 @@
 				<Company>chizl.com</Company>
 				<Copyright>© 2026 chizl.com</Copyright>
 				<PackageTags>dynamic-time-draw</PackageTags>
-        <ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
-        <PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
+				<ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
+				<PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
 				<AssemblyVersion>6.0.0.0</AssemblyVersion>
-				<FileVersion>6.5.3.2150</FileVersion>
+				<FileVersion>6.5.3.2343</FileVersion>
 				<Version>6.5.3.0</Version>
 		</PropertyGroup>
-		
-  <ItemGroup>
-    <Content Include="Chizl_Atomic_Blue_512.ico" />
-			<None Include="..\README.md" />
-			<None Include="..\LICENSE.md" />
-			<None Include="..\imgs\**\*.*" />
-	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="Chizl_Atomic_Blue_512.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+		<ItemGroup>
+				<Content Include="Chizl_Atomic_Blue_512.ico" />
+				<None Include="..\README.md" />
+				<None Include="..\LICENSE.md" />
+				<None Include="..\imgs\**\*.*" Link="imgs\%(RecursiveDir)%(Filename)%(Extension)" />
+		</ItemGroup>
+
+		<ItemGroup>
+				<None Include="Chizl_Atomic_Blue_512.png" Link="imgs\Chizl_Atomic_Blue_512.png">
+						<Pack>True</Pack>
+						<PackagePath>\</PackagePath>
+				</None>
+		</ItemGroup>
+
+		<ItemGroup>
+				<Folder Include="imgs\" />
+				<Folder Include="skins\" />
+		</ItemGroup>
+
+		<ItemGroup>
+		  <None Update="skins\fungal_planet.png">
+		    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		  </None>
+		</ItemGroup>
 
 </Project>

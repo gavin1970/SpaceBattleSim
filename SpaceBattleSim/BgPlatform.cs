@@ -1,5 +1,6 @@
 ﻿using Chizl.Applications;
 using Chizl.ThreadSupport;
+using System.Drawing.Drawing2D;
 using static DynamicTimeDraw.StaticConfig;
 
 namespace DynamicTimeDraw
@@ -14,6 +15,15 @@ namespace DynamicTimeDraw
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
+
+        const bool _usePlanets = true;
+        const int _planetSize = 100;
+        const float _planetSpinSpeed = 0.5f;
+        private readonly Bitmap _planetTexture = new Bitmap(".\\skins\\fungal_planet.png"); // Load your map here
+        private float _xOffset = 0;
+        const int _planetWrapWidth = _planetSize * 2;
+        Rectangle _redPlanetRect = Rectangle.Empty;
+
 
         // Default border width for controls
         const uint _borderWidth = 2;
@@ -161,17 +171,68 @@ namespace DynamicTimeDraw
         private static float _xCounter = 0.0f;
         private static float _yCounter = 0.0f;
         private static Point _lastStartPoint = Point.Empty;
+        private static bool _use3DPlanets = false;
 
         private void BgPlatform_Paint(object sender, PaintEventArgs e)
         {
             var g = e.Graphics;
 
             // Set global quality once for the whole frame
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
             //// Draw the grid background
             if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
+
+            if (_usePlanets)
+            {
+                // ############################# PLANETS
+                // The math: The full wrap of the planet is twice the visible width
+                if (_use3DPlanets)
+                {
+                    // Place this inside your OnPaint, after drawing the moving texture
+                    using (GraphicsPath shadowPath = new GraphicsPath())
+                    {
+                        // Define a path that matches your planet's circle
+                        shadowPath.AddEllipse(_redPlanetRect);
+                        g.SetClip(shadowPath);
+
+                        using (PathGradientBrush pgb = new PathGradientBrush(shadowPath))
+                        {
+                            // Set the "Highlight" (the part that looks like light hitting the ball)
+                            // CenterPoint moves the light source (e.g., top-left)
+                            pgb.CenterPoint = new PointF(_redPlanetRect.X + _planetSize * 0.3f, _redPlanetRect.Y + _planetSize * 0.3f);
+                            pgb.CenterColor = Color.FromArgb(0, Color.White); // Transparent in center to see texture
+
+                            // Set the "Shadow" (the dark edge of the planet)
+                            pgb.SurroundColors = new Color[] { Color.FromArgb(180, Color.Black) };
+
+                            // Fill the circle with this gradient
+                            g.FillEllipse(pgb, _redPlanetRect);
+                        }
+                    }
+                }
+                else
+                {
+                    using (GraphicsPath path = new GraphicsPath())
+                    {
+                        path.AddEllipse(_redPlanetRect);
+                        g.SetClip(path);
+                    }
+                }
+
+                // 2. Draw moving texture (scaled dynamically)
+                // We draw it at wrapWidth so the image stretches/shrinks to fit the planet
+                g.DrawImage(_planetTexture, _redPlanetRect.X - _xOffset, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
+                g.DrawImage(_planetTexture, (_redPlanetRect.X - _xOffset) + _planetWrapWidth, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
+
+                // 3. Clean up
+                g.ResetClip();
+
+                // Optional: Draw a border so the edges look sharp
+                g.DrawEllipse(Pens.Black, _redPlanetRect);
+                // #############################
+            }
 
             // Replace the existing foreach over _spaceShapes.DrawList with this:
             if (_spaceCache != null)
@@ -299,10 +360,18 @@ namespace DynamicTimeDraw
         /// </summary>
         private void BuildSpaceTime()
         {
+            var center = new Point(this.ViewSize.Width / 2, this.ViewSize.Height / 2);
             if (_spaceCache == null)
             {
                 this.Invoke(new Action(() =>
                 {
+                    // Red Planet Setup, placed here so it is behind the HomeBase and
+                    // BattleShips but in front of the static starfield and nebulae
+                    // background to create a sense of depth. The planet will also
+                    // have a simple left-to-right scrolling animation to add some
+                    // dynamic movement to the scene.
+                    _redPlanetRect = new Rectangle(center.X + _planetWrapWidth, center.Y + _planetSize, _planetSize, _planetSize);
+
                     var rng = Random.Shared;
                     var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
                                                 this.ViewSize.Width, this.ViewSize.Height);
@@ -314,7 +383,7 @@ namespace DynamicTimeDraw
                                              System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
                     using var bg = Graphics.FromImage(_spaceCache);
-                    bg.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    bg.SmoothingMode = SmoothingMode.AntiAlias;
                     bg.Clear(Color.Transparent);
 
                     // Collect into a temporary DShapes then draw them all onto the bitmap
@@ -848,6 +917,12 @@ namespace DynamicTimeDraw
         /// <param name="e">An EventArgs object that contains the event data.</param>
         private void RefreshTimer_Tick(object sender, EventArgs e)
         {
+            if (_usePlanets)
+            {
+                _xOffset += _planetSpinSpeed;
+                if (_xOffset >= _planetSize * 2) _xOffset = 0; // Dynamic reset point
+            }
+
             this.Invalidate();
         }
         /// <summary>
