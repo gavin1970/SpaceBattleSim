@@ -175,7 +175,7 @@ DynamicTimeDraw/
 │   └── ItemReq.cs             # Paint request wrapper
 ├── services/
 │   ├── ColorConvert.cs        # Colour blending / damage-colour utilities
-│   └── Logger.cs              # Simple file/console logger
+│   └── Logger.cs              # Simple async thread-safe file logger
 └── utils/
     ├── StaticConfig.cs        # Global UI style constants (colours, pens, brushes, fonts)
     ├── DDefaults.cs           # Drawing defaults (shadow, border, laser pens)
@@ -195,9 +195,9 @@ DynamicTimeDraw/
 | `Chizl.ThreadSupport` | Atomic primitives (`ABool`, `ADateTime`, `EventStatus`) for lock-free thread safety | [`DynamicTimeDraw/utils/atomic/`](DynamicTimeDraw/utils/atomic/) |
 | `Chizl.ColorExtension` | Colour manipulation helpers used during dynamic ship colour merging | [`DynamicTimeDraw/services/ColorConvert.cs`](DynamicTimeDraw/services/ColorConvert.cs) |
 | `Chizl.Applications` | Application metadata helpers (`About`) | [`DynamicTimeDraw/utils/About.cs`](DynamicTimeDraw/utils/About.cs) |
-| `Chizl.IO.Logging` | Async Chizl.TextLogger (DLL) | [`github.com`](https://github.com/gavin1970/Chizl.IO.Logging) |
+| `Chizl.StandAloneLogging` | Async thread-safe file logger | [`DynamicTimeDraw/utils/Logger.cs`](DynamicTimeDraw/utils/Logger.cs) |
 
-> All dependencies are first-party [Chizl](https://github.com/gavin1970) libraries — no third-party game engines or rendering frameworks are used.
+> All dependencies are classes from first-party [Chizl](https://github.com/gavin1970) libraries — no third-party game engines or rendering frameworks are used.
 
 ---
 
