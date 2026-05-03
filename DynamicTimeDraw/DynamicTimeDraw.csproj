@@ -34,10 +34,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Chizl.TextLogger">
-      <HintPath>..\..\..\Libraries\AnyOS\Chizl.TextLogger\src\Chizl.TextLogger\bin\Release\net8.0\Chizl.TextLogger.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

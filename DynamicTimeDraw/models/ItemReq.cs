@@ -1,6 +1,7 @@
-﻿using Chizl.IO.Logging;
+﻿using Chizl.StandAloneLogging;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using static DDefaults;
 
 namespace DynamicTimeDraw
@@ -12,6 +13,8 @@ namespace DynamicTimeDraw
     internal class ItemReq
     {
         const int _alternateShadowDepth = 7;
+        internal static readonly object _logLocker = new();
+        internal static Logger _logger = Logger.Empty;
 
         /// <summary>
         /// Provides a StringFormat configured to center text both horizontally and vertically.
@@ -21,7 +24,6 @@ namespace DynamicTimeDraw
         // By making FormStatus static, we can have a shared event status across all instances of ItemReq,
         // which can be useful for tracking global refresh and states that affect all items.
         internal static readonly EventStatus _formStatus = new();
-        private TextLogger _logger = TextLogger.Empty;
         private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
         private ABool _isInBattleCheck = ABool.False;
         private ABool _isSpaceBattle = ABool.False;
@@ -75,6 +77,22 @@ namespace DynamicTimeDraw
             if(parentForm == null)
                 throw new ArgumentNullException(nameof(parentForm), "Parent form cannot be null.");
 
+            lock (_logLocker)
+            {
+                // static object, set once for all creations, so we don't have to
+                // worry about threading issues or multiple loggers being created.
+                // Logger is ThreadSafe and designed to be asyncronous, so we can
+                // set it once here without worrying about conflicts or performance
+                // issues.
+                if (_logger.IsEmpty)
+                {
+                    // Default is Application and Error log types.
+                    _logger = Logger.Default;
+                    _logger.WriteLine(LogLevel.Application, $"Logger initialized for ItemReq instances. ItemReq.Name: {name}");
+                    Debug.WriteLine($"Logger was set by: {name}");
+                }
+            }
+
             _parentForm = parentForm;
             // Mouse events are used for interaction with the item, such
             // as clicking animations, so we subscribe to them here.
@@ -87,15 +105,7 @@ namespace DynamicTimeDraw
             this.MouseDown += (e, args) => { };      // initialize the event to prevent validate subscribers .
             this.MouseUp += (e, args) => { };        // initialize the event to prevent validate subscribers .
             this.MouseMove += (e, args) => { };      // initialize the event to prevent validate subscribers .
-
             this.Name = name;
-
-            _logger = new TextLogger($"{name}_ItemReq", @".\logs")
-            {
-                //EnabledLogLevels = LogLevel.Debug | LogLevel.Error,
-                EnabledLogLevels = LogLevel.Error,
-                KeepLogDays = TimeSpan.FromDays(1)
-            };
 
             if (!_eventStatus.Set($"{Name}_MouseOver", false))
                 throw new ArgumentNullException(nameof(parentForm), $"Parent form Name {Name}.");
@@ -695,7 +705,7 @@ namespace DynamicTimeDraw
                                 }
                                 catch(Exception ex)
                                 {
-                                    _logger.WriteLine(LogLevel.Error, $"Error in combat scan for '{Name}': {ex}");
+                                    _logger.WriteLine(LogLevel.Error, $"Error in combat scan for '{Name}': {ex.Message}");
                                     if (_spaceShip.IsRepairRig)
                                         this.NextDestination = this.HomeBaseLocation;
                                 }
@@ -945,7 +955,7 @@ namespace DynamicTimeDraw
             catch (Exception ex)
             {
                 // Handle any exceptions that may occur during drawing, such as issues with graphics context or invalid parameters.
-                _logger.WriteLine(LogLevel.Error, ex.Message);
+                _logger.WriteLine(LogLevel.Critical, ex.Message);
                 return false;
             }
 
@@ -1038,7 +1048,7 @@ namespace DynamicTimeDraw
             catch (Exception ex)
             {
                 // Handle any exceptions that may occur during the hit test, such as issues with rectangle calculations or invalid parameters.
-                _logger.WriteLine(LogLevel.Error, ex.Message);
+                _logger.WriteLine(LogLevel.Critical, ex.Message);
                 return false;
             }
         }
