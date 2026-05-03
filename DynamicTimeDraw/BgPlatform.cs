@@ -361,61 +361,6 @@ namespace DynamicTimeDraw
                 }));
             }
         }
-        /*
-        private void BuildSpaceTime()
-        {
-            if (_spaceShapes.DrawList.Count == 0)
-            {
-                this.Invoke(new Action(() =>
-                {
-                    var rng = Random.Shared;
-                    var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
-                                               this.ViewSize.Width, this.ViewSize.Height);
-
-                    // --- Star field: two passes for depth ---
-                    // Distant, dim stars scattered across the full canvas
-                    SpaceBackground.AddStarField(_spaceShapes, bounds, 350, rng);
-                    // Brighter, sparser foreground stars in a tighter inner region
-                    var innerBounds = new RectangleF(bounds.X + 60, bounds.Y + 60,
-                                                     bounds.Width - 120, bounds.Height - 120);
-                    SpaceBackground.AddStarField(_spaceShapes, innerBounds, 80, rng);
-                    Debug.WriteLine($"Star field created - total count {_spaceShapes.DrawList.Count} stars.");
-
-                    // --- Nebulae ---
-                    // Purple/blue nebula — upper-left quadrant
-                    SpaceBackground.AddNebula(_spaceShapes,
-                        new PointF(bounds.Width * 0.22f, bounds.Height * 0.28f),
-                        radius: 140, Color.FromArgb(22, 60, 0, 180), density: 11200, rng);
-
-                    // --- Nebulae ---
-                    // Red/orange emission nebula — lower-right quadrant
-                    SpaceBackground.AddNebula(_spaceShapes,
-                        new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
-                        radius: 110, Color.FromArgb(22, 180, 40, 0), density: 8800, rng);
-
-                    // --- Nebulae ---
-                    // Faint teal cloud — upper-right
-                    SpaceBackground.AddNebula(_spaceShapes,
-                        new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
-                        radius: 80, Color.FromArgb(16, 0, 140, 130), density: 6400, rng);
-                }));
-            }
-
-            if (_cometShapes.DrawList.Count == 0)
-            {
-                this.Invoke(new Action(() =>
-                {
-                    var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
-                                               this.ViewSize.Width, this.ViewSize.Height);
-
-                    // --- Comet: travelling toward lower-right ---
-                    SpaceBackground.AddComet(_cometShapes,
-                        head: new PointF(bounds.Width * 0.15f, bounds.Height * 0.18f),
-                        direction: new PointF(1f, 0.45f), tailLength: 160f, rays: 10);
-                }));
-            }
-        }
-        /**/
         /// <summary>
         /// Initializes the MatrixArray control as a grid of ItemReq objects
         /// representing the matrix background if it is empty.
