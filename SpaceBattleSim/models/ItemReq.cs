@@ -17,20 +17,85 @@ namespace DynamicTimeDraw
         internal static Logger _logger = Logger.Empty;
         // battle time tracking
         private static TimeSpan _battleTime = TimeSpan.Zero;
+        // Start time of the current battle, used to track the duration of battles and reset times
+        // when all ships are dead.
         private static ADateTime _startBattle = ADateTime.MinValue;
+
+        // Since the ItemReq class is designed to be used for drawing on a form, it
+        // requires a reference to a Form object to perform its drawing operations.
+        // The _parentForm field is initialized with a dummy invisible form to satisfy
+        // this requirement without impacting the actual application. This allows the
+        // ItemReq class to be instantiated and used even in contexts where a real form
+        // is not available or necessary, while still providing the necessary infrastructure
+        // for drawing operations when needed. The dummy form is created with a unique name
+        // based on the current time to avoid conflicts and is immediately closed and
+        // disposed to ensure it does not consume resources or interfere with the
+        // application's UI.
+        private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
 
         /// <summary>
         /// Provides a StringFormat configured to center text both horizontally and vertically.
         /// </summary>
         internal static readonly StringFormat _centerText = new() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+        // ConcurrentDictionary is used for thread-safe operations on the collection of spaceships,
+        // allowing for concurrent reads and writes without the need for external locking. This is
+        // crucial in a simulation where multiple threads may be updating ship statuses, locations,
+        // and handling combat interactions simultaneously.
         internal static readonly ConcurrentDictionary<string, SpaceShip> _allSpaceShips = new ConcurrentDictionary<string, SpaceShip>();
+        /// <summary>
+        /// So we don't have than 1 ship on Repair for the same fighter.
+        /// </summary>
+        internal static readonly ConcurrentDictionary<string, SpaceShip> _spaceShipsInRepair = new ConcurrentDictionary<string, SpaceShip>();
         // By making FormStatus static, we can have a shared event status across all instances of ItemReq,
         // which can be useful for tracking global refresh and states that affect all items.
         internal static readonly EventStatus _formStatus = new();
-        private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
+        // This flag is used to ensure that only one combat scan runs at a time across all ships, preventing
+        // race conditions and ensuring thread safety when multiple ships are engaged in battle simultaneously.
+        // It is set to true when a scan is in progress, and other scans will check this flag before starting
+        // to avoid overlapping operations that could lead to inconsistent state or performance issues.
         private ABool _isInBattleCheck = ABool.False;
+        // This flag is set to true when any ship has its type set, which triggers the battle logic in the
+        // drawing code. It is used to avoid unnecessary checks and logic for space battles when no ships
+        // are active, improving performance by only engaging the battle code when needed.
         private ABool _isSpaceBattle = ABool.False;
+        // This flag is used to trigger the drawing of laser flashes on the UI thread during the
+        // Paint event.
         private ABool _showFire = ABool.False;
+        // Tracks the time of the last combat action to manage the duration of visual effects like
+        // laser flashes.
+        private DateTime _lastCombatTime = DateTime.MinValue;
+        // Stores the last engaged target's location and the time of the last attack so a
+        // laser flash line can be drawn on the UI thread during the next Paint pass.
+        private PointF _lastTargetLocation = PointF.Empty;
+        // Tracks how many consecutive scans the ship has been in the same location, which can be
+        // used to determine if a RepairRig has reached a dead ship and should stop trying to pull
+        // it home after a certain threshold, preventing it from getting stuck indefinitely if
+        // something goes wrong with the pathfinding or if the target is unreachable for some reason.
+        private int _lastTargetLocationCount = 0;
+        // Cached next destination set by the background battle task so the synchronous
+        // movement code can act on it in the same frame instead of always wandering.
+        private PointF _pendingDestination = PointF.Empty;
+        // Tracks the name of the currently locked target so the ship keeps chasing
+        // across frames without waiting for a new async scan each time.
+        private string _activeTargetName = string.Empty;
+        // Throttle the async combat scan so it doesn't spawn a Task every 20ms.
+        // Steering toward a locked target still happens every frame (sync, cheap).
+        private DateTime _lastScanTime = DateTime.MinValue;
+        // 150ms is a good balance for responsiveness without overloading the thread pool with
+        // combat scans when many ships are active. At 1px/frame, it allows for up to ~7px of
+        // steering lag, which is acceptable for this type of simulation.
+        private static readonly TimeSpan _scanInterval = TimeSpan.FromMilliseconds(150);
+        // This SpaceShip instance represents the current ship associated with this ItemReq.
+        // It is initialized with default values (empty name, RepairRig type, and white color)
+        // and will be updated when the ship type is set using the SetShiptType method. This allows
+        // each ItemReq to have its own ship information, which can be used for tracking status,
+        // location, and other properties relevant to the space battle simulation.
+        private SpaceShip _spaceShip = new SpaceShip(string.Empty, ShipType.RepairRig, Color.White);
+        // EventStatus is used to track the state of various events related to the ItemReq, such
+        // as mouse interactions and refresh states. By using an EventStatus instance, we can
+        // manage these states in a centralized way, allowing for easy checking and updating of
+        // event-related flags without needing multiple separate variables for each event type.
+        private readonly EventStatus _eventStatus = new();
 
         // default vars
         private char _shadowOpacity = DEF_SHDW_OPACITY;
@@ -41,10 +106,6 @@ namespace DynamicTimeDraw
         private DLine _dLine = new();
         private DText _dText = new();
         private Pen _hitboxCircle = new Pen(Color.FromArgb(64, Color.Silver), 1);
-
-        // side fun, watch ships fight each other, when enabled by SpaceBattle property.
-        private SpaceShip _spaceShip = new SpaceShip(string.Empty, ShipType.RepairRig, Color.White);
-        private readonly EventStatus _eventStatus = new();
 
         #region Constructors
         /// <summary>
@@ -359,6 +420,13 @@ namespace DynamicTimeDraw
             _spaceShipsInRepair.Clear();
             _startBattle = ADateTime.UtcNow;
         }
+        private static string CreatePaddedString(string label, int totalLength)
+        {
+            if (totalLength - label.Length <= 0)
+                return label;
+
+            return label.PadRight(totalLength, ' ');
+        }
         /// <summary>
         /// Retrieves the status information for all spaceships, either as detailed records or as grouped summaries.
         /// </summary>
@@ -376,34 +444,50 @@ namespace DynamicTimeDraw
 
             if (stats)
             {
-                foreach(ShipType sType in Enum.GetValues(typeof(ShipType)))
+                var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Shields", 7)} | " +
+                             $"{CreatePaddedString("Power", 5)} | {CreatePaddedString("HitBox", 6)} | " +
+                             $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} |";
+
+                foreach (ShipType sType in Enum.GetValues(typeof(ShipType)))
                 {
                     // unused, skip.
                     if (sType == ShipType.Transport || sType == ShipType.Bomber)
                         continue;
 
                     var shipStats = new ShipStats(sType);
-                    retVal.Add($"Type: {sType}, Shields: {shipStats.Shields}, Power: {shipStats.Power}, HitBox: {shipStats.Hitbox}, Speed: {shipStats.Speed}, Recovery: {shipStats.Recovery}");
+                    retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{shipStats.Shields}", 7)} | " +
+                                 $"{CreatePaddedString($"{shipStats.Power}", 5)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
+                                 $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} |");
                 }
 
-                retVal.Add(new string('-', 75));
+                retVal.Add(new string('_', header.Length));
+                retVal.Add(header);
+                retVal.Add(new string('_', header.Length));
+
                 retVal.Add($"This Battle Time: {ADateTime.UtcNow - _startBattle.Value}");
                 retVal.Add($"Last Total Battle Time: {_battleTime}");
             }
             else
             {
-                retVal.AddRange((from ships in _allSpaceShips
-                          group ships by new { ships.Value.ShipType, ships.Value.Status } into g
-                          orderby g.Key.ShipType, g.Key.Status
-                          select $"Type: {g.Key.ShipType}, Status: {g.Key.Status}, Count: {g.Count()}").ToList());
+                var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Total", 5)} | " +
+                             $"{CreatePaddedString("Alive", 6)} | {CreatePaddedString("Dead", 4)} |";
 
-                retVal.Add(new string('-', 75));
 
-                retVal.AddRange((from ships in _allSpaceShips
-                                 group ships by new { ships.Value.ShipType } into g
-                                 orderby g.Key.ShipType
-                                 select $"Type: {g.Key.ShipType}, Count: {g.Count()}, " +
-                                 $"Dead: {g.Count(s => s.Value.Status == ShipStatus.Dead)}").ToList());
+                foreach (ShipType sType in Enum.GetValues(typeof(ShipType)))
+                {
+                    // unused, skip.
+                    if (sType == ShipType.Transport || sType == ShipType.Bomber)
+                        continue;
+
+                    var totalByType = _allSpaceShips.Where(w => w.Value.ShipType == sType).Count();
+                    var deadByType = _allSpaceShips.Where(w => w.Value.ShipType == sType && w.Value.Status == ShipStatus.Dead).Count();
+                    retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{totalByType}", 5)} | " +
+                               $"{CreatePaddedString($"{totalByType-deadByType}", 6)} | {CreatePaddedString($"{deadByType}", 4)} |");
+                }
+
+                retVal.Add(new string('_', header.Length));
+                retVal.Add(header);
+                retVal.Add(new string('_', header.Length));
             }
 
             return retVal.ToArray();
@@ -429,26 +513,6 @@ namespace DynamicTimeDraw
         /// Default: false
         /// </summary>
         public bool SpaceBattle { get; set; } = false;
-        // Stores the last engaged target's location and the time of the last attack so a
-        // laser flash line can be drawn on the UI thread during the next Paint pass.
-        private PointF _lastTargetLocation = PointF.Empty;
-        private int _lastTargetLocationCount = 0;
-        private DateTime _lastCombatTime = DateTime.MinValue;
-        // Cached next destination set by the background battle task so the synchronous
-        // movement code can act on it in the same frame instead of always wandering.
-        private PointF _pendingDestination = PointF.Empty;
-        // Tracks the name of the currently locked target so the ship keeps chasing
-        // across frames without waiting for a new async scan each time.
-        private string _activeTargetName = string.Empty;
-        // Throttle the async combat scan so it doesn't spawn a Task every 20ms.
-        // Steering toward a locked target still happens every frame (sync, cheap).
-        private DateTime _lastScanTime = DateTime.MinValue;
-        private static readonly TimeSpan _scanInterval = TimeSpan.FromMilliseconds(150);
-        /// <summary>
-        /// So we don't have than 1 ship on Repair for the same fighter.
-        /// </summary>
-        internal static ConcurrentDictionary<string, SpaceShip> _spaceShipsInRepair = new ConcurrentDictionary<string, SpaceShip>();
-
         /// <summary>
         /// Draws a Item with a shadow, background, border, and an 'X' symbol onto the specified graphics
         /// surface.
@@ -892,7 +956,6 @@ namespace DynamicTimeDraw
 
             return true;
         }
-
         /// <summary>
         /// Determines whether the specified mouse position is within the rectangle, optionally including the shadow
         /// area and an expanded hit area.

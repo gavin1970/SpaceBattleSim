@@ -60,6 +60,7 @@ namespace DynamicTimeDraw
         readonly Font _largeFlierFont = new Font("Arial", 16, FontStyle.Regular);
         readonly Font _closeBtnFont = new Font("Arial", 22, FontStyle.Regular);
         readonly Font _titleFont = new Font("Arial", 14, FontStyle.Bold);
+        readonly Font _statsFont = new Font("Courier New", 12, FontStyle.Regular);
         // Colors for different ship types to provide visual distinction between them.
         readonly Color _raiderColor = Color.FromArgb(255, 255, 0, 0);
         readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
@@ -202,22 +203,26 @@ namespace DynamicTimeDraw
                 g.DrawLine(pen, sPf, ePf);
             }
 
+            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
+
+            // Draw the Space Battle (Fighters & Raiders)
+            foreach (var ship in BattleShips)
+                if (ship.Visible) ship.DrawItem(e.Graphics);
+
+            // Draw the Infrastructure (HomeBase & UI)
+            if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
+            if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
+
             if (_shipInfo.Length > 0)
             {
+                float y = this.FormSize.Height - this.Padding.Bottom - (_shipInfo.Length * 24);
+                float width = _shipInfo.OrderByDescending(s => s.Length).FirstOrDefault()?.Length ?? 60.0f;
+                RectangleF rect = new RectangleF(this.Padding.Left + 5, y - 5, (width * 10.0f) + 10.0f, (_shipInfo.Length * 20) + 20);
+                g.FillRectangle(Brushes.Blue, rect);
+                g.DrawRectangle(new Pen(Brushes.Yellow, 1), rect);
+
                 for (int i = 0; i < _shipInfo.Length; i++)
-                    g.DrawString(_shipInfo[i], _smallFlierFont, Brushes.Yellow, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30 - ((i + 1) * 20)));
-            }
-            else
-            {
-                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
-
-                // Draw the Space Battle (Fighters & Raiders)
-                foreach (var ship in BattleShips)
-                    if (ship.Visible) ship.DrawItem(e.Graphics);
-
-                // Draw the Infrastructure (HomeBase & UI)
-                if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
-                if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
+                    g.DrawString(_shipInfo[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30 - ((i + 1) * 20)));
             }
 
             if (CloseButton.Visible) CloseButton.DrawItem(e.Graphics);
