@@ -10,7 +10,7 @@
 
 		<PropertyGroup>
 				<Authors>Chizl</Authors>
-				<PackageId>DynamicTimeDraw</PackageId>
+				<PackageId>SpaceBattleSim</PackageId>
 				<Company>chizl.com</Company>
 				<Copyright>© 2026 chizl.com</Copyright>
 				<PackageTags>dynamic-time-draw</PackageTags>
