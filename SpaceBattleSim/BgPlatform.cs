@@ -11,7 +11,7 @@ namespace DynamicTimeDraw
         // while keeping the grid lines visible.
         static bool _transparentBG = false;
         const string _appTitle = "WinForm Random Battleground";
-        static string _appInfo = "Version: {0} - Press F5 reset the dead.\nPress F1 or F2 for Ship Info/Stats.";
+        static string _appInfo = "Version: {0} - Press F5 reset dead, Press F1 or F2 for Ship Info/Stats, Mouse over far right top for close button, Mouse over far left top and click banner that pops up for transparent background..";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
@@ -210,7 +210,7 @@ namespace DynamicTimeDraw
             }
             else
             {
-                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 50));
+                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
 
                 // Draw the Space Battle (Fighters & Raiders)
                 foreach (var ship in BattleShips)

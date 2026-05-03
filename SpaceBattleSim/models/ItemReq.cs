@@ -15,6 +15,9 @@ namespace DynamicTimeDraw
         const int _alternateShadowDepth = 7;
         internal static readonly object _logLocker = new();
         internal static Logger _logger = Logger.Empty;
+        // battle time tracking
+        private static TimeSpan _battleTime = TimeSpan.Zero;
+        private static ADateTime _startBattle = ADateTime.MinValue;
 
         /// <summary>
         /// Provides a StringFormat configured to center text both horizontally and vertically.
@@ -89,7 +92,8 @@ namespace DynamicTimeDraw
                     // Default is Application and Error log types.
                     _logger = Logger.Default;
                     _logger.WriteLine(LogLevel.Application, $"Logger initialized for ItemReq instances. ItemReq.Name: {name}");
-                    Debug.WriteLine($"Logger was set by: {name}");
+                    _startBattle = ADateTime.UtcNow;
+                    _battleTime = TimeSpan.Zero;
                 }
             }
 
@@ -343,6 +347,7 @@ namespace DynamicTimeDraw
         /// </summary>
         public static void ResetDeadShips()
         {
+            _battleTime = ADateTime.UtcNow - _startBattle.Value;
             foreach (var ship in _allSpaceShips)
             {
                 if (_allSpaceShips[ship.Key].Status == ShipStatus.Dead)
@@ -351,6 +356,7 @@ namespace DynamicTimeDraw
                 }
             }
             _spaceShipsInRepair.Clear();
+            _startBattle = ADateTime.UtcNow;
         }
         /// <summary>
         /// Retrieves the status information for all spaceships, either as detailed records or as grouped summaries.
@@ -379,12 +385,8 @@ namespace DynamicTimeDraw
                     retVal.Add($"Type: {sType}, Shields: {shipStats.Shields}, Power: {shipStats.Power}, HitBox: {shipStats.Hitbox}, Speed: {shipStats.Speed}, Recovery: {shipStats.Recovery}");
                 }
 
-                //retVal = _allSpaceShips.Where(w=>!w.Value.IsDead)
-                //                       .OrderBy(o => o.Value.ShipType)
-                //                       .Select(s => $"Name: {s.Value.Name}, Shields: {s.Value.Shields}, " +
-                //                                    $"Power: {s.Value.Power}, HitBox: {s.Value.HitBox}, Status: {s.Value.Status}" +
-                //                                    $"{(s.Value.IsRepairRig ? $", Mission: {s.Value.CurrentMission}" : "")}")
-                //                       .ToList();
+                retVal.Add(new string('-', 75));
+                retVal.Add($"Last Total Battle Time: {_battleTime}");
             }
             else
             {
