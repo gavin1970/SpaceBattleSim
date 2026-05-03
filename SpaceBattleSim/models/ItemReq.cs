@@ -368,12 +368,12 @@ namespace DynamicTimeDraw
         /// status. The default is true.</param>
         /// <returns>An array of strings containing either detailed status information for each spaceship or grouped summaries,
         /// depending on the value of the details parameter.</returns>
-        public static string[] GetShipStatus(bool details = true)
+        public static string[] GetShipStatus(bool stats = true)
         {
             string[] status = { };
             List<string> retVal = new List<string>();
 
-            if (details)
+            if (stats)
             {
                 foreach(ShipType sType in Enum.GetValues(typeof(ShipType)))
                 {
@@ -386,6 +386,7 @@ namespace DynamicTimeDraw
                 }
 
                 retVal.Add(new string('-', 75));
+                retVal.Add($"This Battle Time: {ADateTime.UtcNow - _startBattle.Value}");
                 retVal.Add($"Last Total Battle Time: {_battleTime}");
             }
             else
