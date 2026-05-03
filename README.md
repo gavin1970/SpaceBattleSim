@@ -1,6 +1,6 @@
 ﻿# DynamicTimeDraw — Space Battleground Simulation
 
-A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — ships, lasers, repair-beams, the grid, shadow effects, and colour blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols).
+A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — nebulae, stars, ships, lasers, repair-beams, the grid, shadow effects, and colour blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols).
 
 ---
 
@@ -24,7 +24,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 ## What It Is
 
-**DynamicTimeDraw** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with stars, a flying comet, and lets them fight autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
+**DynamicTimeDraw** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, and Raiders against Friendly fighting autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
 
 ![Battleground full-screen view](imgs/full_screen_view.png)
 
@@ -37,6 +37,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 ## Features
 
 - **Flawless and Pure `System.Drawing` rendering** — no Unity, MonoGame, SkiaSharp, or similar.
+- **Space background** — Nebulae, radom Stars, and a flying Comet.  All to make it more of a space simulation.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
 - **4 active ship classes** — RepairRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behavior.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.

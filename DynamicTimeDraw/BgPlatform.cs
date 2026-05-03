@@ -1,5 +1,6 @@
 ﻿using Chizl.Applications;
 using Chizl.ThreadSupport;
+using System.Diagnostics;
 using static DynamicTimeDraw.StaticConfig;
 
 namespace DynamicTimeDraw
@@ -77,6 +78,8 @@ namespace DynamicTimeDraw
         //private static ItemReq SpaceAndTime = ItemReq.Empty;
         private static DShapes _spaceShapes = new DShapes();
         private static DShapes _cometShapes = new DShapes();
+        // Add this field alongside _spaceShapes / _cometShapes
+        private static Bitmap? _spaceCache = null;
 
 
         internal static List<ItemReq> BattleShips = new List<ItemReq>();
@@ -167,12 +170,12 @@ namespace DynamicTimeDraw
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            // Draw the grid background
+            //// Draw the grid background
             if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
 
-            // Draw the static space background (stars, nebulae, comet) above the grid
-            foreach (var (start, end, pen) in _spaceShapes.DrawList)
-                g.DrawLine(pen, start, end);
+            // Replace the existing foreach over _spaceShapes.DrawList with this:
+            if (_spaceCache != null)
+                g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
 
             // if comet is off the screen, lets reset it.
             if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
@@ -199,12 +202,6 @@ namespace DynamicTimeDraw
 
                 g.DrawLine(pen, sPf, ePf);
             }
-
-            //if(this.ClientRectangle.Contains(_lastStartPoint) && this.ClientRectangle.Contains(_lastStartPoint))
-            //{
-            //    // Draw a bright head for the comet
-            //    g.FillEllipse(Brushes.White, _lastStartPoint.X - 4, _lastStartPoint.Y - 4, 8, 8);
-            //}
 
             if (_shipInfo.Length > 0)
             {
@@ -291,12 +288,80 @@ namespace DynamicTimeDraw
 #endif
         }
 
-
         #region Build Paint Objects
         /// <summary>
         /// Builds the static space background — star field, nebulae, and a comet —
         /// into <c>_spaceShapes</c> once so it can be replayed every paint frame.
         /// </summary>
+        private void BuildSpaceTime()
+        {
+            if (_spaceCache == null)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    var rng = Random.Shared;
+                    var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
+                                                this.ViewSize.Width, this.ViewSize.Height);
+
+                    // Bake the static background (stars + nebulae) into a bitmap once.
+                    // Alpha accumulates properly on a Bitmap, so nebulae build up density
+                    // without needing a huge density value.
+                    _spaceCache = new Bitmap(this.ViewSize.Width, this.ViewSize.Height,
+                                             System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    using var bg = Graphics.FromImage(_spaceCache);
+                    bg.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    bg.Clear(Color.Transparent);
+
+                    // Collect into a temporary DShapes then draw them all onto the bitmap
+                    var tmp = new DShapes();
+
+                    // --- Star field: two passes for depth ---
+                    SpaceBackground.AddStarField(tmp, bounds, 350, rng);
+                    var innerBounds = new RectangleF(bounds.X + 60, bounds.Y + 60,
+                                                      bounds.Width - 120, bounds.Height - 120);
+                    SpaceBackground.AddStarField(tmp, innerBounds, 80, rng);
+
+                    // --- Nebulae ---
+                    // Purple/blue — upper-left quadrant (density 600–1000 is plenty on a bitmap)
+                    SpaceBackground.AddNebula(tmp,
+                        new PointF(bounds.Width * 0.22f, bounds.Height * 0.28f),
+                        radius: 140, Color.FromArgb(60, 60, 0, 180), density: 11200, rng);
+
+                    // Red/orange — lower-right quadrant
+                    SpaceBackground.AddNebula(tmp,
+                        new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
+                        radius: 110, Color.FromArgb(60, 180, 40, 0), density: 8800, rng);
+
+                    // Faint teal — upper-right
+                    SpaceBackground.AddNebula(tmp,
+                        new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
+                        radius: 80, Color.FromArgb(50, 0, 140, 130), density: 6400, rng);
+
+                    // Draw all collected segments onto the bitmap
+                    foreach (var (start, end, pen) in tmp.DrawList)
+                        bg.DrawLine(pen, start, end);
+
+                    Debug.WriteLine(
+                        $"Space cache baked — {tmp.DrawList.Count} segments → 1 bitmap.");
+                }));
+            }
+
+            // Comet stays in _cometShapes (it animates each frame)
+            if (_cometShapes.DrawList.Count == 0)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
+                                                this.ViewSize.Width, this.ViewSize.Height);
+
+                    SpaceBackground.AddComet(_cometShapes,
+                        head: new PointF(bounds.Width * 0.15f, bounds.Height * 0.18f),
+                        direction: new PointF(1f, 0.45f), tailLength: 160f, rays: 10);
+                }));
+            }
+        }
+        /*
         private void BuildSpaceTime()
         {
             if (_spaceShapes.DrawList.Count == 0)
@@ -314,24 +379,29 @@ namespace DynamicTimeDraw
                     var innerBounds = new RectangleF(bounds.X + 60, bounds.Y + 60,
                                                      bounds.Width - 120, bounds.Height - 120);
                     SpaceBackground.AddStarField(_spaceShapes, innerBounds, 80, rng);
+                    Debug.WriteLine($"Star field created - total count {_spaceShapes.DrawList.Count} stars.");
 
                     // --- Nebulae ---
                     // Purple/blue nebula — upper-left quadrant
                     SpaceBackground.AddNebula(_spaceShapes,
                         new PointF(bounds.Width * 0.22f, bounds.Height * 0.28f),
-                        radius: 140, Color.FromArgb(22, 60, 0, 180), density: 300, rng);
+                        radius: 140, Color.FromArgb(22, 60, 0, 180), density: 11200, rng);
+
+                    // --- Nebulae ---
                     // Red/orange emission nebula — lower-right quadrant
                     SpaceBackground.AddNebula(_spaceShapes,
                         new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
-                        radius: 110, Color.FromArgb(22, 180, 40, 0), density: 240, rng);
+                        radius: 110, Color.FromArgb(22, 180, 40, 0), density: 8800, rng);
+
+                    // --- Nebulae ---
                     // Faint teal cloud — upper-right
                     SpaceBackground.AddNebula(_spaceShapes,
                         new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
-                        radius: 80, Color.FromArgb(16, 0, 140, 130), density: 160, rng);
+                        radius: 80, Color.FromArgb(16, 0, 140, 130), density: 6400, rng);
                 }));
             }
 
-            if(_cometShapes.DrawList.Count==0)
+            if (_cometShapes.DrawList.Count == 0)
             {
                 this.Invoke(new Action(() =>
                 {
@@ -345,6 +415,7 @@ namespace DynamicTimeDraw
                 }));
             }
         }
+        /**/
         /// <summary>
         /// Initializes the MatrixArray control as a grid of ItemReq objects
         /// representing the matrix background if it is empty.
@@ -827,11 +898,15 @@ namespace DynamicTimeDraw
             return retVal.ToArray();
         }
 
+        /// <summary>
+        /// Handles the timer tick event to trigger a repaint of the control.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the timer that raised the event.</param>
+        /// <param name="e">An EventArgs object that contains the event data.</param>
         private void RefreshTimer_Tick(object sender, EventArgs e)
         {
             this.Invalidate();
         }
-
         /// <summary>
         /// Runs ever 30sec to see if a reset is needed.
         /// </summary>
@@ -839,6 +914,18 @@ namespace DynamicTimeDraw
         {
             if (ItemReq.NeedsDeadReset())
                 ItemReq.ResetDeadShips();
+        }
+        private void BgPlatform_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            // Ensure that the space cache bitmap is properly disposed of when the form is closed
+            _spaceCache?.Dispose();
+            _spaceCache = null;
+        }
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _spaceCache?.Dispose();
+            _spaceCache = null;
+            base.OnFormClosed(e);
         }
         #endregion
 

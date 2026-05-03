@@ -51,7 +51,7 @@ namespace DynamicTimeDraw
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(26, 26, 26);
+            BackColor = Color.FromArgb(8, 9, 10);
             ClientSize = new Size(800, 450);
             Cursor = Cursors.Cross;
             DoubleBuffered = true;
@@ -59,6 +59,7 @@ namespace DynamicTimeDraw
             Name = "BgPlatform";
             WindowState = FormWindowState.Maximized;
             Paint += BgPlatform_Paint;
+            // FormClosed += BgPlatform_FormClosed;
             ResumeLayout(false);
         }
         #endregion

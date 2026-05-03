@@ -73,7 +73,75 @@
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        //  Nebula / Interstellar Cloud
+        //  Nebula / Interstellar Cloud with Layered Ellipses
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Renders a nebula cloud directly onto a <see cref="Graphics"/> surface using
+        /// layered, semi-transparent filled ellipses with a radial gradient falloff.
+        /// Far more efficient and visually richer than the segment-based <see cref="AddNebula"/> 
+        /// approach — use this overload when baking to a cached <see cref="Bitmap"/>.
+        /// </summary>
+        /// <param name="g">Graphics surface to draw onto (typically a Bitmap's Graphics).</param>
+        /// <param name="center">Centre of the cloud.</param>
+        /// <param name="radius">Outer radius of the cloud in pixels.</param>
+        /// <param name="color">
+        ///   Base colour. The alpha channel controls peak core opacity (40–90 works well).
+        /// </param>
+        /// <param name="rng">Shared <see cref="Random"/> instance.</param>
+        /// <param name="layers">
+        ///   Number of layered ellipses (8–16 gives good depth without many calls).
+        /// </param>
+        public static void AddNebulaDirect(Graphics g, PointF center, float radius,
+                                           Color color, Random rng, int layers = 12)
+        {
+            // Stretch horizontally for a more natural cloud silhouette
+            const float xScale = 1.6f;
+            const float yScale = 1.0f;
+
+            // Outer → inner pass: large/faint ellipses build the halo,
+            // small/opaque ones build up the glowing core.
+            for (int i = 0; i < layers; i++)
+            {
+                float t = (float)i / layers;   // 0 = outermost, approaches 1 = innermost
+
+                // Radius shrinks toward inner layers so the core is richest
+                float layerRadius = radius * (1.0f - t * 0.55f);
+
+                // Random offset keeps the cloud organic, not perfectly round
+                float offX = (float)(rng.NextDouble() - 0.5) * radius * 0.4f;
+                float offY = (float)(rng.NextDouble() - 0.5) * radius * 0.3f;
+
+                float w = layerRadius * xScale * 2f;
+                float h = layerRadius * yScale * 2f;
+
+                // Alpha builds from faint (outer) to richer (inner)
+                int alpha = (int)(color.A * (0.15f + t * 0.65f));
+                alpha = Math.Clamp(alpha, 6, color.A);
+
+                using var brush = new SolidBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
+                g.FillEllipse(brush, center.X + offX - w / 2f, center.Y + offY - h / 2f, w, h);
+            }
+
+            // Second pass: bright compact core glow — simulates an emission hotspot
+            float coreR = radius * 0.25f;
+            for (int i = 0; i < 4; i++)
+            {
+                float offX = (float)(rng.NextDouble() - 0.5) * radius * 0.12f;
+                float offY = (float)(rng.NextDouble() - 0.5) * radius * 0.12f;
+
+                float w = coreR * xScale * 2f;
+                float h = coreR * yScale * 2f;
+
+                int alpha = Math.Clamp((int)(color.A * 0.55f), 20, 120);
+
+                using var brush = new SolidBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
+                g.FillEllipse(brush, center.X + offX - w / 2f, center.Y + offY - h / 2f, w, h);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Nebula / Interstellar Cloud with Density-Based Line Segments
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -94,7 +162,8 @@
         /// <param name="color">Base colour; alpha is ignored — density controls opacity.</param>
         /// <param name="density">Number of micro-segments (200–600 works well).</param>
         /// <param name="rng">Shared <see cref="Random"/> instance.</param>
-        public static void AddNebula(DShapes shapes, PointF center, float radius, Color color, int density, Random rng)
+        public static void AddNebula(DShapes shapes, PointF center, float radius, 
+                                     Color color, int density, Random rng, int layers = 12)
         {
             // Aspect ratio stretches the cloud horizontally for a more natural look
             float xScale = 1.6f;
