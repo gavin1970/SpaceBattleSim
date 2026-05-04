@@ -1,6 +1,6 @@
 ﻿# SpaceBattleSim — Space Battleground Simulation
 
-A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — nebulae, stars, ships, lasers, repair-beams, the grid, shadow effects, and colour blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols).
+A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — nebulae, stars, moving comet, rotating planet, ships, lasers, repair-beams, the grid, shadow effects, and color blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols, planet image dynamic resize/wrap for rotation).
 
 ---
 
@@ -24,7 +24,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 ## What It Is
 
-**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, and Raiders against Friendly fighting autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
+**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, rotating planet, and Raiders fighting against Friendly autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
 
 ![Battleground full-screen view](imgs/full_screen_view.png)
 
@@ -37,13 +37,13 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 ## Features
 
 - **Flawless and Pure `System.Drawing` rendering** — no Unity, MonoGame, SkiaSharp, or similar.
-- **Space background** — Nebulae, radom Stars, and a flying Comet.  All to make it more of a space simulation.
+- **Space background** — Nebulae, radom Stars, rotating planet, and a flying Comet.  All to make it more of a space simulation.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
 - **4 active ship classes** — RepairRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behavior.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
 - **Thread-safe shared state** — a `ConcurrentDictionary` tracks every ship's current position and health, readable by all threads simultaneously.
 - **Conflict-free repair assignments** — a second thread-safe dictionary ensures only one RepairRig claims a dead ally at a time.
-- **Dynamic colour health indicator** — ship colour shifts as shields drop (green → yellow → orange → red → green tombstone).
+- **Dynamic color health indicator** — ship color shifts as shields drop (green → yellow → orange → red → green tombstone).
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
 - **F-key HUD overlays** — press F1/F2 to view live ship stats; press F5 to instantly revive all dead ships.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
@@ -175,10 +175,10 @@ SpaceBattleSim/
 │   ├── DText.cs               # Text rendering model
 │   └── ItemReq.cs             # Paint request wrapper
 ├── services/
-│   ├── ColorConvert.cs        # Colour blending / damage-colour utilities
+│   ├── ColorConvert.cs        # color blending / damage-color utilities
 │   └── Logger.cs              # Simple async thread-safe file logger
 └── utils/
-    ├── StaticConfig.cs        # Global UI style constants (colours, pens, brushes, fonts)
+    ├── StaticConfig.cs        # Global UI style constants (colors, pens, brushes, fonts)
     ├── DDefaults.cs           # Drawing defaults (shadow, border, laser pens)
     ├── About.cs               # Assembly version helper
     └── atomic/
@@ -194,7 +194,7 @@ SpaceBattleSim/
 | Package | Purpose | Found in... |
 |---------|---------|-------------|
 | `Chizl.ThreadSupport` | Atomic primitives (`ABool`, `ADateTime`, `EventStatus`) for lock-free thread safety | [`SpaceBattleSim/utils/atomic/`](SpaceBattleSim/utils/atomic/) |
-| `Chizl.ColorExtension` | Colour manipulation helpers used during dynamic ship colour merging | [`SpaceBattleSim/services/ColorConvert.cs`](SpaceBattleSim/services/ColorConvert.cs) |
+| `Chizl.ColorExtension` | color manipulation helpers used during dynamic ship color merging | [`SpaceBattleSim/services/ColorConvert.cs`](SpaceBattleSim/services/ColorConvert.cs) |
 | `Chizl.Applications` | Application metadata helpers (`About`) | [`SpaceBattleSim/utils/About.cs`](SpaceBattleSim/utils/About.cs) |
 | `Chizl.StandAloneLogging` | Async thread-safe file logger | [`SpaceBattleSim/utils/Logger.cs`](SpaceBattleSim/utils/Logger.cs) |
 
