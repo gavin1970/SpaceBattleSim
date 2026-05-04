@@ -17,13 +17,12 @@ namespace DynamicTimeDraw
         const bool _useBattlegrounds = true;
 
         const bool _usePlanets = true;
-        const int _planetSize = 100;
+        const int _planetSize = 300;
         const float _planetSpinSpeed = 0.1f;
         private readonly Bitmap _planetTexture = new Bitmap(".\\skins\\fungal_planet.png"); // Load your map here
         private float _xOffset = 0;
         const int _planetWrapWidth = _planetSize * 2;
         Rectangle _redPlanetRect = Rectangle.Empty;
-
 
         // Default border width for controls
         const uint _borderWidth = 2;
@@ -365,12 +364,25 @@ namespace DynamicTimeDraw
             {
                 this.Invoke(new Action(() =>
                 {
+                    var xOffset = Math.Clamp(_planetSize, 25, 100) * 2;
+                    var yOffset = Math.Clamp(_planetSize, 25, 100);
+
+                    // Correct location if the planet would be off the screen based on the configured offsets.
+                    if (center.X + xOffset + _planetSize > this.ViewSize.Width)
+                    {
+                        xOffset = center.X - (_planetSize + xOffset);
+                    }
+                    if (center.Y + yOffset + _planetSize > this.ViewSize.Height)
+                    {
+                        yOffset = center.Y - (_planetSize + yOffset);
+                    }
+
                     // Red Planet Setup, placed here so it is behind the HomeBase and
                     // BattleShips but in front of the static starfield and nebulae
                     // background to create a sense of depth. The planet will also
                     // have a simple left-to-right scrolling animation to add some
                     // dynamic movement to the scene.
-                    _redPlanetRect = new Rectangle(center.X + _planetWrapWidth, center.Y + _planetSize, _planetSize, _planetSize);
+                    _redPlanetRect = new Rectangle(center.X + xOffset, center.Y + yOffset, _planetSize, _planetSize);
 
                     var rng = Random.Shared;
                     var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
