@@ -15,8 +15,13 @@ namespace DynamicTimeDraw
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const bool _useBattlegrounds = true;
+        
+        private bool _showPlanets = true;  // pulled from app config
+        private bool _showNebulaes = true; // pulled from app config
+        private bool _showStars = true;    // pulled from app config
 
-        const bool _usePlanets = true;
+        // const bool _showAsteroids = false;
+
         const int _planetSize = 300;
         const float _planetSpinSpeed = 0.1f;
         private readonly Bitmap _planetTexture = new Bitmap(".\\skins\\fungal_planet.png"); // Load your map here
@@ -85,7 +90,7 @@ namespace DynamicTimeDraw
         private static ItemReq TitleText = ItemReq.Empty;
         private static ItemReq HomeBase = ItemReq.Empty;
         //private static ItemReq SpaceAndTime = ItemReq.Empty;
-        private static DShapes _spaceShapes = new DShapes();
+        //private static DShapes _spaceShapes = new DShapes();
         private static DShapes _cometShapes = new DShapes();
         // Add this field alongside _spaceShapes / _cometShapes
         private static Bitmap? _spaceCache = null;
@@ -100,6 +105,11 @@ namespace DynamicTimeDraw
 
             // Set the form's padding based on config.
             this.Padding = FormStyle.Padding;
+            
+            // Load background display settings from app config.
+            _showPlanets = AppConfig.GetConfigValue<bool>("ShowPlanets", out bool showPlanets) ? showPlanets : _showPlanets;
+            _showNebulaes = AppConfig.GetConfigValue<bool>("ShowNebulaes", out bool showNebulaes) ? showNebulaes : _showPlanets;
+            _showStars = AppConfig.GetConfigValue<bool>("ShowStars", out bool showStars) ? showStars : _showPlanets;
 
             // Set the form closed event status to false initially. This will be used to
             // track whether the form has already been closed, preventing multiple closure
@@ -215,7 +225,7 @@ namespace DynamicTimeDraw
 
             g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
 
-            if (_usePlanets)
+            if (_showPlanets)
             {
                 // ############################# PLANETS
                 // The math: The full wrap of the planet is twice the visible width
@@ -360,72 +370,82 @@ namespace DynamicTimeDraw
         private void BuildSpaceTime()
         {
             var center = new Point(this.ViewSize.Width / 2, this.ViewSize.Height / 2);
+
             if (_spaceCache == null)
             {
                 this.Invoke(new Action(() =>
                 {
-                    var xOffset = Math.Clamp(_planetSize, 25, 100) * 2;
-                    var yOffset = Math.Clamp(_planetSize, 25, 100);
-
-                    // Correct location if the planet would be off the screen based on the configured offsets.
-                    if (center.X + xOffset + _planetSize > this.ViewSize.Width)
-                    {
-                        xOffset = center.X - (_planetSize + xOffset);
-                    }
-                    if (center.Y + yOffset + _planetSize > this.ViewSize.Height)
-                    {
-                        yOffset = center.Y - (_planetSize + yOffset);
-                    }
-
-                    // Red Planet Setup, placed here so it is behind the HomeBase and
-                    // BattleShips but in front of the static starfield and nebulae
-                    // background to create a sense of depth. The planet will also
-                    // have a simple left-to-right scrolling animation to add some
-                    // dynamic movement to the scene.
-                    _redPlanetRect = new Rectangle(center.X + xOffset, center.Y + yOffset, _planetSize, _planetSize);
-
-                    var rng = Random.Shared;
                     var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
                                                 this.ViewSize.Width, this.ViewSize.Height);
 
-                    // Bake the static background (stars + nebulae) into a bitmap once.
-                    // Alpha accumulates properly on a Bitmap, so nebulae build up density
-                    // without needing a huge density value.
-                    _spaceCache = new Bitmap(this.ViewSize.Width, this.ViewSize.Height,
-                                             System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    if (_showPlanets)
+                    {
+                        int xOffset = Math.Clamp(_planetSize, 25, 100) * 2;
+                        int yOffset = Math.Clamp(_planetSize, 25, 100);
 
-                    using var bg = Graphics.FromImage(_spaceCache);
-                    bg.SmoothingMode = SmoothingMode.AntiAlias;
-                    bg.Clear(Color.Transparent);
+                        // Correct location if the planet would be off the screen based on the configured offsets.
+                        if (center.X + xOffset + _planetSize > bounds.Width)
+                            xOffset = center.X - (((int)bounds.Width - _planetSize) + (this.Padding.Bottom * 2));
 
-                    // Collect into a temporary DShapes then draw them all onto the bitmap
-                    var tmp = new DShapes();
+                        if (center.Y + yOffset + _planetSize > bounds.Height)
+                            yOffset = center.Y - (((int)bounds.Height - _planetSize) + (this.Padding.Left * 2));
 
-                    // --- Star field: two passes for depth ---
-                    SpaceBackground.AddStarField(tmp, bounds, 350, rng);
-                    var innerBounds = new RectangleF(bounds.X + 60, bounds.Y + 60,
-                                                      bounds.Width - 120, bounds.Height - 120);
-                    SpaceBackground.AddStarField(tmp, innerBounds, 80, rng);
+                        // Red Planet Setup, placed here so it is behind the HomeBase and
+                        // BattleShips but in front of the static starfield and nebulae
+                        // background to create a sense of depth. The planet will also
+                        // have a simple left-to-right scrolling animation to add some
+                        // dynamic movement to the scene.
+                        _redPlanetRect = new Rectangle(center.X + xOffset, center.Y + yOffset, _planetSize, _planetSize);
+                    }
 
-                    // --- Nebulae ---
-                    // Purple/blue — upper-left quadrant (density 600–1000 is plenty on a bitmap)
-                    SpaceBackground.AddNebula(tmp,
-                        new PointF(bounds.Width * 0.22f, bounds.Height * 0.28f),
-                        radius: 140, Color.FromArgb(60, 60, 0, 180), density: 11200, rng);
+                    if (_showStars || _showNebulaes)
+                    {
+                        // Bake the static background (stars + nebulae) into a bitmap once.
+                        // Alpha accumulates properly on a Bitmap, so nebulae build up density
+                        // without needing a huge density value.
+                        _spaceCache = new Bitmap(this.ViewSize.Width, this.ViewSize.Height,
+                                                 System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-                    // Red/orange — lower-right quadrant
-                    SpaceBackground.AddNebula(tmp,
-                        new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
-                        radius: 110, Color.FromArgb(60, 180, 40, 0), density: 8800, rng);
+                        using var bg = Graphics.FromImage(_spaceCache);
+                        bg.SmoothingMode = SmoothingMode.AntiAlias;
+                        bg.Clear(Color.Transparent);
 
-                    // Faint teal — upper-right
-                    SpaceBackground.AddNebula(tmp,
-                        new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
-                        radius: 80, Color.FromArgb(50, 0, 140, 130), density: 6400, rng);
+                        // Collect into a temporary DShapes then draw them all onto the bitmap
+                        var tmp = new DShapes();
+                        var rng = Random.Shared;
 
-                    // Draw all collected segments onto the bitmap
-                    foreach (var (start, end, pen) in tmp.DrawList)
-                        bg.DrawLine(pen, start, end);
+                        if (_showStars)
+                        {
+                            // --- Star field: two passes for depth ---
+                            SpaceBackground.AddStarField(tmp, bounds, 350, rng);
+                            var innerBounds = new RectangleF(bounds.X + 60, bounds.Y + 60,
+                                                              bounds.Width - 120, bounds.Height - 120);
+                            SpaceBackground.AddStarField(tmp, innerBounds, 80, rng);
+                        }
+
+                        if (_showNebulaes)
+                        {
+                            // --- Nebulae ---
+                            // Purple/blue — upper-left quadrant (density 600–1000 is plenty on a bitmap)
+                            SpaceBackground.AddNebula(tmp,
+                                new PointF(bounds.Width * 0.22f, bounds.Height * 0.28f),
+                                radius: 140, Color.FromArgb(60, 60, 0, 180), density: 11200, rng);
+
+                            // Red/orange — lower-right quadrant
+                            SpaceBackground.AddNebula(tmp,
+                                new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
+                                radius: 110, Color.FromArgb(60, 180, 40, 0), density: 8800, rng);
+
+                            // Faint teal — upper-right
+                            SpaceBackground.AddNebula(tmp,
+                                new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
+                                radius: 80, Color.FromArgb(50, 0, 140, 130), density: 6400, rng);
+                        }
+
+                        // Draw all collected segments onto the bitmap
+                        foreach (var (start, end, pen) in tmp.DrawList)
+                            bg.DrawLine(pen, start, end);
+                    }
                 }));
             }
 
@@ -929,7 +949,7 @@ namespace DynamicTimeDraw
         /// <param name="e">An EventArgs object that contains the event data.</param>
         private void RefreshTimer_Tick(object sender, EventArgs e)
         {
-            if (_usePlanets)
+            if (_showPlanets)
             {
                 _xOffset += _planetSpinSpeed;
                 if (_xOffset >= _planetSize * 2) _xOffset = 0; // Dynamic reset point
