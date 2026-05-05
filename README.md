@@ -38,6 +38,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 - **Flawless and Pure `System.Drawing` rendering** — no Unity, MonoGame, SkiaSharp, or similar.
 - **Space background** — Nebulae, radom Stars, rotating planet, and a flying Comet.  All to make it more of a space simulation.
+- **Config Space background** — At the root you will find `SpaceBattleSim.dll.config`.  This file has settings for the space background elements to be visible or not, such as Nebulae, Stars, Planet, and a Comet to be `true` or `false`.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
 - **4 active ship classes** — RepairRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behavior.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
