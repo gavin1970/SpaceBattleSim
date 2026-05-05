@@ -15,8 +15,9 @@ namespace DynamicTimeDraw
         static string _appInfo = "Version: {0} - Press F5 reset dead, Press F1 or F2 for Ship Info/Stats, Mouse over far right top for close button, Mouse over far left top and click banner that pops up for transparent background..";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
-        const bool _useBattlegrounds = true;
-        
+
+        const bool _use3DPlanets = false;
+
         private bool _showPlanets = true;  // pulled from app config
         private bool _showNebulaes = true; // pulled from app config
         private bool _showStars = true;    // pulled from app config
@@ -97,6 +98,9 @@ namespace DynamicTimeDraw
         // Add this field alongside _spaceShapes / _cometShapes
         private static Bitmap? _spaceCache = null;
 
+        private static float _xCounter = 0.0f;
+        private static float _yCounter = 0.0f;
+        private static Point _lastStartPoint = Point.Empty;
 
         internal static List<ItemReq> BattleShips = new List<ItemReq>();
         private static string[] _shipInfo = { };
@@ -110,8 +114,8 @@ namespace DynamicTimeDraw
             
             // Load background display settings from app config.
             _showPlanets = AppConfig.GetConfigValue<bool>("ShowPlanets", out bool showPlanets) ? showPlanets : _showPlanets;
-            _showNebulaes = AppConfig.GetConfigValue<bool>("ShowNebulaes", out bool showNebulaes) ? showNebulaes : _showPlanets;
-            _showStars = AppConfig.GetConfigValue<bool>("ShowStars", out bool showStars) ? showStars : _showPlanets;
+            _showNebulaes = AppConfig.GetConfigValue<bool>("ShowNebulaes", out bool showNebulaes) ? showNebulaes : _showNebulaes;
+            _showStars = AppConfig.GetConfigValue<bool>("ShowStars", out bool showStars) ? showStars : _showStars;
             _showComet = AppConfig.GetConfigValue<bool>("ShowComet", out bool showComet) ? showComet : _showComet;
 
             // Set the form closed event status to false initially. This will be used to
@@ -179,11 +183,6 @@ namespace DynamicTimeDraw
                     ItemReq.ResetDeadShips();
             };
         }
-
-        private static float _xCounter = 0.0f;
-        private static float _yCounter = 0.0f;
-        private static Point _lastStartPoint = Point.Empty;
-        private static bool _use3DPlanets = false;
 
         private void BgPlatform_Paint(object sender, PaintEventArgs e)
         {
@@ -376,34 +375,36 @@ namespace DynamicTimeDraw
         private void BuildSpaceTime()
         {
             var center = new Point(this.ViewSize.Width / 2, this.ViewSize.Height / 2);
+            var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
+                                        this.ViewSize.Width, this.ViewSize.Height);
+
+            if (_showPlanets)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    int xOffset = Math.Clamp(_planetSize, 25, 100) * 2;
+                    int yOffset = Math.Clamp(_planetSize, 25, 100);
+
+                    // Correct location if the planet would be off the screen based on the configured offsets.
+                    if (center.X + xOffset + _planetSize > bounds.Width)
+                        xOffset = center.X - (((int)bounds.Width - _planetSize) + (this.Padding.Bottom * 2));
+
+                    if (center.Y + yOffset + _planetSize > bounds.Height)
+                        yOffset = center.Y - (((int)bounds.Height - _planetSize) + (this.Padding.Left * 2));
+
+                    // Red Planet Setup, placed here so it is behind the HomeBase and
+                    // BattleShips but in front of the static starfield and nebulae
+                    // background to create a sense of depth. The planet will also
+                    // have a simple left-to-right scrolling animation to add some
+                    // dynamic movement to the scene.
+                    _redPlanetRect = new Rectangle(center.X + xOffset, center.Y + yOffset, _planetSize, _planetSize);
+                }));
+            }
 
             if (_spaceCache == null)
             {
                 this.Invoke(new Action(() =>
                 {
-                    var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
-                                                this.ViewSize.Width, this.ViewSize.Height);
-
-                    if (_showPlanets)
-                    {
-                        int xOffset = Math.Clamp(_planetSize, 25, 100) * 2;
-                        int yOffset = Math.Clamp(_planetSize, 25, 100);
-
-                        // Correct location if the planet would be off the screen based on the configured offsets.
-                        if (center.X + xOffset + _planetSize > bounds.Width)
-                            xOffset = center.X - (((int)bounds.Width - _planetSize) + (this.Padding.Bottom * 2));
-
-                        if (center.Y + yOffset + _planetSize > bounds.Height)
-                            yOffset = center.Y - (((int)bounds.Height - _planetSize) + (this.Padding.Left * 2));
-
-                        // Red Planet Setup, placed here so it is behind the HomeBase and
-                        // BattleShips but in front of the static starfield and nebulae
-                        // background to create a sense of depth. The planet will also
-                        // have a simple left-to-right scrolling animation to add some
-                        // dynamic movement to the scene.
-                        _redPlanetRect = new Rectangle(center.X + xOffset, center.Y + yOffset, _planetSize, _planetSize);
-                    }
-
                     if (_showStars || _showNebulaes)
                     {
                         // Bake the static background (stars + nebulae) into a bitmap once.
@@ -711,7 +712,6 @@ namespace DynamicTimeDraw
                         Visible = true
                     };
 
-                    fly.SpaceBattle = _useBattlegrounds;
                     fly.SetShiptType(shipType, shipColor);
 
                     BattleShips.Add(fly);
@@ -730,7 +730,6 @@ namespace DynamicTimeDraw
                         Location = new PointF(x, y),
                         Size = capSize,
                         ShadowDepth = _shadowStyle.depth,
-                        SpaceBattle = _useBattlegrounds,
                         DText = {
                             Font = _largeFlierFont,
                             Text = capImage,
@@ -744,7 +743,6 @@ namespace DynamicTimeDraw
 
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
-                    fly.SpaceBattle = _useBattlegrounds;
                     fly.SetShiptType(ShipType.Capital, _capitalShipColor);
                     BattleShips.Add(fly);
                 }
@@ -762,7 +760,6 @@ namespace DynamicTimeDraw
                         Location = new PointF(x, y),
                         Size = repairSize,
                         ShadowDepth = _shadowStyle.depth,
-                        SpaceBattle = _useBattlegrounds,
                         DText = {
                             Font = _smallFlierFont,
                             Text = repairRigImage,
@@ -785,7 +782,6 @@ namespace DynamicTimeDraw
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
                     fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
-                    fly.SpaceBattle = _useBattlegrounds;
                     fly.SetShiptType(ShipType.RepairRig, _repairRigShipColor);
                     BattleShips.Add(fly);
                 }

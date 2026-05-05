@@ -34,22 +34,24 @@ namespace Chizl.Configurations
         /// available.</param>
         /// <returns>true if the configuration value was found and successfully converted to the specified type; otherwise,
         /// false.</returns>
-        public static bool GetConfigValue<T>(string setting, out T nval, bool reload = false)
+        public static bool GetConfigValue<T>(string setting, out T? nval, bool reload = false)
         {
             nval = default;
 
-            //load and save value in memory as string.
             try
             {
+                //load and save value in memory as string.
                 if (GetConfigValue(setting, out string value, reload, false))
                 {
+                    // attempt conversion, if it fails, it will return the default value for the type, which is what we want in this case.
                     nval = ConvertType<T>(value, nval);
                     return true;
                 }
             }
             catch
             {
-                nval = default; // just in case
+                // just in case
+                nval = default;
             }
 
             return false;
@@ -137,15 +139,18 @@ namespace Chizl.Configurations
 
             try
             {
+                // Trim values
+                value = value.Trim();
+
                 // Use TypeDescriptor to find a converter for the target type and attempt to convert the string value.
                 var converter = TypeDescriptor.GetConverter(typeof(T));
 
                 // If a converter exists and can convert from string, use it to perform the conversion.
                 if (converter != null && converter.CanConvertFrom(typeof(string)))
-                    return (T)converter.ConvertFromString(value.Trim());
+                    return (T)converter.ConvertFromString(value);
 
                 // Fallback to ChangeType for types TypeDescriptor might miss
-                return (T)Convert.ChangeType(value.Trim(), typeof(T));
+                return (T)Convert.ChangeType(value, typeof(T));
             }
             catch
             {

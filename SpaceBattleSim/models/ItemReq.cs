@@ -387,6 +387,18 @@ namespace DynamicTimeDraw
         #endregion
 
         #region User Controler Methods, e.g. Mouse Hit Testing
+        /// <summary>
+        /// Gets the current spaceship information.
+        /// </summary>
+        public SpaceShip ShipInfo => _spaceShip;
+        /// <summary>
+        /// Determines whether all raider ships or all repair rigs are in the dead state, indicating that a dead reset
+        /// is required.
+        /// </summary>
+        /// <remarks>Use this method to check if a reset condition is met based on the status of all
+        /// raider ships or all repair rigs. This can be useful for triggering game state changes or recovery logic when
+        /// all critical ship types are incapacitated.</remarks>
+        /// <returns>true if all raider ships or all repair rigs are dead; otherwise, false.</returns>
         public static bool NeedsDeadReset()
         {
             var allRaders = _allSpaceShips.Where(w => w.Value.IsRaider).Select(s => s.Value.Status).ToList();
@@ -505,15 +517,6 @@ namespace DynamicTimeDraw
             _isSpaceBattle.TrySetTrue();
         }
         /// <summary>
-        /// Gets the current spaceship information.
-        /// </summary>
-        public SpaceShip ShipInfo => _spaceShip;
-        /// <summary>
-        /// Indicates whether a space battle between ships will occur.<br/>
-        /// Default: false
-        /// </summary>
-        public bool SpaceBattle { get; set; } = false;
-        /// <summary>
         /// Draws a Item with a shadow, background, border, and an 'X' symbol onto the specified graphics
         /// surface.
         /// </summary>
@@ -535,11 +538,8 @@ namespace DynamicTimeDraw
                     // exception, they can be repaired but not fight, so they don't get
                     // the animation treatment.
                     if (!this.Animation && !_spaceShip.IsDead && !_spaceShip.IsRepairRig)
-                    {
                         this.Animation = true;
-                        this.SpaceBattle = true;
-                    }
-                }
+               }
 
                 // Calculate the rectangle for the close button based on form size and padding
                 //var frmW = ParentSize.Width - _parentForm.Right;
@@ -759,7 +759,6 @@ namespace DynamicTimeDraw
                                     if (_spaceShip.IsDead)
                                     {
                                         this.Animation = false;
-                                        this.SpaceBattle = false;
                                         this._dText.Text = $"{this._dText.DeadDisplay}";
                                     }
                                 }
