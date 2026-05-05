@@ -38,7 +38,9 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 - **Flawless and Pure `System.Drawing` rendering** — no Unity, MonoGame, SkiaSharp, or similar.
 - **Space background** — Nebulae, radom Stars, rotating planet, and a flying Comet.  All to make it more of a space simulation.
-- **Config Space background** — At the root you will find `SpaceBattleSim.dll.config`.  This file has settings for the space background elements to be visible or not, such as Nebulae, Stars, Planet, and a Comet to be `true` or `false`.
+- **Config Space background** — At the root you will find `SpaceBattleSim.dll.config`.  
+  - This file has settings for the space background elements to be visible or not, such as:
+    - Nebulae, Stars, Planet, Comet to be `true` or `false`. Planet Size (int) and Planet Spin Speed (float) can also be configured.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
 - **4 active ship classes** — RepairRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behavior.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
@@ -49,6 +51,21 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 - **F-key HUD overlays** — press F1/F2 to view live ship stats; press F5 to instantly revive all dead ships.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
 - **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
+
+---
+
+## Configuration File `SpaceBattleSim.dll.config`
+
+| ConfigName | Value Type | Default Value | Description |
+|---|---|---|---|
+| `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
+| `ShowStars` | bool | true | Toggle visibility of random stars in the background |
+| `ShowPlanet` | bool | true | Toggle visibility of the rotating planet in the background |
+| `ShowComet` | bool | true | Toggle visibility of the flying comet in the background |
+| `PlanetSize` | int | 300 | Diameter of the rotating planet in pixels |
+| `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
+
+> **SpaceBattleSim.dll.config** is found at the root of the application.exe.
 
 ---
 

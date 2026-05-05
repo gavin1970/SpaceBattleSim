@@ -18,18 +18,18 @@ namespace DynamicTimeDraw
 
         const bool _use3DPlanets = false;
 
-        private bool _showPlanets = true;  // pulled from app config
-        private bool _showNebulaes = true; // pulled from app config
-        private bool _showStars = true;    // pulled from app config
-        private bool _showComet = true;    // pulled from app config
+        private bool _showPlanets = true;       // pulled from app config
+        private bool _showNebulaes = true;      // pulled from app config
+        private bool _showStars = true;         // pulled from app config
+        private bool _showComet = true;         // pulled from app config
+        private int _planetSize = 300;          // pulled from app config
+        private float _planetSpinSpeed = 0.1f;  // pulled from app config
 
         // const bool _showAsteroids = false;
 
-        const int _planetSize = 300;
-        const float _planetSpinSpeed = 0.1f;
+        private int _planetWrapWidth = 0; // auto updates to _planetSize * 2, do not modify this here.
         private readonly Bitmap _planetTexture = new Bitmap(".\\skins\\fungal_planet.png"); // Load your map here
         private float _xOffset = 0;
-        const int _planetWrapWidth = _planetSize * 2;
         Rectangle _redPlanetRect = Rectangle.Empty;
 
         // Default border width for controls
@@ -117,6 +117,9 @@ namespace DynamicTimeDraw
             _showNebulaes = AppConfig.GetConfigValue<bool>("ShowNebulaes", out bool showNebulaes) ? showNebulaes : _showNebulaes;
             _showStars = AppConfig.GetConfigValue<bool>("ShowStars", out bool showStars) ? showStars : _showStars;
             _showComet = AppConfig.GetConfigValue<bool>("ShowComet", out bool showComet) ? showComet : _showComet;
+            _planetSize = AppConfig.GetConfigValue<int>("PlanetSize", out int planetSize) ? planetSize : _planetSize;
+            _planetSpinSpeed = AppConfig.GetConfigValue<float>("PlanetSpinSpeed", out float planetSpinSpeed) ? planetSpinSpeed : _planetSpinSpeed;
+            _planetWrapWidth = _planetSize * 2;
 
             // Set the form closed event status to false initially. This will be used to
             // track whether the form has already been closed, preventing multiple closure
