@@ -1,4 +1,5 @@
 ﻿using Chizl.Applications;
+using Chizl.Configurations;
 using Chizl.ThreadSupport;
 using System.Drawing.Drawing2D;
 using static DynamicTimeDraw.StaticConfig;
@@ -19,6 +20,7 @@ namespace DynamicTimeDraw
         private bool _showPlanets = true;  // pulled from app config
         private bool _showNebulaes = true; // pulled from app config
         private bool _showStars = true;    // pulled from app config
+        private bool _showComet = true;    // pulled from app config
 
         // const bool _showAsteroids = false;
 
@@ -110,6 +112,7 @@ namespace DynamicTimeDraw
             _showPlanets = AppConfig.GetConfigValue<bool>("ShowPlanets", out bool showPlanets) ? showPlanets : _showPlanets;
             _showNebulaes = AppConfig.GetConfigValue<bool>("ShowNebulaes", out bool showNebulaes) ? showNebulaes : _showPlanets;
             _showStars = AppConfig.GetConfigValue<bool>("ShowStars", out bool showStars) ? showStars : _showPlanets;
+            _showComet = AppConfig.GetConfigValue<bool>("ShowComet", out bool showComet) ? showComet : _showComet;
 
             // Set the form closed event status to false initially. This will be used to
             // track whether the form has already been closed, preventing multiple closure
@@ -197,33 +200,36 @@ namespace DynamicTimeDraw
             if (_spaceCache != null)
                 g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
 
-            // if comet is off the screen, lets reset it.
-            if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
+            if (_showComet)
             {
-                _xCounter = -110.0f;
-                _yCounter = 0.0f;
+                // if comet is off the screen, lets reset it.
+                if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
+                {
+                    _xCounter = -110.0f;
+                    _yCounter = 0.0f;
+                }
+                else
+                {
+                    _xCounter += 0.1f;
+                    _yCounter += 0.05f;
+                }
+
+                foreach (var (start, end, pen) in _cometShapes.DrawList)
+                {
+                    var xStart = start.X + _xCounter;
+                    var yStart = start.Y + _yCounter;
+
+                    var sPf = new PointF(xStart, yStart);
+                    var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
+
+                    // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
+                    _lastStartPoint = new Point((int)xStart, (int)yStart);
+
+                    g.DrawLine(pen, sPf, ePf);
+                }
+
+                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
             }
-            else
-            {
-                _xCounter += 0.1f;
-                _yCounter += 0.05f;
-            }
-
-            foreach (var (start, end, pen) in _cometShapes.DrawList)
-            {
-                var xStart = start.X + _xCounter;
-                var yStart = start.Y + _yCounter;
-
-                var sPf = new PointF(xStart, yStart);
-                var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
-
-                // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
-                _lastStartPoint = new Point((int)xStart, (int)yStart);
-
-                g.DrawLine(pen, sPf, ePf);
-            }
-
-            g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
 
             if (_showPlanets)
             {
