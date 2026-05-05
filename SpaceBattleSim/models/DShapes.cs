@@ -129,6 +129,16 @@ namespace DynamicTimeDraw
             return retVal.ToArray();
         }
 
+        /// <summary>
+        /// Creates an array of points representing the vertices of a star shape based on the specified location and
+        /// size.
+        /// </summary>
+        /// <param name="location">The reference point for the star. Interpreted as the top-left corner of the bounding rectangle unless
+        /// <paramref name="loctionIsCenter"/> is set to <see langword="true"/>.</param>
+        /// <param name="size">The overall width and height of the star.</param>
+        /// <param name="loctionIsCenter">If set to <see langword="true"/>, the <paramref name="location"/> parameter is treated as the center of the
+        /// star; otherwise, it is treated as the top-left corner.</param>
+        /// <returns>An array of <see cref="PointF"/> objects representing the vertices of the star.</returns>
         public static PointF[] CreateStar(PointF location, SizeF size, bool loctionIsCenter = false)
         {
             List<PointF> retVal = new();

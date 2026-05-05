@@ -20,6 +20,7 @@ namespace Chizl.Configurations
         /// ensuring safe usage in multi-threaded scenarios.</remarks>
         private static ConcurrentDictionary<string, string> _configValues = new ConcurrentDictionary<string, string>();
 
+        #region Public Methods
         /// <summary>
         /// Attempts to retrieve a configuration value by key and convert it to the specified type.
         /// </summary>
@@ -41,8 +42,11 @@ namespace Chizl.Configurations
             try
             {
                 //load and save value in memory as string.
-                if (GetConfigValue(setting, out string value, reload, false))
+                if (GetConfigValue(setting, out string? value, reload, false))
                 {
+                    if(value == null)
+                        return false;
+
                     // attempt conversion, if it fails, it will return the default value for the type, which is what we want in this case.
                     nval = ConvertType<T>(value, nval);
                     return true;
@@ -56,6 +60,9 @@ namespace Chizl.Configurations
 
             return false;
         }
+        #endregion
+
+        #region Private Helper Methods
         /// <summary>
         /// Retrieves the value of the specified configuration setting from the application's configuration file or
         /// cache.
@@ -73,7 +80,7 @@ namespace Chizl.Configurations
         /// <param name="secondAttempt">Indicates whether this is a retry attempt after a previous failure. This parameter is used internally to
         /// control retry logic and should typically be left as false.</param>
         /// <returns>true if the configuration value was successfully retrieved; otherwise, false.</returns>
-        private static bool GetConfigValue(string setting, out string value, bool reload = false, bool secondAttempt = false)
+        private static bool GetConfigValue(string setting, out string? value, bool reload = false, bool secondAttempt = false)
         {
             bool retVal = true;
             value = string.Empty;
@@ -147,16 +154,17 @@ namespace Chizl.Configurations
 
                 // If a converter exists and can convert from string, use it to perform the conversion.
                 if (converter != null && converter.CanConvertFrom(typeof(string)))
-                    return (T)converter.ConvertFromString(value);
+                    return (T?)converter.ConvertFromString(value);
 
                 // Fallback to ChangeType for types TypeDescriptor might miss
-                return (T)Convert.ChangeType(value, typeof(T));
+                return (T?)Convert.ChangeType(value, typeof(T));
             }
             catch
             {
                 // If any exception occurs during conversion, return the default value for the type.
-                return (T)defValue;
+                return defValue != null ? (T?)defValue : default(T)!;
             }
         }
+        #endregion
     }
 }

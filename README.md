@@ -40,7 +40,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 - **Space background** — Nebulae, radom Stars, rotating planet, and a flying Comet.  All to make it more of a space simulation.
 - **Config Space background** — At the root you will find `SpaceBattleSim.dll.config`.  
   - This file has settings for the space background elements to be visible or not, such as:
-    - Nebulae, Stars, Planet, Comet to be `true` or `false`. Planet Size (int) and Planet Spin Speed (float) can also be configured.
+    - Nebulae, Stars, Planet, Comet, NaturalStarfield to be `true` or `false`. Planet Size (int) and Planet Spin Speed (float) can also be configured.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
 - **4 active ship classes** — RepairRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behavior.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
@@ -60,12 +60,13 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 |---|---|---|---|
 | `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
 | `ShowStars` | bool | true | Toggle visibility of random stars in the background |
+| `ShowNaturalStarfield` | bool | false | Toggle visibility of the natural starfield background layer |
 | `ShowPlanet` | bool | true | Toggle visibility of the rotating planet in the background |
 | `ShowComet` | bool | true | Toggle visibility of the flying comet in the background |
 | `PlanetSize` | int | 300 | Diameter of the rotating planet in pixels |
 | `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
 
-> **SpaceBattleSim.dll.config** is found at the root of the application.exe.
+> **SpaceBattleSim.dll.config** is found at the root of the application.
 
 ---
 

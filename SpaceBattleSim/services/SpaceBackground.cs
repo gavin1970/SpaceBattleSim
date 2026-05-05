@@ -25,9 +25,11 @@
         /// <param name="bounds">Screen area in which stars may appear.</param>
         /// <param name="count">Total number of stars to generate.</param>
         /// <param name="rng">Shared <see cref="Random"/> instance.</param>
-        public static void AddStarField(DShapes shapes, RectangleF bounds, int count, Random rng)
+        /// <param name="natrualStarfield">Indicates whether to use a natural starfield style.</param>
+        public static void AddStarField(DShapes shapes, RectangleF bounds, int count, Random rng, bool natrualStarfield)
         {
             var coordsList = new List<float[]>(count);
+            var penSize = natrualStarfield ? 2f : 1f;
 
             for (int i = 0; i < count; i++)
             {
@@ -45,9 +47,9 @@
                           : tier < 0.90f ? rng.Next(100, 180)
                                          : rng.Next(180, 255);
 
-                var pen = new Pen(Color.FromArgb(alpha, Color.White), 1f);
+                var pen = new Pen(Color.FromArgb(alpha, Color.White), penSize);
 
-                if (arm <= 1f)
+                if (arm <= 1f || natrualStarfield)
                 {
                     // Dot — single 1-px segment (reuses the matrix trick)
                     shapes.Add(new PointF(cx, cy), new PointF(cx + 1f, cy + 1f), pen);
@@ -234,7 +236,7 @@
             float ny = direction.Y / len;
 
             // ── Head — compact 4-point diamond ───────────────────────────────
-            float hr = 5f;   // head radius in pixels
+            float hr = 4.0f;// 5f;   // head radius in pixels
             var headCoords = new float[]
             {
                 head.X,        head.Y - hr,   // top
@@ -243,7 +245,10 @@
                 head.X - hr,   head.Y          // left
             };
 
-            var headPen = new Pen(Color.FromArgb(255, baseColor), 1.5f);
+            // By changing both head radius above to 4.0f from 5.0f, and this to 4.0f from from 1.5f, the
+            // head looks more rounded and less like a diamond, which better suits the comet aesthetic.
+            // The slightly thicker pen also gives it more presence against the tail rays.
+            var headPen = new Pen(Color.FromArgb(255, baseColor), 4.0f); 
             shapes.AddPolygonalShapes(new List<float[]> { headCoords }, headPen);
 
             // Bright centre dot

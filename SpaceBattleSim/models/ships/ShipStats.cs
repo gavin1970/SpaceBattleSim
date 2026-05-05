@@ -10,13 +10,15 @@
     /// order.</remarks>
     public class ShipStats
     {
-        readonly static string _repairRigShip = char.ConvertFromUtf32(10070);  // 10070 - ❖ = \u2756
-        readonly static string _capitalShip = char.ConvertFromUtf32(11790);    // 11790 - ⸎ = \u2e4e    -- // 11159 - ⮗ = \u2b97
+        // 🚑 - 128657 - U+1F691 - Ambulance emoji, used for the Repair Rig ship.
+        readonly static string _repairRigShip = char.ConvertFromUtf32(10070);  // 10070 - ❖ = \u2756 -- 🚑 - 128657 - U+1F691 - Ambulance emoji, used for the Repair Rig ship.
+        readonly static string _capitalShip = char.ConvertFromUtf32(11790);    // 11790 - ⸎ = \u2e4e --  ⮗ - 11159  - \u2b97
         readonly static string _bomberShip = char.ConvertFromUtf32(11258);     // 11258 - ⯺ = \u2bfa
         readonly static string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
         readonly static string _transportShip = char.ConvertFromUtf32(11213);  // 11213 - ⯍ = \u2b5d
-        //readonly static string _raiderShip = char.ConvertFromUtf32(11501);     // 11501 - Ⳮ = \u2cd5
-        readonly static string _raiderShip = char.ConvertFromUtf32(10618);   // 10618 - ⥺ = \u293a  -- attempting rotation to face the direction it's heading. Still in the works.
+        readonly static string _raiderShip = char.ConvertFromUtf32(11501);     // 11501 - Ⳮ = \u2cd5
+        //readonly static string _raiderShip = char.ConvertFromUtf32(10618);   // 10618 - ⥺ = \u293a
+        //readonly static string _deadShip = char.ConvertFromUtf32(9760);      // 9760 - ☠️ = \u2620
 
         readonly static Color _unuseDefault = Color.Gray;
         readonly static Color _raiderColor = Color.FromArgb(255, 255, 0, 0);
@@ -25,9 +27,14 @@
         readonly static Color _repairRigShipColor = Color.FromArgb(255, 0, 255, 255);
         readonly static Color _bomberShipColor = _unuseDefault;
         readonly static Color _transportShipColor = _unuseDefault;
+        readonly static Color _deadShipColor = _unuseDefault;
 
-        static private readonly Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)> _shipsAvailable = 
-                            new Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)>()
+        static private readonly Dictionary<ShipType, 
+                (uint Shields, uint Power, uint HitBox, float Speed, 
+                RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)> 
+          _shipsAvailable = new Dictionary<ShipType, 
+                (uint Shields, uint Power, uint HitBox, float Speed, 
+                RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)>()
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.

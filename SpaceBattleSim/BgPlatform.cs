@@ -17,13 +17,16 @@ namespace DynamicTimeDraw
         const string _formClosing = "Form_Closed";
 
         const bool _use3DPlanets = false;
+        readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
+        readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 1.0f);   // set limits for planet spin speed.
 
         private bool _showPlanets = true;       // pulled from app config
-        private bool _showNebulaes = true;      // pulled from app config
+        private bool _showNebulae = true;      // pulled from app config
         private bool _showStars = true;         // pulled from app config
         private bool _showComet = true;         // pulled from app config
         private int _planetSize = 300;          // pulled from app config
         private float _planetSpinSpeed = 0.1f;  // pulled from app config
+        private bool _naturalStarfield = true;  // pulled from app config
 
         // const bool _showAsteroids = false;
 
@@ -43,7 +46,7 @@ namespace DynamicTimeDraw
         // Number of RepairRig ships to create
         const int _repairRigCount = (_flierCount / 10);
 
-        // Character to use for the first set of BattleShips shapes. If you use things like '⣮ ⣭ ⣪', remember,
+        // Character to use for the first set of _battleShips shapes. If you use things like '⣮ ⣭ ⣪', remember,
         // you must make the size wider and lower the height to see them side by side. If you want them
         // stacked, then make the size taller and narrower. You can use any Unicode character for the ship
         // shapes, so feel free to experiment with different symbols to find ones that you like and that fit
@@ -66,9 +69,9 @@ namespace DynamicTimeDraw
         const float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
         // Moves Y position of HomeBase and _capitalShip anchor points if changed.
         const float _moveY = 0.0f;          // Center Screen: 0.0f, Far Top: -455.0f, Far Bottom: 450.0f.
-        // _capitalShip Lines: - Base X anchor point of lines to the large BattleShips moving items.
+        // _capitalShip Lines: - Base X anchor point of lines to the large _battleShips moving items.
         const float _anchorX = 758.0f;
-        // _capitalShip Lines: - Base Y anchor point of lines to the large BattleShips moving items.
+        // _capitalShip Lines: - Base Y anchor point of lines to the large _battleShips moving items.
         const float _anchorY = 540.0f;
         // Tuple to hold the shadow color and depth for consistent styling across controls.
         readonly (Color color, uint depth) _shadowStyle = (Color.FromArgb(64, Color.White), 5);
@@ -98,7 +101,7 @@ namespace DynamicTimeDraw
         private static float _yCounter = 0.0f;
         private static Point _lastStartPoint = Point.Empty;
 
-        internal static List<ItemReq> BattleShips = new List<ItemReq>();
+        internal static List<ItemReq> _battleShips = new List<ItemReq>();
         private static string[] _shipInfo = { };
 
         public BgPlatform()
@@ -107,14 +110,21 @@ namespace DynamicTimeDraw
 
             // Set the form's padding based on config.
             this.Padding = FormStyle.Padding;
-            
             // Load background display settings from app config.
             _showPlanets = AppConfig.GetConfigValue<bool>("ShowPlanets", out bool showPlanets) ? showPlanets : _showPlanets;
-            _showNebulaes = AppConfig.GetConfigValue<bool>("ShowNebulaes", out bool showNebulaes) ? showNebulaes : _showNebulaes;
+            _showNebulae = AppConfig.GetConfigValue<bool>("ShowNebulae", out bool showNebulae) ? showNebulae : _showNebulae;
             _showStars = AppConfig.GetConfigValue<bool>("ShowStars", out bool showStars) ? showStars : _showStars;
+            _naturalStarfield = AppConfig.GetConfigValue<bool>("NaturalStarfield", out bool naturalStarfield) ? naturalStarfield : _naturalStarfield;
             _showComet = AppConfig.GetConfigValue<bool>("ShowComet", out bool showComet) ? showComet : _showComet;
-            _planetSize = AppConfig.GetConfigValue<int>("PlanetSize", out int planetSize) ? planetSize : _planetSize;
-            _planetSpinSpeed = AppConfig.GetConfigValue<float>("PlanetSpinSpeed", out float planetSpinSpeed) ? planetSpinSpeed : _planetSpinSpeed;
+            _planetSize = AppConfig.GetConfigValue<int>("PlanetSize", out int planetSize) ? 
+                Math.Clamp(planetSize, _planetSizeLimits.min, _planetSizeLimits.max) : _planetSize;
+            _planetSpinSpeed = AppConfig.GetConfigValue<float>("PlanetSpinSpeed", out float planetSpinSpeed) ? 
+                Math.Clamp(planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max) : _planetSpinSpeed;
+
+            // Calculate the wrap width for the planet texture based on the planet size. The wrap width
+            // is set to twice the planet size to allow for seamless horizontal scrolling of the texture
+            // across the planet's surface. This ensures that as the texture scrolls, it will repeat
+            // without visible seams, creating a continuous animation effect on the planet.
             _planetWrapWidth = _planetSize * 2;
 
             // Set the form closed event status to false initially. This will be used to
@@ -138,7 +148,7 @@ namespace DynamicTimeDraw
             this.MouseMove += (s, e) =>
             {
                 // Direct call to all ships to check their hitboxes
-                //foreach (var ship in BattleShips) 
+                //foreach (var ship in _battleShips) 
                 //    ship.IsMouseInRect(e.Location);
                 if (CloseButton.IsMouseInRect(e.Location))
                     CloseButton.Visible = true;
@@ -280,7 +290,7 @@ namespace DynamicTimeDraw
             }
 
             // Draw the Space Battle (Fighters & Raiders)
-            foreach (var ship in BattleShips)
+            foreach (var ship in _battleShips)
                 if (ship.Visible) ship.DrawItem(e.Graphics);
 
             // Draw the Infrastructure (HomeBase & UI)
@@ -331,8 +341,8 @@ namespace DynamicTimeDraw
                 BuildMatrixArray();
 
                 //Build out stars, planets, and other space objects in the background before building the HomeBase
-                //and BattleShips to create a sense of depth and immersion in the space battle scene. By drawing
-                //these elements first, they will appear behind the HomeBase and BattleShips, enhancing the visual
+                //and _battleShips to create a sense of depth and immersion in the space battle scene. By drawing
+                //these elements first, they will appear behind the HomeBase and _battleShips, enhancing the visual
                 //complexity and making the overall scene more engaging. You can use simple shapes like circles for
                 //stars and planets, or even use images for more detailed backgrounds. Consider adding subtle animations
                 //to these background elements (e.g., twinkling stars or slowly rotating planets) to further enhance
@@ -392,7 +402,7 @@ namespace DynamicTimeDraw
                         yOffset = center.Y - (((int)bounds.Height - _planetSize) + (this.Padding.Left * 2));
 
                     // Red Planet Setup, placed here so it is behind the HomeBase and
-                    // BattleShips but in front of the static starfield and nebulae
+                    // _battleShips but in front of the static starfield and nebulae
                     // background to create a sense of depth. The planet will also
                     // have a simple left-to-right scrolling animation to add some
                     // dynamic movement to the scene.
@@ -404,7 +414,7 @@ namespace DynamicTimeDraw
             {
                 this.Invoke(new Action(() =>
                 {
-                    if (_showStars || _showNebulaes)
+                    if (_showStars || _showNebulae)
                     {
                         // Bake the static background (stars + nebulae) into a bitmap once.
                         // Alpha accumulates properly on a Bitmap, so nebulae build up density
@@ -423,13 +433,13 @@ namespace DynamicTimeDraw
                         if (_showStars)
                         {
                             // --- Star field: two passes for depth ---
-                            SpaceBackground.AddStarField(tmp, bounds, 350, rng);
+                            SpaceBackground.AddStarField(tmp, bounds, 350, rng, _naturalStarfield);
                             var innerBounds = new RectangleF(bounds.X + 60, bounds.Y + 60,
                                                               bounds.Width - 120, bounds.Height - 120);
-                            SpaceBackground.AddStarField(tmp, innerBounds, 80, rng);
+                            SpaceBackground.AddStarField(tmp, innerBounds, 80, rng, _naturalStarfield);
                         }
 
-                        if (_showNebulaes)
+                        if (_showNebulae)
                         {
                             // --- Nebulae ---
                             // Purple/blue — upper-left quadrant (density 600–1000 is plenty on a bitmap)
@@ -632,7 +642,7 @@ namespace DynamicTimeDraw
         }
         /// <summary>
         /// Initializes and adds animated close button items
-        /// to the BattleShips collection if it is empty.
+        /// to the _battleShips collection if it is empty.
         /// </summary>
         /// <remarks>
         ///    Each item is positioned randomly near the center of the form and can display 
@@ -640,7 +650,7 @@ namespace DynamicTimeDraw
         /// </remarks>
         private void BuildFliers()
         {
-            if (BattleShips.Count > 0)
+            if (_battleShips.Count > 0)
                 return;
 
             // Size of the flier button
@@ -677,7 +687,7 @@ namespace DynamicTimeDraw
                 // from the center of the form when triggered.
                 for (int cnt = 0; cnt < _flierCount; cnt++)
                 {
-                    // Randomly position the BattleShips items within the bounds of the form
+                    // Randomly position the _battleShips items within the bounds of the form
                     x = Random.Shared.Next(0, w + 1);
                     y = Random.Shared.Next(0, h + 1);
 
@@ -714,7 +724,7 @@ namespace DynamicTimeDraw
 
                     fly.SetShiptType(shipType, shipColor);
 
-                    BattleShips.Add(fly);
+                    _battleShips.Add(fly);
                 }
 
                 var cap = new ShipStats(ShipType.Capital);
@@ -744,7 +754,7 @@ namespace DynamicTimeDraw
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
                     fly.SetShiptType(ShipType.Capital, cap.ShipColor);
-                    BattleShips.Add(fly);
+                    _battleShips.Add(fly);
                 }
 
                 var repairRig = new ShipStats(ShipType.RepairRig);
@@ -783,7 +793,7 @@ namespace DynamicTimeDraw
                     // the anchor location, while the end is dynamic following the ItemRec.
                     fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                     fly.SetShiptType(ShipType.RepairRig, repairRig.ShipColor);
-                    BattleShips.Add(fly);
+                    _battleShips.Add(fly);
                 }
             }));
         }

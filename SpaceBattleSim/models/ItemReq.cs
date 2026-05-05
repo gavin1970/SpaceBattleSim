@@ -432,13 +432,6 @@ namespace DynamicTimeDraw
             _spaceShipsInRepair.Clear();
             _startBattle = ADateTime.UtcNow;
         }
-        private static string CreatePaddedString(string label, int totalLength)
-        {
-            if (totalLength - label.Length <= 0)
-                return label;
-
-            return label.PadRight(totalLength, ' ');
-        }
         /// <summary>
         /// Retrieves the status information for all spaceships, either as detailed records or as grouped summaries.
         /// </summary>
@@ -458,7 +451,8 @@ namespace DynamicTimeDraw
             {
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Shields", 7)} | " +
                              $"{CreatePaddedString("Power", 5)} | {CreatePaddedString("HitBox", 6)} | " +
-                             $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} |";
+                             $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} | " +
+                             $"{CreatePaddedString("Image", 5)} | ";
 
                 foreach (ShipType sType in Enum.GetValues(typeof(ShipType)))
                 {
@@ -469,7 +463,8 @@ namespace DynamicTimeDraw
                     var shipStats = new ShipStats(sType);
                     retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{shipStats.Shields}", 7)} | " +
                                  $"{CreatePaddedString($"{shipStats.Power}", 5)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
-                                 $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} |");
+                                 $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
+                                 $"{CreatePaddedString($" {shipStats.ShipView}", 4)}|");
                 }
 
                 retVal.Add(new string('_', header.Length));
@@ -1185,6 +1180,13 @@ namespace DynamicTimeDraw
         #endregion
 
         #region Helper methods and properties
+        private static string CreatePaddedString(string label, int totalLength)
+        {
+            if (totalLength - label.Length <= 0)
+                return label;
+
+            return label.PadRight(totalLength, ' ');
+        }
         private void LineDraw(Graphics g, RectangleF clsBtnRect, float lineMoves)
         {
             foreach (var line in this.DLine.DrawList)
