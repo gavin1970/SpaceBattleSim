@@ -19,10 +19,10 @@
         readonly static string _raiderShip = char.ConvertFromUtf32(10618);   // 10618 - ⥺ = \u293a  -- attempting rotation to face the direction it's heading. Still in the works.
 
         readonly static Color _unuseDefault = Color.Gray;
-        readonly static Color _raiderColor = Color.FromArgb(255, 255, 0, 255);
+        readonly static Color _raiderColor = Color.FromArgb(255, 255, 0, 0);
         readonly static Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
-        readonly static Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
-        readonly static Color _repairRigShipColor = Color.FromArgb(255, 255, 255, 255);
+        readonly static Color _capitalShipColor = Color.FromArgb(255, 200, 200, 200);
+        readonly static Color _repairRigShipColor = Color.FromArgb(255, 0, 255, 255);
         readonly static Color _bomberShipColor = _unuseDefault;
         readonly static Color _transportShipColor = _unuseDefault;
 
