@@ -18,26 +18,34 @@
         //readonly static string _raiderShip = char.ConvertFromUtf32(11501);     // 11501 - Ⳮ = \u2cd5
         readonly static string _raiderShip = char.ConvertFromUtf32(10618);   // 10618 - ⥺ = \u293a  -- attempting rotation to face the direction it's heading. Still in the works.
 
-        static private readonly Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, float Rotate)> _shipsAvailable = 
-                            new Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, float Rotate)>()
+        readonly static Color _unuseDefault = Color.Gray;
+        readonly static Color _raiderColor = Color.FromArgb(255, 255, 0, 255);
+        readonly static Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
+        readonly static Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
+        readonly static Color _repairRigShipColor = Color.FromArgb(255, 255, 255, 255);
+        readonly static Color _bomberShipColor = _unuseDefault;
+        readonly static Color _transportShipColor = _unuseDefault;
+
+        static private readonly Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)> _shipsAvailable = 
+                            new Dictionary<ShipType, (uint Shields, uint Power, uint HitBox, float Speed, RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)>()
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.
-            { ShipType.RepairRig, (400, 1, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, 0.0f) },
+            { ShipType.RepairRig, (400, 1, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
             // The most durable and powerful ship as a whole, but also the slowest.
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.
-            { ShipType.Capital, (800, 8, 75, 0.3f, RecoverOrder.High, _capitalShip, 0.0f) },
+            { ShipType.Capital, (800, 8, 75, 0.3f, RecoverOrder.High, _capitalShip, _capitalShipColor, 0.0f) },
             // Curent not used.
-            { ShipType.Bomber, (400, 6, 60, 0.5f, RecoverOrder.Medium, _bomberShip, 0.0f) },
+            { ShipType.Bomber, (400, 6, 60, 0.5f, RecoverOrder.Medium, _bomberShip, _bomberShipColor, 0.0f) },
             // Small random ship to protect the home base.
-            { ShipType.Fighter, (200, 4, 50, 1.0f, RecoverOrder.Low, _fighterShip, 0.0f) },
+            { ShipType.Fighter, (200, 4, 50, 1.0f, RecoverOrder.Low, _fighterShip, _fighterColor, 0.0f) },
             // Current not used.
-            { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, 0.0f) },
+            { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, _transportShipColor, 0.0f) },
             // Half the shield of a Captial ship and twice as much power.
             // The same hitbox and speed as a Fighter, but no recovery since
             // they are not on the home team.  Rotation needs work, leave 0.0f for now.
-            { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None, _raiderShip, 0.0f) }, // rotate 90.0f - not working as intended.
+            { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) }, // rotate 90.0f - not working as intended.
         };
 
         private uint _shields = 0;
@@ -45,6 +53,7 @@
         private float _speed = 0.0f;
         private uint _hitbox = 0;
         private string _shipView = string.Empty;
+        private Color _shipColor = Color.Empty;
         private float _rotate = 0;
         private RecoverOrder _recovery = RecoverOrder.None;
 
@@ -58,7 +67,7 @@
         public ShipStats(ShipType type)
         {
             Type = type;
-            if (_shipsAvailable.TryGetValue(type, out (uint shields, uint power, uint hitBox, float speed, RecoverOrder recovery, string shipView, float rotate) value))
+            if (_shipsAvailable.TryGetValue(type, out (uint shields, uint power, uint hitBox, float speed, RecoverOrder recovery, string shipView, Color shipColor, float rotate) value))
             {
                 _shields = value.shields;
                 _power = value.power;
@@ -66,6 +75,7 @@
                 _hitbox = value.hitBox;
                 _recovery = value.recovery;
                 _shipView = value.shipView;
+                _shipColor = value.shipColor;
                 //make sure, we didn't mess up the rotation value in the dictionary,
                 //which should be 0 to 359, where 0 means no rotation and 90 means a 90
                 //degree rotation, etc.
@@ -76,6 +86,7 @@
         /// Gets the type of the ship.
         /// </summary>
         public ShipType Type { get; }
+        public Color ShipColor { get { return _shipColor; } }
         /// <summary>
         /// Gets the current shield value for the ship.
         /// </summary>

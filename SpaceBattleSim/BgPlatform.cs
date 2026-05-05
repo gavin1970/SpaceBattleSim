@@ -79,10 +79,6 @@ namespace DynamicTimeDraw
         readonly Font _titleFont = new Font("Arial", 14, FontStyle.Bold);
         readonly Font _statsFont = new Font("Courier New", 12, FontStyle.Regular);
         // Colors for different ship types to provide visual distinction between them.
-        readonly Color _raiderColor = Color.FromArgb(255, 255, 0, 0);
-        readonly Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
-        readonly Color _capitalShipColor = Color.FromArgb(255, 0, 255, 255);
-        readonly Color _repairRigShipColor = Color.FromArgb(255, 255, 0, 255);
         readonly Color _homeBaseLinkRepairRigColor = Color.FromArgb(32, 255, 255, 255);
         // Thread-Safe - EventStatus object to track whether the form has already been
         // closed, preventing multiple closure attempts.
@@ -671,8 +667,9 @@ namespace DynamicTimeDraw
 
             this.Invoke(new Action(() =>
             {
-                var raidImage = new ShipStats(ShipType.Raider).ShipView;
-                var fighterImage = new ShipStats(ShipType.Fighter).ShipView;
+                var raid = new ShipStats(ShipType.Raider);
+                var fight = new ShipStats(ShipType.Fighter);
+
                 int x, y;
                 var fighterCnt = _flierCount / 3;
 
@@ -693,9 +690,9 @@ namespace DynamicTimeDraw
                     //var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
                     //var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
                     //var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
-                    var shipImg = cnt < fighterCnt ? fighterImage : raidImage;
+                    var shipImg = cnt < fighterCnt ? fight.ShipView : raid.ShipView;
                     var shipType = cnt < fighterCnt ? ShipType.Fighter : ShipType.Raider;
-                    var shipColor = cnt < fighterCnt ? _fighterColor : _raiderColor;
+                    var shipColor = cnt < fighterCnt ? fight.ShipColor : raid.ShipColor;
                     // fighterCnt
                     var partName = $"{shipType}";
 
@@ -720,7 +717,7 @@ namespace DynamicTimeDraw
                     BattleShips.Add(fly);
                 }
 
-                var capImage = new ShipStats(ShipType.Capital).ShipView;
+                var cap = new ShipStats(ShipType.Capital);
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
                 for (int cnt = 0; cnt < _capShipCount; cnt++)
@@ -735,9 +732,9 @@ namespace DynamicTimeDraw
                         ShadowDepth = _shadowStyle.depth,
                         DText = {
                             Font = _largeFlierFont,
-                            Text = capImage,
+                            Text = cap.ShipView,
                             ShadowDepth = _shadowStyle.depth,
-                            ShadowColor = Color.FromArgb(64, _capitalShipColor),
+                            ShadowColor = Color.FromArgb(64, cap.ShipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
                         Animation = true,
@@ -746,11 +743,11 @@ namespace DynamicTimeDraw
 
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
-                    fly.SetShiptType(ShipType.Capital, _capitalShipColor);
+                    fly.SetShiptType(ShipType.Capital, cap.ShipColor);
                     BattleShips.Add(fly);
                 }
 
-                var repairRigImage = new ShipStats(ShipType.RepairRig).ShipView;
+                var repairRig = new ShipStats(ShipType.RepairRig);
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
                 for (int cnt = 0; cnt < _repairRigCount; cnt++)
@@ -765,9 +762,9 @@ namespace DynamicTimeDraw
                         ShadowDepth = _shadowStyle.depth,
                         DText = {
                             Font = _smallFlierFont,
-                            Text = repairRigImage,
+                            Text = repairRig.ShipView,
                             ShadowDepth = _shadowStyle.depth,
-                            ShadowColor = Color.FromArgb(64, _repairRigShipColor),
+                            ShadowColor = Color.FromArgb(64, repairRig.ShipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
                         Animation = false,
@@ -785,7 +782,7 @@ namespace DynamicTimeDraw
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
                     fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
-                    fly.SetShiptType(ShipType.RepairRig, _repairRigShipColor);
+                    fly.SetShiptType(ShipType.RepairRig, repairRig.ShipColor);
                     BattleShips.Add(fly);
                 }
             }));
