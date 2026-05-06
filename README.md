@@ -40,7 +40,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 - **Space background** — Nebulae, radom Stars, rotating planet, and a flying Comet.  All to make it more of a space simulation.
 - **Config Space background** — At the root you will find `SpaceBattleSim.dll.config`.  
   - This file has settings for the space background elements to be visible or not, such as:
-    - Nebulae, Stars, Planet, Comet, NaturalStarfield to be `true` or `false`. Planet Size (int) and Planet Spin Speed (float) can also be configured.
+    - Nebulae, Stars, Planet, Comet, NaturalStarfield, Version to be `true` or `false`. Total BattleShips (int), Planet Size (int) and Planet Spin Speed (float) can also be configured.
 - **100+ ship fleet** — configurable via constants in `BgPlatform.cs`.
 - **4 active ship classes** — RepairRig/Healer, Capital Ship, Fighter, Raider — each with unique stats and behavior.
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
@@ -65,6 +65,10 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 | `ShowComet` | bool | true | Toggle visibility of the flying comet in the background |
 | `PlanetSize` | int | 300 | Diameter of the rotating planet in pixels |
 | `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
+| `TotalBattleShips` | int | 120 | Total number of ships (Fighters + Raiders) to spawn in the simulation |
+| `ShowVersion` | bool | true | Show the app version near the bottom left of the screen. |
+| `CriticalTransferRaiders` | bool | false | If true, this allows a raider to transfer half their power * 50 to their shields, when their shields drop below 25%. |
+| `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power * 50 to their shields, when their shields drop below 25%. |
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
 
@@ -76,8 +80,8 @@ All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 
 | Ship Type | Shields | Power | Speed | Hitbox | Recovery Priority | Notes |
 |-----------|---------|-------|-------|--------|-------------------|-------|
-| **RepairRig** (Healer) | 400 | 1 | 2.0 | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery |
-| **Capital Ship** | 800 | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, Twice Raider shields, but half their power |
+| **RepairRig** (Healer) | 400 | 2 | **2.0** | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery |
+| **Capital Ship** | **800** | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, Twice Raider shields, but half their power |
 | **Fighter** | 200 | 4 | 1.0 | 50 px | **Low** (3rd) | Balanced grunt unit; home-team protector |
 | **Raider** (Enemy) | 400 | **16** | 1.0 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed |
 | *Bomber* | 400 | 6 | 0.5 | 60 px | **Medium** | *Reserved — not currently deployed* |
@@ -92,17 +96,18 @@ All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 Default counts are set in `BgPlatform.cs`:
 
 ```csharp
-const int _flierCount    = 100;               // Total Fighters + Raiders
-const int _capShipCount  = _flierCount / 10;  // 10 Capital Ships
-const int _repairRigCount   = _flierCount / 10;  // 10 RepairRigs / Healers
+// configuration:
+int _flierCount    = 100;                 // Total Fighters + Raiders
+int _capShipCount  = _flierCount / 10;    // 10 Capital Ships
+int _repairRigCount   = _flierCount / 10; // 10 RepairRigs / Healers
 ```
 
-The `_flierCount` is split so that **Raiders outnumber Fighters** by roughly 3:1**, creating strong enemy pressure that the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where neither side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight last around 5-10 minutes before one side is completely wiped out, at which point the (30sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
+The `_flierCount` is split so that **Raiders outnumber Fighters** by roughly 2:1**, creating strong enemy pressure that the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where neither side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight last around 5-10 minutes before one side is completely wiped out, at which point the (30sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
 
 | Group | Default Count |
 |-------|---------------|
-| Raiders (enemy) | ~75 |
-| Fighters (home team) | ~25 |
+| Raiders (enemy) | ~67 |
+| Fighters (home team) | ~33 |
 | Capital Ships | 10 |
 | TowRigs / Healers | 10 |
 | **Total ships** | **~120** |

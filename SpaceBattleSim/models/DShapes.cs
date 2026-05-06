@@ -12,11 +12,25 @@ namespace DynamicTimeDraw
         /// Stores additional line segments to be drawn, each defined by a start and end point.
         /// </summary>
         private readonly ConcurrentDictionary<(PointF Start, PointF End), Pen> _extraDrawList = new ConcurrentDictionary<(PointF Start, PointF End), Pen>();
+        /// <summary>
+        /// Stores brushes associated with line segments defined by their start and end points.
+        /// </summary>
+        /// <remarks>This dictionary enables efficient retrieval and management of brushes for specific
+        /// line segments, supporting concurrent access in multithreaded scenarios.</remarks>
+        private readonly ConcurrentDictionary<(PointF Start, PointF End), Brush> _extraFillList = new ConcurrentDictionary<(PointF Start, PointF End), Brush>();
 
         /// <summary>
         /// Gets a list of line segments defined by start and end points.
         /// </summary>
         public List<(PointF Start, PointF End, Pen Pen)> DrawList => _extraDrawList.Select(s => (s.Key.Start, s.Key.End, s.Value)).ToList();
+        /// <summary>
+        /// Gets a list of fill segments, each defined by a start point, end point, and associated brush.
+        /// </summary>
+        /// <remarks>Each tuple in the list represents a graphical segment to be filled, where the brush
+        /// specifies the fill style for that segment. The returned list is a snapshot and modifications to it do not
+        /// affect the underlying collection.</remarks>
+        public List<(PointF Start, PointF End, Brush Brush)> FillList => _extraFillList.Select(s => (s.Key.Start, s.Key.End, s.Value)).ToList();
+
         /// <summary>
         /// Adds a line defined by the specified start and end points to the collection if it does not already exist.
         /// </summary>
@@ -30,6 +44,23 @@ namespace DynamicTimeDraw
 
             return true;
         }
+        /// <summary>
+        /// Adds a fill brush associated with the specified start and end points.
+        /// </summary>
+        /// <remarks>If a brush is already associated with the specified segment, the method does not add
+        /// the new brush and returns false.</remarks>
+        /// <param name="start">The starting point of the segment to associate with the brush.</param>
+        /// <param name="end">The ending point of the segment to associate with the brush.</param>
+        /// <param name="brush">The brush to associate with the specified segment. Cannot be null.</param>
+        /// <returns>true if the brush was successfully added for the specified segment; otherwise, false.</returns>
+        public bool Add(PointF start, PointF end, Brush brush)
+        {
+            if (!_extraFillList.TryAdd((start, end), brush))
+                return false;
+
+            return true;
+        }
+        
         /// <summary>
         /// Adds multiple lines defined by the specified start and end points to the collection if they do not already exist.
         /// </summary>
@@ -47,9 +78,23 @@ namespace DynamicTimeDraw
             return true;
         }
         /// <summary>
-        /// Gets or sets the pen used to draw the shadow of a line.
+        /// Add multiple lines to the collection using the specified brush.
         /// </summary>
-        public Pen ShadowPen { get; set; } = DEF_LINE_SHADOW_SETUP;
+        /// <remarks>If any line fails to be added, the method stops processing further lines and returns
+        /// false.</remarks>
+        /// <param name="lines">An array of tuples, each containing the start and end points of a line to add.</param>
+        /// <param name="brush">The brush used to draw each line. Cannot be null.</param>
+        /// <returns>true if all lines are successfully added; otherwise, false.</returns>
+        public bool Add((PointF start, PointF end)[] lines, Brush brush)
+        {
+            foreach (var (start, end) in lines)
+            {
+                if (!Add(start, end, brush))
+                    return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Adds closed polygonal shapes for each set of coordinates in the 
@@ -109,6 +154,81 @@ namespace DynamicTimeDraw
                 return true;
             });
         }
+
+        /// <summary>
+        /// Fills one or more polygonal shapes defined by coordinate arrays using the specified brush.
+        /// </summary>
+        /// <param name="coordsList">A list of float arrays, where each array contains the coordinates of a polygon to fill. Each array should
+        /// represent the vertices of a polygon in sequential order.</param>
+        /// <param name="brush">The brush used to fill the interior of the polygons.</param>
+        /// <returns>A task that represents the asynchronous fill operation.</returns>
+        public Task FillPolygonalShapes(List<float[]> coordsList, Brush brush) =>
+            FillPolygonalShapes(coordsList, brush, false, new Pen(brush), 0f, 0f);
+        /// <summary>
+        /// Fills multiple polygonal shapes defined by coordinate arrays using the specified brush and translation
+        /// offsets.
+        /// </summary>
+        /// <param name="coordsList">A list of float arrays, each representing the vertices of a polygon to fill. Each array should contain pairs
+        /// of X and Y coordinates.</param>
+        /// <param name="brush">The brush used to fill the interior of each polygon.</param>
+        /// <param name="moveX">The horizontal offset, in pixels, to apply to all polygon coordinates before filling.</param>
+        /// <param name="moveY">The vertical offset, in pixels, to apply to all polygon coordinates before filling.</param>
+        /// <returns>A task that represents the asynchronous fill operation.</returns>
+        public Task FillPolygonalShapes(List<float[]> coordsList, Brush brush, float moveX, float moveY) =>
+            FillPolygonalShapes(coordsList, brush, false, new Pen(brush), moveX, moveY);
+        /// <summary>
+        /// Fills one or more closed polygonal shapes defined by coordinate arrays, using the specified brush.
+        /// Optionally outlines the shapes with a given pen.
+        /// </summary>
+        /// <remarks>Each shape in the list is closed automatically by connecting the last point to the
+        /// first. The method runs the fill operation on a background thread. If an exception occurs during processing,
+        /// the returned task result will be <see langword="false"/>.</remarks>
+        /// <param name="coordsList">A list of float arrays, each representing the sequence of X and Y coordinates for a polygonal shape to fill.
+        /// Each array must contain an even number of elements, with pairs representing the X and Y positions of each
+        /// vertex.</param>
+        /// <param name="brush">The brush used to fill the interior of each polygonal shape.</param>
+        /// <param name="outline">A value indicating whether to outline each shape after filling. If <see langword="true"/>, the outlinePen is
+        /// used to draw the border.</param>
+        /// <param name="outlinePen">The pen used to draw the outline of each shape if outlining is enabled. Ignored if <paramref
+        /// name="outline"/> is <see langword="false"/>.</param>
+        /// <param name="moveX">The horizontal offset, in pixels, to apply to all coordinates of each shape. The default is 0.</param>
+        /// <param name="moveY">The vertical offset, in pixels, to apply to all coordinates of each shape. The default is 0.</param>
+        /// <returns>A task that represents the asynchronous fill operation. The task result is <see langword="true"/> if all
+        /// shapes are filled successfully; otherwise, <see langword="false"/>.</returns>
+        public Task FillPolygonalShapes(List<float[]> coordsList, Brush brush, bool outline, Pen outlinePen, float moveX = 0, float moveY = 0)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    // lines from center point for all corners of the inner HomeBase shape
+                    foreach (var cords in coordsList)
+                    {
+                        // Create the points for the lines based on the
+                        // coordinates and optional movement offsets
+                        var points = BuildClosedShape(cords, moveX, moveY).ToList();
+
+                        // Add lines between each point and the next,
+                        // wrapping around to the first point at the end to
+                        // create a closed shape
+                        for (int i = 0; i < points.Count; i++)
+                        {
+                            // Add lines between each point and the next, wrapping around to the first point at the end
+                            this.Add(points[i], points[(i == points.Count - 1 ? 0 : i + 1)], brush);
+                            // Add outline if requested, using the provided pen
+                            if (outline)
+                                this.Add(points[i], points[(i == points.Count - 1 ? 0 : i + 1)], outlinePen);
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+                return true;
+            });
+        }
+
         /// <summary>
         /// Creates an array of Point structures representing the corners of a closed shape, optionally offset by specified values.
         /// </summary>
@@ -125,37 +245,6 @@ namespace DynamicTimeDraw
             var retVal = new List<PointF>();
             for (int i = 0; i < coordinates.Length; i += 2)
                 retVal.Add(new PointF(coordinates[i] + moveX, coordinates[i + 1] + moveY));
-
-            return retVal.ToArray();
-        }
-
-        /// <summary>
-        /// Creates an array of points representing the vertices of a star shape based on the specified location and
-        /// size.
-        /// </summary>
-        /// <param name="location">The reference point for the star. Interpreted as the top-left corner of the bounding rectangle unless
-        /// <paramref name="loctionIsCenter"/> is set to <see langword="true"/>.</param>
-        /// <param name="size">The overall width and height of the star.</param>
-        /// <param name="loctionIsCenter">If set to <see langword="true"/>, the <paramref name="location"/> parameter is treated as the center of the
-        /// star; otherwise, it is treated as the top-left corner.</param>
-        /// <returns>An array of <see cref="PointF"/> objects representing the vertices of the star.</returns>
-        public static PointF[] CreateStar(PointF location, SizeF size, bool loctionIsCenter = false)
-        {
-            List<PointF> retVal = new();
-
-            var midWidth = size.Width / 2;
-            var midHeight= size.Height / 2;
-            var cx = location.X + midWidth;
-            var cy = location.Y + midHeight;
-
-            // horizonal bar, left side
-            retVal.Add(new PointF(location.X, cy));
-            // horizonal bar, right side
-            retVal.Add(new PointF(location.X + size.Width, cy));
-            // veritcal bar, top side
-            retVal.Add(new PointF(cx, location.Y));
-            // veritcal bar, bottom side
-            retVal.Add(new PointF(cx, location.Y + size.Height));
 
             return retVal.ToArray();
         }

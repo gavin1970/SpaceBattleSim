@@ -38,6 +38,7 @@ namespace Chizl.StandAloneLogging
         // MAX_IO_FAILURES is reached, _ioFailureCount will be reset back to 0.  
         const int MAX_IO_FAILURES = 50;
         private int _ioFailureCount = 0;
+        private static Logger _logger = Logger.Empty;
 
         private List<FileInfo> _fileInfo = new();
         private ConcurrentQueue<(LogLevel Level, string Msg)> _msgQueue = new();
@@ -47,6 +48,8 @@ namespace Chizl.StandAloneLogging
         private LogLevel _enabledLogLevels = LogLevel.Application | LogLevel.Error;
         private string _logPath = DEFAULT_LOG_PATH;
         private DirectoryInfo _logDirectoryInfo = new DirectoryInfo(DEFAULT_LOG_PATH);
+
+        public static Logger Static { get { return _logger; } set { _logger = value; }  }
 
         #region Public Static Readonly Properties
         /// <summary>
@@ -64,9 +67,19 @@ namespace Chizl.StandAloneLogging
         /// Initializes a new instance of the Logger class, using default values.<br/>
         /// Defaults:<br/>
         ///    LogPath = ".\logs";<br/>
-        ///    LogLevels = LogLevel.Application | LogLevel.Error
+        ///    LogLevels = LogLevel.Application | LogLevel.Error | LogLevel.Critical
         /// </summary>
-        public static Logger Default => new Logger(LogLevel.All, DEFAULT_LOG_PATH);
+        public static Logger Default => new Logger(LogLevel.Application | LogLevel.Error | LogLevel.Critical, DEFAULT_LOG_PATH);
+        /// <summary>
+        /// Gets a logger instance configured to capture all log levels for development purposes.<br/>
+        /// Defaults:<br/>
+        ///    LogPath = ".\logs";<br/>
+        ///    LogLevels = LogLevel.All
+        /// </summary>
+        /// <remarks>This logger is intended for use during development and debugging. It records messages
+        /// at all log levels to the default log path, which may include verbose or sensitive information not suitable
+        /// for production environments.</remarks>
+        public static Logger Developer => new Logger(LogLevel.All, DEFAULT_LOG_PATH);
         /// <summary>
         /// Gets an instance of the logger that performs no logging operations.
         /// </summary>
@@ -192,9 +205,9 @@ namespace Chizl.StandAloneLogging
                         // message during the writing loop, which helps to reduce overhead and improve performance.
                         foreach (LogLevel logLevel in Enum.GetValues(typeof(LogLevel)))
                         {
-                            if (logLevel == LogLevel.All)
-                                continue; // Skip the "All" log level since it is not an actual
-                                            // log level to write to, but rather a combination of
+                            if (logLevel == LogLevel.All || logLevel == LogLevel.None)
+                                continue; // Skip the "All" and "None" log levels since they are not actual
+                                            // log levels to write to, but rather combinations of
                                             // all levels for configuration purposes.
 
                             // Check if the current log level is enabled for logging.  If it
@@ -312,15 +325,8 @@ namespace Chizl.StandAloneLogging
             {
                 // Update the log file date and name to reflect the new date.
                 // We do this before creating the file to ensure that
-                _activeFileDate.AdjustTime(Now.Date);
-
+                _activeFileDate.AdjustTime(Now.Date, true);
             }
-
-            // Clear the existing FileInfo list and create new FileInfo objects
-            // for the new log file.  We do this to ensure that the FileInfo is
-            // always up to date and reflects the current log file, even if it
-            // doesn't exist yet.
-            _fileInfo.Clear();
 
             try
             {
@@ -328,16 +334,11 @@ namespace Chizl.StandAloneLogging
                 // and the configured retention period.
                 var expireDate = Now - KeepLogsFor;
 
-                // Wait to until allowed to write to prevent potential issues that could
-                // arise from trying to set up a new log file while another thread is still
-                // writing to the old log file, such as file access conflicts or data
-                // corruption.  We do this in a loop to ensure that we wait until we can
-                // successfully set _isWriting to true, which indicates that no other thread
-                // is currently writing and it is safe to proceed with the log setup.
-                // All WriteLine calls will still be sent to queue during this pause, so
-                // no information will be lost.
-                while (!_startWriting.TrySetTrue())
-                    Task.Delay(100).Wait();
+                // Clear the existing FileInfo list and create new FileInfo objects
+                // for the new log file.  We do this to ensure that the FileInfo is
+                // always up to date and reflects the current log file, even if it
+                // doesn't exist yet.
+                _fileInfo.Clear();
 
                 // Delete old log files that are past the expiration date.  We do this to
                 // ensure that we are not keeping log files indefinitely, which helps to
@@ -360,12 +361,13 @@ namespace Chizl.StandAloneLogging
                 // changes, without requiring manual intervention. 
                 foreach (LogLevel logLevel in Enum.GetValues(typeof(LogLevel)))
                 {
-                    if (logLevel == LogLevel.All)
-                        continue; // Skip the "All" log level since it is not an actual
-                                  // log level to write to, but rather a combination of
+                    if (logLevel == LogLevel.All || logLevel == LogLevel.None)
+                        continue; // Skip the "All" and "None" log levels since they are not actual
+                                  // log levels to write to, but rather combinations of
                                   // all levels for configuration purposes.
 
                     // Get the integer value of the log level to use as an index for the FileInfo list.
+                    // NOTE: this int is based on LogLevels turned on, not the identifier in LogLevel enum.
                     int logLevelVal = (int)Math.Log((int)logLevel, 2);
 
                     // Use a date-based log file name to create a new log file each day.

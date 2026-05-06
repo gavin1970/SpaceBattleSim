@@ -11,21 +11,41 @@ namespace DynamicTimeDraw
     public class SpaceShip : DRectangleF
     {
         private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
+        private static readonly List<Pen> _hitboxCircleList = new List<Pen>() {
+            new Pen(Color.FromArgb(0, Color.HotPink), 1),
+            new Pen(Color.FromArgb(100, Color.HotPink), 1),
+            new Pen(Color.FromArgb(25, Color.Silver), 1),
+            new Pen(Color.FromArgb(50, Color.Silver), 1),
+            new Pen(Color.FromArgb(75, Color.Silver), 1),
+            new Pen(Color.FromArgb(100, Color.Silver), 1)
+        };
+
+        private static readonly List<Pen> _hitboxGreenCircleList = new List<Pen>() {
+            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Red), 1),
+            new Pen(Color.FromArgb(25, Color.Green), 1),
+            new Pen(Color.FromArgb(50, Color.Green), 1),
+            new Pen(Color.FromArgb(75, Color.Green), 1),
+            new Pen(Color.FromArgb(100, Color.Green), 1)
+        };
 
         const string SHIP_COLR_BRUSH_KEY = "shipsColorBrush";
         // The hitbox is represented as a char, which can be used to store a single
         // character representation of the ship's radar distance to pick up ships,
         // based on ShipType. This drops as they take damage.
         private char _hitBox = (char)0;
-        private RectangleF _hitBoxRect = RectangleF.Empty;
         private uint _orgShields = 0;
         private uint _shields = 0;
         private uint _orgPower = 0;
         private uint _power = 0;
         private float _speed = 0.5f;
         private int _recovery = 0;
+        private ADateTime _nextCriticalTransfer = ADateTime.UtcNow;
+        private bool _criticalTransfer = false;
         private string _shipsView = string.Empty;
+        private string _shipsViewOrig = string.Empty;
         private float _rotate = 0.0f;
+        private Pen _hitboxCircle = _hitboxGreenCircleList[5];   //default, alpha will be changed based on damage level.
         // The last attack time is stored as an Atomic DateTime, which can be used
         // to track if currently in battle. This allows for cooldown management,
         // attack rate limiting, and other time-based mechanics in the game or
@@ -62,7 +82,7 @@ namespace DynamicTimeDraw
         /// Initializes a new instance of the <see cref="SpaceShip"/> class with the specified type.
         /// </summary>
         /// <param name="type">The type of the spaceship.</param>
-        public SpaceShip(string name, ShipType type, Color shipColor)
+        public SpaceShip(string name, ShipType type, bool criticalTransfer)
         {
             if (!string.IsNullOrWhiteSpace(name))
             {
@@ -75,21 +95,21 @@ namespace DynamicTimeDraw
                 _orgShields = shipStats.Shields;
                 _speed = shipStats.Speed;
                 _hitBox = (char)shipStats.Hitbox;
+                _criticalTransfer = criticalTransfer || shipStats.HasCritalTransfer;
 
-                _hitBoxRect = new RectangleF(this.Center.X - _hitBox,
-                                             this.Center.Y - _hitBox,
-                                             _hitBox * 2,
-                                             _hitBox * 2);
+                if (criticalTransfer && !shipStats.HasCritalTransfer)
+                    ShipStats.SetCriticalTransfer.Add(_shipType);
 
                 _isRepairRig = type == ShipType.RepairRig;
                 _isRaider = type == ShipType.Raider;
                 _recovery = (int)shipStats.Recovery;
 
                 _shipsView = shipStats.ShipView;
+                _shipsViewOrig = _shipsView;
                 _rotate = shipStats.Rotate;
 
-                _orgShipColor = shipColor;
-                _shipsColor = shipColor;
+                _orgShipColor = shipStats.ShipColor;
+                _shipsColor = shipStats.ShipColor;
                 // Provides a pre-built dynamic visual representations of the ship's shield status.
                 _shipsColorBrush = new SolidBrush(_shipsColor);
                 // Store the ship's color brush in the custom data dictionary. Used later for
@@ -165,6 +185,7 @@ namespace DynamicTimeDraw
         {
             get { return new RectangleF(this.Center.X - _hitBox, this.Center.Y - _hitBox, _hitBox * 2, _hitBox * 2); }
         }
+        public Pen HitboxCircle { get { return _hitboxCircle; } }
         /// <summary>
         /// Gets the color of the ship. The ship's color is used to visually represent the ship in various contexts,
         /// such as user interfaces or visual effects in a game or simulation. The color can be used to differentiate
@@ -187,6 +208,10 @@ namespace DynamicTimeDraw
         /// ships and cause damage.  Gets a value indicating whether the entity is classified as a raider.
         /// </summary>
         public bool IsRaider => _isRaider;
+        /// <summary>
+        /// Allows a raider to transfer half their power to their shields, when they drop below 25% shields.
+        /// </summary>
+        public bool CriticalTransfer => _criticalTransfer;
         /// <summary>
         /// Gets or sets a value indicating whether a RepairRig is required.
         /// </summary>
@@ -227,7 +252,13 @@ namespace DynamicTimeDraw
         /// The shield value is used to determine the ship's status and can affect its performance in various<br/>
         /// ways, such as reducing power or changing its visual representation based on the damage level.<br/>
         /// </summary>
-        public uint Shields => _shields; 
+        public uint Shields => _shields;
+        /// <summary>
+        /// Gets the current shield integrity as a percentage of the original shield value.
+        /// </summary>
+        /// <remarks>Returns 0 if the original shield value is zero. The value represents the proportion
+        /// of remaining shields relative to the initial amount, expressed as a percentage.</remarks>
+        public float ShieldIntegrity => _orgShields == 0 ? 0 : (_shields / (float)_orgShields) * 100.0f;
         /// <summary>
         /// Gets the current power value. The power represents the ship's operational capabilities, and as the ship<br/>
         /// takes damage, the power value decreases. When the power reaches zero, the ship is considered dead.<br/>
@@ -365,7 +396,23 @@ namespace DynamicTimeDraw
                 _shipStatus = ShipStatus.Dead;
             }
             else
+            {
                 _shields -= damage;
+                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && (_power / 2) > 2)
+                {
+                    _nextCriticalTransfer.AdjustTime(DateTime.UtcNow.AddSeconds(2));
+
+                    uint transfer = transfer = _power / 2;
+                    _power -= transfer;
+                    if ((transfer * 50) > _orgShields)
+                        _shields = _orgShields;
+                    else
+                        _shields += (transfer * 50);   // Yes, this means the first time, Raiders will get 100% of their shields back, but lose half their power.
+
+                    _shipStatus = ShipStatus.Operational;
+                    _damageColor = Color.Transparent;
+                }
+            }
 
             // Update the ship's status based on the new shield level, determining whether it is still operational,
             // scratched, damaged, critical, or dead.
@@ -403,35 +450,45 @@ namespace DynamicTimeDraw
             var alpha = 128;
             var dmgLevel = DamageLevel;     
             var prevDamageColor = _damageColor;
+            var hitboxList = _hitboxGreenCircleList;
+            if (_power < _orgPower)
+                hitboxList = _hitboxCircleList;
 
             if (_shields == 0)
             {
+                _hitboxCircle = hitboxList[0];
                 _shipStatus = ShipStatus.Dead;
                 _damageColor = Color.FromArgb(alpha, Color.Black);
             }
             else if (dmgLevel >= 90.0)
             {
-                _damageColor = Color.FromArgb(alpha, Color.Red);
+                _hitboxCircle = hitboxList[1];
+                _damageColor = Color.FromArgb(alpha, Color.BlueViolet);
             }
             else if (dmgLevel >= 75.0)
             {
+                _hitboxCircle = hitboxList[2];
                 _shipStatus = ShipStatus.Critical;
                 _damageColor = Color.FromArgb(alpha, Color.OrangeRed);
             }
             else if (dmgLevel >= 50.0)
             {
+                _hitboxCircle = hitboxList[3];
                 _shipStatus = ShipStatus.Damaged;
                 _damageColor = Color.FromArgb(alpha, Color.Orange);
             }
             else if (dmgLevel >= 25.0)
             {
+                _hitboxCircle = hitboxList[4];
                 _shipStatus = ShipStatus.Scratched;
                 _damageColor = Color.FromArgb(alpha, Color.Yellow);
             }
             else 
             {
+                _hitboxCircle = hitboxList[5];
                 _shipStatus = ShipStatus.Operational;
                 _damageColor = Color.Transparent;
+                _shipsView = _shipsViewOrig;
             }
 
             if (_damageColor != prevDamageColor)

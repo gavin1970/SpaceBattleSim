@@ -1,6 +1,8 @@
 ﻿using Chizl.StandAloneLogging;
 using Chizl.ThreadSupport;
+using Microsoft.VisualBasic.Logging;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using static DDefaults;
 
 namespace DynamicTimeDraw
@@ -15,12 +17,13 @@ namespace DynamicTimeDraw
         const int _alternateShadowDepth = 7;
         internal static readonly object _logLocker = new();
         internal static Logger _logger = Logger.Empty;
+
         // battle time tracking
         private static TimeSpan _battleTime = TimeSpan.Zero;
+
         // Start time of the current battle, used to track the duration of battles and reset times
         // when all ships are dead.
         private static ADateTime _startBattle = ADateTime.MinValue;
-
         // Since the ItemReq class is designed to be used for drawing on a form, it
         // requires a reference to a Form object to perform its drawing operations.
         // The _parentForm field is initialized with a dummy invisible form to satisfy
@@ -90,7 +93,7 @@ namespace DynamicTimeDraw
         // and will be updated when the ship type is set using the SetShiptType method. This allows
         // each ItemReq to have its own ship information, which can be used for tracking status,
         // location, and other properties relevant to the space battle simulation.
-        private SpaceShip _spaceShip = new SpaceShip(string.Empty, ShipType.RepairRig, Color.White);
+        private SpaceShip _spaceShip = new SpaceShip(string.Empty, ShipType.RepairRig, false);
         // EventStatus is used to track the state of various events related to the ItemReq, such
         // as mouse interactions and refresh states. By using an EventStatus instance, we can
         // manage these states in a centralized way, allowing for easy checking and updating of
@@ -105,7 +108,7 @@ namespace DynamicTimeDraw
         private DRectangleF  _rectangleF = DRectangleF.Default;
         private DLine _dLine = new();
         private DText _dText = new();
-        private Pen _hitboxCircle = new Pen(Color.FromArgb(64, Color.Silver), 1);
+        //private Pen _hitboxCircle = new Pen(Color.FromArgb(64, Color.Silver), 1);
 
         #region Constructors
         /// <summary>
@@ -151,8 +154,10 @@ namespace DynamicTimeDraw
                 // issues.
                 if (_logger.IsEmpty)
                 {
-                    // Default is Application and Error log types.
-                    _logger = Logger.Default;
+                    if(Logger.Static.IsEmpty)
+                        Logger.Static = Logger.Default;
+
+                    _logger = Logger.Static;
                     _logger.WriteLine(LogLevel.Application, $"Logger initialized for ItemReq instances. ItemReq.Name: {name}");
                     _startBattle = ADateTime.UtcNow;
                     _battleTime = TimeSpan.Zero;
@@ -286,6 +291,11 @@ namespace DynamicTimeDraw
         /// Gets or sets the name of this specific Box.
         /// </summary>
         public string Name { get; } = DateTime.Now.ToString($"Square_HHmmssffff");
+        /// <summary>
+        /// Only available for Raiders.
+        /// Allows a raider to transfer half their power to their shields, when they drop below 25% shields.
+        /// </summary>
+        public bool CriticalTransfer { get; set; } = false;
         /// <summary>
         /// Gets the date and time when the instance was created.
         /// </summary>
@@ -452,19 +462,19 @@ namespace DynamicTimeDraw
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Shields", 7)} | " +
                              $"{CreatePaddedString("Power", 5)} | {CreatePaddedString("HitBox", 6)} | " +
                              $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} | " +
-                             $"{CreatePaddedString("Image", 5)} | ";
+                             $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} | ";
 
                 foreach (ShipType sType in Enum.GetValues(typeof(ShipType)))
                 {
                     // unused, skip.
                     if (sType == ShipType.Transport || sType == ShipType.Bomber)
                         continue;
-
+                    
                     var shipStats = new ShipStats(sType);
                     retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{shipStats.Shields}", 7)} | " +
                                  $"{CreatePaddedString($"{shipStats.Power}", 5)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
                                  $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
-                                 $"{CreatePaddedString($" {shipStats.ShipView}", 4)}|");
+                                 $"{CreatePaddedString($"{shipStats.HasCritalTransfer}", 4)} |{CreatePaddedString($" {shipStats.ShipView}", 4)}|");
                 }
 
                 retVal.Add(new string('_', header.Length));
@@ -503,12 +513,15 @@ namespace DynamicTimeDraw
         /// Sets the type of the spaceship.
         /// </summary>
         /// <param name="stype">The type of the spaceship.</param>
-        public void SetShiptType(ShipType stype, Color shipsColor)
+        public void SetShiptType(ShipType sType)
         {
+            if (sType == ShipType.Raider)
+                Debug.WriteLine("here");
+
             // When setting the ship type, we create a new SpaceShip
             // instance with the specified type and color,
-            _spaceShip = new SpaceShip(Name, stype, shipsColor);
-            _allSpaceShips.TryAdd(Name, _spaceShip);
+            _spaceShip = new SpaceShip(Name, sType, CriticalTransfer);
+            _allSpaceShips.TryAdd(this.Name, _spaceShip);
             _isSpaceBattle.TrySetTrue();
         }
         /// <summary>
@@ -707,10 +720,11 @@ namespace DynamicTimeDraw
                                         List<SpaceShip> allShips = new List<SpaceShip>();
                                         double closestDist = double.MaxValue;
 
-                                        allShips = _allSpaceShips.Where(w => 
-                                                                        !w.Value.IsEmpty && w.Value.Name != this.Name && 
+                                        allShips = _allSpaceShips.Where(w =>
+                                                                        !w.Value.IsEmpty && w.Value.Name != this.Name &&
                                                                         !w.Value.IsDead && w.Value.Location.X != 0 &&
-                                                                        w.Value.Location.Y != 0).Select(s=>s.Value).ToList();
+                                                                        w.Value.Location.Y != 0).Select(s => s.Value).ToList();
+
 
                                         if (allShips.Count > 0)
                                         {
@@ -718,6 +732,7 @@ namespace DynamicTimeDraw
                                                 allShips = allShips.Where(w => w.ShipType != ShipType.Raider).ToList();
                                             else
                                                 allShips = allShips.Where(w => w.ShipType == ShipType.Raider).ToList();
+
 
                                             if (allShips.Count > 0)
                                             {
@@ -728,7 +743,14 @@ namespace DynamicTimeDraw
                                                     // use of memory and CPU than Math.sqrt() when we only need relative distances
                                                     // for comparison against hitBoxSq and closestDist.
                                                     float distSq = kvp.DistanceFrom(myLoc);
-                                                    if (distSq <= hitBoxSq && distSq < closestDist)
+                                                    var inHitBox = distSq <= hitBoxSq;
+
+                                                    // if this is a damaged raider and the target is a raider, no matter what, go to them.
+                                                    // or if in the hitbox already, keep them as a target, even if they are not a raider, because
+                                                    // we want to stay and fight until we die or they die, we don't want to run away from a
+                                                    // fight if we are already in it.
+
+                                                    if (inHitBox && distSq < closestDist)
                                                     {
                                                         closestDist = distSq;
                                                         closest = kvp;
@@ -739,9 +761,9 @@ namespace DynamicTimeDraw
 
                                         if (closest != null)
                                         {
-                                            _activeTargetName = closest.Name;
                                             _pendingDestination = closest.Location;
                                             _lastTargetLocation = closest.Location;
+                                            _activeTargetName = closest.Name;
                                             _lastCombatTime = DateTime.UtcNow;
                                             _allSpaceShips[closest.Name].TakeDamage(_spaceShip.Power, Name);
                                         }
@@ -910,7 +932,7 @@ namespace DynamicTimeDraw
                         var shipCy = clsBtnRect.Y + clsBtnRect.Height / 2;
 
                         var hbRect = new RectangleF(shipCx - hbR, shipCy - hbR, hbR * 2, hbR * 2);
-                        g.DrawEllipse(_hitboxCircle, hbRect);
+                        g.DrawEllipse(_spaceShip.HitboxCircle, hbRect);
 
                         // If the ship has recently fired (within the last 300ms), draw a laser line toward the last target
                         // location to visually indicate an attack, creating a dynamic combat effect that shows the direction

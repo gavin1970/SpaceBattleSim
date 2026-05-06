@@ -38,7 +38,7 @@
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.
-            { ShipType.RepairRig, (400, 1, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
+            { ShipType.RepairRig, (400, 2, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
             // The most durable and powerful ship as a whole, but also the slowest.
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.
@@ -46,7 +46,7 @@
             // Curent not used.
             { ShipType.Bomber, (400, 6, 60, 0.5f, RecoverOrder.Medium, _bomberShip, _bomberShipColor, 0.0f) },
             // Small random ship to protect the home base.
-            { ShipType.Fighter, (200, 4, 50, 1.0f, RecoverOrder.Low, _fighterShip, _fighterColor, 0.0f) },
+            { ShipType.Fighter, (200, 6, 50, 1.0f, RecoverOrder.Low, _fighterShip, _fighterColor, 0.0f) },
             // Current not used.
             { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, _transportShipColor, 0.0f) },
             // Half the shield of a Captial ship and twice as much power.
@@ -73,9 +73,9 @@
         /// <param name="type">The type of ship for which to initialize statistics.</param>
         public ShipStats(ShipType type)
         {
-            Type = type;
             if (_shipsAvailable.TryGetValue(type, out (uint shields, uint power, uint hitBox, float speed, RecoverOrder recovery, string shipView, Color shipColor, float rotate) value))
             {
+                this.Ship = type;
                 _shields = value.shields;
                 _power = value.power;
                 _speed = value.speed;
@@ -89,10 +89,19 @@
                 _rotate = Math.Clamp(value.rotate, 0, 359);
             }
         }
+        private static List<ShipType> _criticalList = new List<ShipType>();
+        /// <summary>
+        /// List of ShipTypes that have critial transfers configured.
+        /// </summary>
+        public static List<ShipType> SetCriticalTransfer => _criticalList;
+        public bool HasCritalTransfer { get { return SetCriticalTransfer.Contains(this.Ship); } }
         /// <summary>
         /// Gets the type of the ship.
         /// </summary>
-        public ShipType Type { get; }
+        public ShipType Ship { get; }
+        /// <summary>
+        /// Gets the color used to represent the ship.
+        /// </summary>
         public Color ShipColor { get { return _shipColor; } }
         /// <summary>
         /// Gets the current shield value for the ship.

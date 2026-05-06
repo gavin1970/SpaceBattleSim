@@ -16,21 +16,27 @@ namespace DynamicTimeDraw
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
 
-        const bool _use3DPlanets = false;
+        // const bool _use3DPlanets = false;
         readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
         readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 1.0f);   // set limits for planet spin speed.
 
-        private bool _showPlanets = true;       // pulled from app config
-        private bool _showNebulae = true;      // pulled from app config
-        private bool _showStars = true;         // pulled from app config
-        private bool _showComet = true;         // pulled from app config
-        private int _planetSize = 300;          // pulled from app config
-        private float _planetSpinSpeed = 0.1f;  // pulled from app config
-        private bool _naturalStarfield = true;  // pulled from app config
+        private bool _showPlanets = true;           // pulled from app config
+        private bool _showNebulae = true;           // pulled from app config
+        private bool _showStars = true;             // pulled from app config
+        private bool _showComet = true;             // pulled from app config
+        private bool _showVersion = true;           // pulled from app config
+        private int _totalBattleShips = 100;        // pulled from app config, Total number of Fighters and Raiders combined.
+        private bool _criticalTransferRaiders = false; // pulled from app config
+        private bool _criticalTransferAlly = false; // pulled from app config
+        private int _planetSize = 300;              // pulled from app config
+        private float _planetSpinSpeed = 0.1f;      // pulled from app config
+        private bool _naturalStarfield = true;      // pulled from app config
 
         // const bool _showAsteroids = false;
+        private int _capShipCount = 0;              // calculated later, _totalBattleShips / 10, do not modify this here.
+        private int _repairRigCount = 0;            // calculated later, _totalBattleShips / 10, do not modify this here.
+        private int _planetWrapWidth = 0;           // calculated later, _planetSize * 2, do not modify this here.
 
-        private int _planetWrapWidth = 0; // auto updates to _planetSize * 2, do not modify this here.
         private readonly Bitmap _planetTexture = new Bitmap(".\\skins\\fungal_planet.png"); // Load your map here
         private float _xOffset = 0;
         Rectangle _redPlanetRect = Rectangle.Empty;
@@ -39,12 +45,6 @@ namespace DynamicTimeDraw
         const uint _borderWidth = 2;
         // Size of the matrix grid (50pxx50px)
         const int _matrixCellSize = 40;
-        // Total number of flighters and Raiders combined.
-        const int _flierCount = 100;
-        // Number of capital shipss to create
-        const int _capShipCount = (_flierCount / 10);
-        // Number of RepairRig ships to create
-        const int _repairRigCount = (_flierCount / 10);
 
         // Character to use for the first set of _battleShips shapes. If you use things like '⣮ ⣭ ⣪', remember,
         // you must make the size wider and lower the height to see them side by side. If you want them
@@ -96,6 +96,7 @@ namespace DynamicTimeDraw
         private static DShapes _cometShapes = new DShapes();
         // Add this field alongside _spaceShapes / _cometShapes
         private static Bitmap? _spaceCache = null;
+        private static DShapes _testingShapes = new DShapes();
 
         private static float _xCounter = 0.0f;
         private static float _yCounter = 0.0f;
@@ -110,22 +111,9 @@ namespace DynamicTimeDraw
 
             // Set the form's padding based on config.
             this.Padding = FormStyle.Padding;
-            // Load background display settings from app config.
-            _showPlanets = AppConfig.GetConfigValue<bool>("ShowPlanets", out bool showPlanets) ? showPlanets : _showPlanets;
-            _showNebulae = AppConfig.GetConfigValue<bool>("ShowNebulae", out bool showNebulae) ? showNebulae : _showNebulae;
-            _showStars = AppConfig.GetConfigValue<bool>("ShowStars", out bool showStars) ? showStars : _showStars;
-            _naturalStarfield = AppConfig.GetConfigValue<bool>("NaturalStarfield", out bool naturalStarfield) ? naturalStarfield : _naturalStarfield;
-            _showComet = AppConfig.GetConfigValue<bool>("ShowComet", out bool showComet) ? showComet : _showComet;
-            _planetSize = AppConfig.GetConfigValue<int>("PlanetSize", out int planetSize) ? 
-                Math.Clamp(planetSize, _planetSizeLimits.min, _planetSizeLimits.max) : _planetSize;
-            _planetSpinSpeed = AppConfig.GetConfigValue<float>("PlanetSpinSpeed", out float planetSpinSpeed) ? 
-                Math.Clamp(planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max) : _planetSpinSpeed;
 
-            // Calculate the wrap width for the planet texture based on the planet size. The wrap width
-            // is set to twice the planet size to allow for seamless horizontal scrolling of the texture
-            // across the planet's surface. This ensures that as the texture scrolls, it will repeat
-            // without visible seams, creating a continuous animation effect on the planet.
-            _planetWrapWidth = _planetSize * 2;
+            // Load background display settings from app config.
+            LoadConfigurations();
 
             // Set the form closed event status to false initially. This will be used to
             // track whether the form has already been closed, preventing multiple closure
@@ -208,6 +196,9 @@ namespace DynamicTimeDraw
             if (_spaceCache != null)
                 g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
 
+            if (_showVersion)
+                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
+
             if (_showComet)
             {
                 // if comet is off the screen, lets reset it.
@@ -235,53 +226,50 @@ namespace DynamicTimeDraw
 
                     g.DrawLine(pen, sPf, ePf);
                 }
-
-                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
             }
 
             if (_showPlanets)
             {
                 // ############################# PLANETS
-                // The math: The full wrap of the planet is twice the visible width
-                if (_use3DPlanets)
+                //if (_use3DPlanets)
+                //{
+                //    // Place this inside your OnPaint, after drawing the moving texture
+                //    using (GraphicsPath shadowPath = new GraphicsPath())
+                //    {
+                //        // Define a path that matches your planet's circle
+                //        shadowPath.AddEllipse(_redPlanetRect);
+                //        g.SetClip(shadowPath);
+
+                //        using (PathGradientBrush pgb = new PathGradientBrush(shadowPath))
+                //        {
+                //            // Set the "Highlight" (the part that looks like light hitting the ball)
+                //            // CenterPoint moves the light source (e.g., top-left)
+                //            pgb.CenterPoint = new PointF(_redPlanetRect.X + _planetSize * 0.3f, _redPlanetRect.Y + _planetSize * 0.3f);
+                //            pgb.CenterColor = Color.FromArgb(0, Color.White); // Transparent in center to see texture
+
+                //            // Set the "Shadow" (the dark edge of the planet)
+                //            pgb.SurroundColors = new Color[] { Color.FromArgb(180, Color.Black) };
+
+                //            // Fill the circle with this gradient
+                //            g.FillEllipse(pgb, _redPlanetRect);
+                //        }
+                //    }
+                //}
+                //else
+                //{
+                using (GraphicsPath path = new GraphicsPath())
                 {
-                    // Place this inside your OnPaint, after drawing the moving texture
-                    using (GraphicsPath shadowPath = new GraphicsPath())
-                    {
-                        // Define a path that matches your planet's circle
-                        shadowPath.AddEllipse(_redPlanetRect);
-                        g.SetClip(shadowPath);
-
-                        using (PathGradientBrush pgb = new PathGradientBrush(shadowPath))
-                        {
-                            // Set the "Highlight" (the part that looks like light hitting the ball)
-                            // CenterPoint moves the light source (e.g., top-left)
-                            pgb.CenterPoint = new PointF(_redPlanetRect.X + _planetSize * 0.3f, _redPlanetRect.Y + _planetSize * 0.3f);
-                            pgb.CenterColor = Color.FromArgb(0, Color.White); // Transparent in center to see texture
-
-                            // Set the "Shadow" (the dark edge of the planet)
-                            pgb.SurroundColors = new Color[] { Color.FromArgb(180, Color.Black) };
-
-                            // Fill the circle with this gradient
-                            g.FillEllipse(pgb, _redPlanetRect);
-                        }
-                    }
+                    path.AddEllipse(_redPlanetRect);
+                    g.SetClip(path);
                 }
-                else
-                {
-                    using (GraphicsPath path = new GraphicsPath())
-                    {
-                        path.AddEllipse(_redPlanetRect);
-                        g.SetClip(path);
-                    }
-                }
+                //}
 
-                // 2. Draw moving texture (scaled dynamically)
+                // Draw moving texture (scaled dynamically)
                 // We draw it at wrapWidth so the image stretches/shrinks to fit the planet
                 g.DrawImage(_planetTexture, _redPlanetRect.X - _xOffset, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
                 g.DrawImage(_planetTexture, (_redPlanetRect.X - _xOffset) + _planetWrapWidth, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
 
-                // 3. Clean up
+                // Clean up
                 g.ResetClip();
 
                 // Optional: Draw a border so the edges look sharp
@@ -296,6 +284,24 @@ namespace DynamicTimeDraw
             // Draw the Infrastructure (HomeBase & UI)
             if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
             if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
+
+            //var gp = new GraphicsPath();
+            //foreach (var (start, end, pen) in _testingShapes.FillList)
+            //{
+            //    var xStart = start.X + _xCounter;
+            //    var yStart = start.Y + _yCounter;
+
+            //    var sPf = new PointF(xStart, yStart);
+            //    var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
+
+            //    // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
+            //    _lastStartPoint = new Point((int)xStart, (int)yStart);
+            //    gp.AddLine(sPf, ePf);
+            //    //g.FillClosedCurve(Brushes.Blue, _testingShapes.DrawList, ePf);
+            //}
+
+            //g.FillPath(Brushes.Yellow, gp);
+            //g.DrawPath(new Pen(Brushes.Red, 1), gp);
 
             if (_shipInfo.Length > 0)
             {
@@ -451,7 +457,7 @@ namespace DynamicTimeDraw
                             SpaceBackground.AddNebula(tmp,
                                 new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
                                 radius: 110, Color.FromArgb(60, 180, 40, 0), density: 8800, rng);
-
+                            
                             // Faint teal — upper-right
                             SpaceBackground.AddNebula(tmp,
                                 new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
@@ -658,17 +664,6 @@ namespace DynamicTimeDraw
             var capSize = new Size(100, 100);
             var repairSize = new Size(20, 20);
 
-            /*
-            int raiderCodePoint = char.ConvertToUtf32(_raiderShip, 0);
-            int fighterCodePoint = char.ConvertToUtf32(_fighterShip, 0);
-            int capitalCodePoint = char.ConvertToUtf32(_capitalShip, 0);
-            int repairRigCodePoint = char.ConvertToUtf32(_repairRigShip, 0);
-            string raiderChar = char.ConvertFromUtf32(raiderCodePoint);
-            string fighterChar = char.ConvertFromUtf32(fighterCodePoint);
-            string capitalChar = char.ConvertFromUtf32(capitalCodePoint);
-            string repairRigChar = char.ConvertFromUtf32(repairRigCodePoint);
-            /**/
-
             // Calculate the X/Y Location of the close button that will be in the top-right corner
             // of the screen. Accounting for top and right padding along with the MatrixArray border
             // width to ensure it doesn't overlap with the matrix grid lines
@@ -681,11 +676,11 @@ namespace DynamicTimeDraw
                 var fight = new ShipStats(ShipType.Fighter);
 
                 int x, y;
-                var fighterCnt = _flierCount / 3;
+                var fighterCnt = _totalBattleShips / 3;
 
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
-                for (int cnt = 0; cnt < _flierCount; cnt++)
+                for (int cnt = 0; cnt < _totalBattleShips; cnt++)
                 {
                     // Randomly position the _battleShips items within the bounds of the form
                     x = Random.Shared.Next(0, w + 1);
@@ -697,13 +692,14 @@ namespace DynamicTimeDraw
                     // value and the conditions to create different patterns of ship
                     // types (e.g., every 2nd item is a fighter, every 5th item is a raider, etc.)
                     // depending on the look you want to achieve.
+
                     //var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
                     //var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
                     //var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
                     var shipImg = cnt < fighterCnt ? fight.ShipView : raid.ShipView;
                     var shipType = cnt < fighterCnt ? ShipType.Fighter : ShipType.Raider;
                     var shipColor = cnt < fighterCnt ? fight.ShipColor : raid.ShipColor;
-                    // fighterCnt
+                    var criticalTransfer = ((cnt >= fighterCnt && _criticalTransferRaiders) || (cnt < fighterCnt && _criticalTransferAlly));
                     var partName = $"{shipType}";
 
                     var fly = new ItemReq(this, $"{partName}_{cnt:000}")
@@ -718,12 +714,12 @@ namespace DynamicTimeDraw
                             ShadowColor = Color.FromArgb(32, shipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
+                        CriticalTransfer = criticalTransfer,
                         Animation = true,
                         Visible = true
                     };
 
-                    fly.SetShiptType(shipType, shipColor);
-
+                    fly.SetShiptType(shipType);
                     _battleShips.Add(fly);
                 }
 
@@ -747,13 +743,14 @@ namespace DynamicTimeDraw
                             ShadowColor = Color.FromArgb(64, cap.ShipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
+                        CriticalTransfer = _criticalTransferAlly,
                         Animation = true,
                         Visible = true
                     };
 
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
-                    fly.SetShiptType(ShipType.Capital, cap.ShipColor);
+                    fly.SetShiptType(ShipType.Capital);
                     _battleShips.Add(fly);
                 }
 
@@ -777,6 +774,7 @@ namespace DynamicTimeDraw
                             ShadowColor = Color.FromArgb(64, repairRig.ShipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
+                        CriticalTransfer = _criticalTransferAlly,
                         Animation = false,
                         DLine =
                         {
@@ -792,7 +790,7 @@ namespace DynamicTimeDraw
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
                     fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
-                    fly.SetShiptType(ShipType.RepairRig, repairRig.ShipColor);
+                    fly.SetShiptType(ShipType.RepairRig);
                     _battleShips.Add(fly);
                 }
             }));
@@ -839,6 +837,8 @@ namespace DynamicTimeDraw
                 coordsList.Add(new float[] { 793, 561, 819, 546, 819, 575, 793, 591 });
                 // ---===[ Inner, Bottom ]===---
                 coordsList.Add(new float[] { 727.5f, 560, 757.5f, 543, 788, 560, 788, 593, 757.5f, 575, 727.5f, 593 });
+
+                _testingShapes.FillPolygonalShapes(coordsList, Brushes.Yellow, true, new Pen(Color.FromArgb(128, Color.White), 2));
 
                 // lines from center point for all corners of the inner HomeBase shape
                 foreach (var cords in coordsList)
@@ -952,6 +952,71 @@ namespace DynamicTimeDraw
                 retVal.Add(new PointF(coordinates[i] + moveX, coordinates[i + 1] + moveY));
 
             return retVal.ToArray();
+        }
+        /// <summary>
+        /// Loads and applies configuration settings for display and animation options.
+        /// </summary>
+        /// <remarks>This method updates internal configuration values related to visual features such as
+        /// planet display, nebulae, stars, and comet visibility. It also recalculates the planet texture wrap width to
+        /// ensure seamless horizontal scrolling of the planet's surface texture. Call this method after changing
+        /// configuration fields to apply the latest settings.</remarks>
+        private void LoadConfigurations()
+        {
+            SetConfigValue("ShowPlanets", ref _showPlanets);
+            SetConfigValue("ShowNebulae", ref _showNebulae);
+            SetConfigValue("ShowStars", ref _showStars);
+            SetConfigValue("NaturalStarfield", ref _naturalStarfield);
+            SetConfigValue("PlanetSize", ref _planetSize);
+            SetConfigValue("PlanetSpinSpeed", ref _planetSpinSpeed);
+            SetConfigValue("ShowComet", ref _showComet);
+            SetConfigValue("ShowVersion", ref _showVersion);
+            SetConfigValue("TotalBattleShips", ref _totalBattleShips);
+            SetConfigValue("CriticalTransferRaiders", ref _criticalTransferRaiders);
+            SetConfigValue("CriticalTransferAlly", ref _criticalTransferAlly);
+
+            // Number of capital shipss to create
+            _capShipCount = (_totalBattleShips / 10);
+            // Number of RepairRig ships to create
+            _repairRigCount = (_totalBattleShips / 10);
+
+        // Clamp the planet size and spin speed to their defined limits to prevent invalid configuration
+        // values that could cause rendering issues or performance problems. This ensures that the planet
+        // will always be rendered within a reasonable size range and will not spin too fast or too slow,
+        // which could affect the visual quality of the animation.
+        _planetSize = Math.Clamp(_planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
+            // The planet spin speed is clamped to a range of 0.1 to 5.0 degrees per frame to ensure that the
+            // animation remains visually appealing and does not become too fast or too slow. A speed of 0.1
+            // degrees per frame will create a slow, subtle rotation effect, while a speed of 5.0 degrees per
+            // frame will create a much faster rotation that may be more suitable for larger planets or more
+            // dynamic scenes. Clamping the spin speed helps maintain a balance between visual interest and
+            // performance, preventing extreme values that could lead to rendering issues or an overwhelming
+            // animation.
+            _planetSpinSpeed = Math.Clamp(_planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max);
+
+            // Calculate the wrap width for the planet texture based on the planet size. The wrap width
+            // is set to twice the planet size to allow for seamless horizontal scrolling of the texture
+            // across the planet's surface. This ensures that as the texture scrolls, it will repeat
+            // without visible seams, creating a continuous animation effect on the planet.
+            _planetWrapWidth = _planetSize * 2;
+        }
+
+        /// <summary>
+        /// Retrieves a configuration value associated with the specified key, or sets the configuration to the provided
+        /// value if the key does not exist.
+        /// </summary>
+        /// <remarks>If the configuration value for the specified key does not exist, the method sets it
+        /// to the provided default value. The method updates the referenced value only if a configuration entry is
+        /// found.</remarks>
+        /// <typeparam name="T">The type of the configuration value to retrieve or set.</typeparam>
+        /// <param name="key">The key identifying the configuration value.</param>
+        /// <param name="retval">When this method returns, contains the configuration value associated with the specified key if found;
+        /// otherwise, contains the value that was set.</param>
+        private void SetConfigValue<T>(string key, ref T retval)
+        {
+            if (AppConfig.GetConfigValue<T>(key, out T? value) && value != null)
+                retval = value;
+            else
+                AppConfig.SetConfigValue(key, $"{retval}");
         }
 
         /// <summary>

@@ -60,6 +60,30 @@ namespace Chizl.Configurations
 
             return false;
         }
+        public static bool SetConfigValue(string setting, string value)
+        {
+            try
+            {
+                // Update the value in the configuration file
+                var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                if (config.AppSettings.Settings[setting] != null)
+                    config.AppSettings.Settings[setting].Value = value;
+                else
+                    config.AppSettings.Settings.Add(setting, value);
+
+                config.Save(ConfigurationSaveMode.Modified);
+                ConfigurationManager.RefreshSection("appSettings");
+
+                // Update the value in the cache
+                _configValues.AddOrUpdate(setting, value, (key, oldValue) => value);
+                return true;
+            }
+            catch
+            {
+                // Handle exceptions as needed (e.g., log the error)
+                return false;
+            }
+        }
         #endregion
 
         #region Private Helper Methods

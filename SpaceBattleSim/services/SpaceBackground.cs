@@ -200,6 +200,25 @@
 
                 shapes.Add(new PointF(px, py), new PointF(ex, ey), pen);
             }
+
+            //// Second pass: bright compact core glow — simulates an emission hotspot
+            //float coreR = radius * 0.25f;
+            //for (int i = 0; i < 4; i++)
+            //{
+            //    float offX = (float)(rng.NextDouble() - 0.5) * radius * 0.12f;
+            //    float offY = (float)(rng.NextDouble() - 0.5) * radius * 0.12f;
+
+            //    float w = coreR * xScale * 2f;
+            //    float h = coreR * yScale * 2f;
+
+            //    int alpha = Math.Clamp((int)(color.A * 0.55f), 20, 120);
+
+            //    using var brush = new SolidBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
+            //    g.FillEllipse(brush, 
+            //        center.X + offX - w / 2f, 
+            //        center.Y + offY - h / 2f, 
+            //        w, h);
+            //}
         }
 
         // ─────────────────────────────────────────────────────────────────────
