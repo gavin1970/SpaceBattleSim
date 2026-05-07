@@ -15,11 +15,14 @@ namespace DynamicTimeDraw
         static string _appInfo = "Version: {0} - Press F5 reset dead, Press F1 or F2 for Ship Info/Stats, Mouse over far right top for close button, Mouse over far left top and click banner that pops up for transparent background..";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
+        const float _percentRepairRigs = 0.10f;              // set percentage of total ships that are repair rigs, rest will be Fighters and Raiders.
+        const float _percentCapitalShips = 0.10f;            // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
 
-        // const bool _use3DPlanets = false;
+        readonly static (int min, int max) _totalBattleShipsLimits = (10, 150);         // set limits for total number of Fighters and Raiders combined.
         readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
         readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 1.0f);   // set limits for planet spin speed.
 
+        private bool _showMatrixGrid = false;       // pulled from app config.
         private bool _showPlanets = true;           // pulled from app config
         private bool _showNebulae = true;           // pulled from app config
         private bool _showStars = true;             // pulled from app config
@@ -28,9 +31,10 @@ namespace DynamicTimeDraw
         private int _totalBattleShips = 100;        // pulled from app config, Total number of Fighters and Raiders combined.
         private bool _criticalTransferRaiders = false; // pulled from app config
         private bool _criticalTransferAlly = false; // pulled from app config
-        private int _planetSize = 300;              // pulled from app config
+        private int _planetSize = 150;              // pulled from app config
         private float _planetSpinSpeed = 0.1f;      // pulled from app config
         private bool _naturalStarfield = true;      // pulled from app config
+        private bool _mouseOverShips = true;        // pulled from app config, Allows the user to mouse over ships to see their stats.
 
         // const bool _showAsteroids = false;
         private int _capShipCount = 0;              // calculated later, _totalBattleShips / 10, do not modify this here.
@@ -101,6 +105,7 @@ namespace DynamicTimeDraw
         private static float _xCounter = 0.0f;
         private static float _yCounter = 0.0f;
         private static Point _lastStartPoint = Point.Empty;
+        private static PointF _versionLoc = PointF.Empty;
 
         internal static List<ItemReq> _battleShips = new List<ItemReq>();
         private static string[] _shipInfo = { };
@@ -181,143 +186,6 @@ namespace DynamicTimeDraw
             };
         }
 
-        private void BgPlatform_Paint(object sender, PaintEventArgs e)
-        {
-            var g = e.Graphics;
-
-            // Set global quality once for the whole frame
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-
-            //// Draw the grid background
-            if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
-
-            // Replace the existing foreach over _spaceShapes.DrawList with this:
-            if (_spaceCache != null)
-                g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
-
-            if (_showVersion)
-                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25));
-
-            if (_showComet)
-            {
-                // if comet is off the screen, lets reset it.
-                if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
-                {
-                    _xCounter = -110.0f;
-                    _yCounter = 0.0f;
-                }
-                else
-                {
-                    _xCounter += 0.1f;
-                    _yCounter += 0.05f;
-                }
-
-                foreach (var (start, end, pen) in _cometShapes.DrawList)
-                {
-                    var xStart = start.X + _xCounter;
-                    var yStart = start.Y + _yCounter;
-
-                    var sPf = new PointF(xStart, yStart);
-                    var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
-
-                    // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
-                    _lastStartPoint = new Point((int)xStart, (int)yStart);
-
-                    g.DrawLine(pen, sPf, ePf);
-                }
-            }
-
-            if (_showPlanets)
-            {
-                // ############################# PLANETS
-                //if (_use3DPlanets)
-                //{
-                //    // Place this inside your OnPaint, after drawing the moving texture
-                //    using (GraphicsPath shadowPath = new GraphicsPath())
-                //    {
-                //        // Define a path that matches your planet's circle
-                //        shadowPath.AddEllipse(_redPlanetRect);
-                //        g.SetClip(shadowPath);
-
-                //        using (PathGradientBrush pgb = new PathGradientBrush(shadowPath))
-                //        {
-                //            // Set the "Highlight" (the part that looks like light hitting the ball)
-                //            // CenterPoint moves the light source (e.g., top-left)
-                //            pgb.CenterPoint = new PointF(_redPlanetRect.X + _planetSize * 0.3f, _redPlanetRect.Y + _planetSize * 0.3f);
-                //            pgb.CenterColor = Color.FromArgb(0, Color.White); // Transparent in center to see texture
-
-                //            // Set the "Shadow" (the dark edge of the planet)
-                //            pgb.SurroundColors = new Color[] { Color.FromArgb(180, Color.Black) };
-
-                //            // Fill the circle with this gradient
-                //            g.FillEllipse(pgb, _redPlanetRect);
-                //        }
-                //    }
-                //}
-                //else
-                //{
-                using (GraphicsPath path = new GraphicsPath())
-                {
-                    path.AddEllipse(_redPlanetRect);
-                    g.SetClip(path);
-                }
-                //}
-
-                // Draw moving texture (scaled dynamically)
-                // We draw it at wrapWidth so the image stretches/shrinks to fit the planet
-                g.DrawImage(_planetTexture, _redPlanetRect.X - _xOffset, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
-                g.DrawImage(_planetTexture, (_redPlanetRect.X - _xOffset) + _planetWrapWidth, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
-
-                // Clean up
-                g.ResetClip();
-
-                // Optional: Draw a border so the edges look sharp
-                g.DrawEllipse(Pens.Black, _redPlanetRect);
-                // #############################
-            }
-
-            // Draw the Space Battle (Fighters & Raiders)
-            foreach (var ship in _battleShips)
-                if (ship.Visible) ship.DrawItem(e.Graphics);
-
-            // Draw the Infrastructure (HomeBase & UI)
-            if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
-            if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
-
-            //var gp = new GraphicsPath();
-            //foreach (var (start, end, pen) in _testingShapes.FillList)
-            //{
-            //    var xStart = start.X + _xCounter;
-            //    var yStart = start.Y + _yCounter;
-
-            //    var sPf = new PointF(xStart, yStart);
-            //    var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
-
-            //    // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
-            //    _lastStartPoint = new Point((int)xStart, (int)yStart);
-            //    gp.AddLine(sPf, ePf);
-            //    //g.FillClosedCurve(Brushes.Blue, _testingShapes.DrawList, ePf);
-            //}
-
-            //g.FillPath(Brushes.Yellow, gp);
-            //g.DrawPath(new Pen(Brushes.Red, 1), gp);
-
-            if (_shipInfo.Length > 0)
-            {
-                float y = this.FormSize.Height - this.Padding.Bottom - (_shipInfo.Length * 24);
-                float width = _shipInfo.OrderByDescending(s => s.Length).FirstOrDefault()?.Length ?? 60.0f;
-                RectangleF rect = new RectangleF(this.Padding.Left + 5, y - 5, (width * 10.0f) + 10.0f, (_shipInfo.Length * 20) + 20);
-                g.FillRectangle(Brushes.Blue, rect);
-                g.DrawRectangle(new Pen(Brushes.Yellow, 1), rect);
-
-                for (int i = 0; i < _shipInfo.Length; i++)
-                    g.DrawString(_shipInfo[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30 - ((i + 1) * 20)));
-            }
-
-            if (CloseButton.Visible) CloseButton.DrawItem(e.Graphics);
-        }
-
         /// <summary>
         /// One time method to create all the necessary ItemReq objects for the form. 
         /// This is called in the constructor after a short delay to ensure the form 
@@ -365,6 +233,9 @@ namespace DynamicTimeDraw
                 BuildTitleText();
                 BuildCloseButton();
 
+                // location for version text to be displayed.
+                _versionLoc = new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25);
+
                 // If transparency background, you can create a fully transparent background while still allowing the
                 // grid lines to be visible. Adjusting the Alpha value allows you to control the transparency level of
                 // the background without affecting the visibility of the grid lines or other controls. This can be
@@ -375,11 +246,11 @@ namespace DynamicTimeDraw
                     this.Invoke(new Action(() => { this.TransparencyKey = this.BackColor; }));
             });
 
-#if DEBUG
-            this.TopMost = false;
-#else 
-            this.TopMost = true;
-#endif
+//#if DEBUG
+//            this.TopMost = false;
+//#else 
+//            this.TopMost = true;
+//#endif
         }
 
         #region Build Paint Objects
@@ -496,7 +367,7 @@ namespace DynamicTimeDraw
         private void BuildMatrixArray()
         {
             // Use Invoke to ensure we're on the UI thread when creating controls
-            if (!MatrixArray.IsEmpty)
+            if (!MatrixArray.IsEmpty || !_showMatrixGrid)
                 return;
 
             // Create a grid of ItemReq objects for the matrix background
@@ -535,7 +406,6 @@ namespace DynamicTimeDraw
                 }
             }
         }
-
         /// <summary>
         /// Initializes and displays a close button in the top-right corner of the view
         /// if it does not already exist.
@@ -953,6 +823,9 @@ namespace DynamicTimeDraw
 
             return retVal.ToArray();
         }
+        #endregion
+
+        #region Configuration
         /// <summary>
         /// Loads and applies configuration settings for display and animation options.
         /// </summary>
@@ -962,28 +835,39 @@ namespace DynamicTimeDraw
         /// configuration fields to apply the latest settings.</remarks>
         private void LoadConfigurations()
         {
+            SetConfigValue("ShowMatrixGrid", ref _showMatrixGrid);
             SetConfigValue("ShowPlanets", ref _showPlanets);
             SetConfigValue("ShowNebulae", ref _showNebulae);
             SetConfigValue("ShowStars", ref _showStars);
             SetConfigValue("NaturalStarfield", ref _naturalStarfield);
-            SetConfigValue("PlanetSize", ref _planetSize);
-            SetConfigValue("PlanetSpinSpeed", ref _planetSpinSpeed);
+            SetConfigValue("PlanetSize", ref _planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
+            SetConfigValue("PlanetSpinSpeed", ref _planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max);
             SetConfigValue("ShowComet", ref _showComet);
             SetConfigValue("ShowVersion", ref _showVersion);
-            SetConfigValue("TotalBattleShips", ref _totalBattleShips);
+            SetConfigValue("TotalBattleShips", ref _totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);
             SetConfigValue("CriticalTransferRaiders", ref _criticalTransferRaiders);
             SetConfigValue("CriticalTransferAlly", ref _criticalTransferAlly);
+            SetConfigValue("MouseOverShips", ref _mouseOverShips);
 
-            // Number of capital shipss to create
-            _capShipCount = (_totalBattleShips / 10);
-            // Number of RepairRig ships to create
-            _repairRigCount = (_totalBattleShips / 10);
+            // Clamp the total number of battle ships to create based on the defined limits to prevent
+            // excessive numbers that could cause performance issues or visual clutter. This ensures
+            // that the animation remains visually appealing and runs smoothly without overwhelming the
+            // viewer with too many ships on the screen at once. By clamping the value, we can maintain
+            // a balance between having enough ships to create an engaging animation and avoiding a
+            // scenario where too many ships could lead to lag or an unrecognizable scene.
+            _totalBattleShips = Math.Clamp(_totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);
 
-        // Clamp the planet size and spin speed to their defined limits to prevent invalid configuration
-        // values that could cause rendering issues or performance problems. This ensures that the planet
-        // will always be rendered within a reasonable size range and will not spin too fast or too slow,
-        // which could affect the visual quality of the animation.
-        _planetSize = Math.Clamp(_planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
+            // Create count for Capital ships based on percentage of total battleships
+            _capShipCount = (int)((float)_totalBattleShips * _percentCapitalShips);
+            // Create count for RepairRig ships based on percentage of total battleships
+            _repairRigCount = (int)((float)_totalBattleShips * _percentRepairRigs);
+
+            // Clamp the planet size and spin speed to their defined limits to prevent invalid configuration
+            // values that could cause rendering issues or performance problems. This ensures that the planet
+            // will always be rendered within a reasonable size range and will not spin too fast or too slow,
+            // which could affect the visual quality of the animation.
+            _planetSize = Math.Clamp(_planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
+
             // The planet spin speed is clamped to a range of 0.1 to 5.0 degrees per frame to ensure that the
             // animation remains visually appealing and does not become too fast or too slow. A speed of 0.1
             // degrees per frame will create a slow, subtle rotation effect, while a speed of 5.0 degrees per
@@ -999,7 +883,6 @@ namespace DynamicTimeDraw
             // without visible seams, creating a continuous animation effect on the planet.
             _planetWrapWidth = _planetSize * 2;
         }
-
         /// <summary>
         /// Retrieves a configuration value associated with the specified key, or sets the configuration to the provided
         /// value if the key does not exist.
@@ -1018,7 +901,120 @@ namespace DynamicTimeDraw
             else
                 AppConfig.SetConfigValue(key, $"{retval}");
         }
+        /// <summary>
+        /// Retrieves a configuration value for the specified key and assigns it to the provided variable, ensuring the
+        /// value is within the specified minimum and maximum bounds. If the configuration value does not exist, writes
+        /// the current value to the configuration.
+        /// </summary>
+        /// <remarks>This method ensures that configuration values remain within a valid range. If the
+        /// configuration does not contain a value for the specified key, the current value of <paramref name="retval"/>
+        /// is persisted as the default.</remarks>
+        /// <typeparam name="T">The type of the configuration value. Must implement <see cref="IComparable{T}"/> to allow range checking.</typeparam>
+        /// <param name="key">The key identifying the configuration value to retrieve or set.</param>
+        /// <param name="retval">A reference to the variable that receives the configuration value. If the value is not found, the current
+        /// value is written to the configuration.</param>
+        /// <param name="min">The minimum allowed value for the configuration setting. If the retrieved value is less than this, the
+        /// minimum is used.</param>
+        /// <param name="max">The maximum allowed value for the configuration setting. If the retrieved value is greater than this, the
+        /// maximum is used.</param>
+        private void SetConfigValue<T>(string key, ref T retval, T min, T max) where T : IComparable<T>
+        {
+            SetConfigValue<T>(key, ref retval);             // default is passed in, so this will write the default if the key is not found.
+            if (retval.CompareTo(min) < 0) retval = min;    // if the value is less than the minimum, set it to the minimum
+            if (retval.CompareTo(max) > 0) retval = max;    // if the value is greater than the maximum, set it to the maximum
+        }
+        #endregion
 
+        #region Form Events
+        private void BgPlatform_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+
+            // Set global quality once for the whole frame
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            //// Draw the grid background
+            if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
+
+            // Replace the existing foreach over _spaceShapes.DrawList with this:
+            if (_spaceCache != null)
+                g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
+
+            if (_showVersion)
+                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, _versionLoc);
+
+            if (_showComet)
+            {
+                // if comet is off the screen, lets reset it.
+                if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
+                {
+                    _xCounter = -110.0f;
+                    _yCounter = 0.0f;
+                }
+                else
+                {
+                    _xCounter += 0.1f;
+                    _yCounter += 0.05f;
+                }
+
+                foreach (var (start, end, pen) in _cometShapes.DrawList)
+                {
+                    var xStart = start.X + _xCounter;
+                    var yStart = start.Y + _yCounter;
+
+                    var sPf = new PointF(xStart, yStart);
+                    var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
+
+                    // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
+                    _lastStartPoint = new Point((int)xStart, (int)yStart);
+
+                    g.DrawLine(pen, sPf, ePf);
+                }
+            }
+
+            if (_showPlanets)
+            {
+                using (GraphicsPath path = new GraphicsPath())
+                {
+                    path.AddEllipse(_redPlanetRect);
+                    g.SetClip(path);    //animation
+                }
+
+                // Draw moving texture (scaled dynamically)
+                // We draw it at wrapWidth so the image stretches/shrinks to fit the planet
+                g.DrawImage(_planetTexture, _redPlanetRect.X - _xOffset, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
+                g.DrawImage(_planetTexture, (_redPlanetRect.X - _xOffset) + _planetWrapWidth, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
+
+                // Clean up
+                g.ResetClip();  //animation
+
+                // Optional: Draw a border so the edges look sharp
+                g.DrawEllipse(Pens.Black, _redPlanetRect);
+            }
+
+            // Draw the Space Battle (Fighters & Raiders)
+            foreach (var ship in _battleShips)
+                if (ship.Visible) ship.DrawItem(e.Graphics);
+
+            // Draw the Infrastructure (HomeBase & UI)
+            if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
+            if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
+
+            if (_shipInfo.Length > 0)
+            {
+                float y = this.FormSize.Height - this.Padding.Bottom - (_shipInfo.Length * 24);
+                float width = _shipInfo.OrderByDescending(s => s.Length).FirstOrDefault()?.Length ?? 60.0f;
+                RectangleF rect = new RectangleF(this.Padding.Left + 5, y - 5, (width * 10.0f) + 10.0f, (_shipInfo.Length * 20) + 20);
+                g.FillRectangle(Brushes.Blue, rect);
+                g.DrawRectangle(new Pen(Brushes.Yellow, 1), rect);
+
+                for (int i = 0; i < _shipInfo.Length; i++)
+                    g.DrawString(_shipInfo[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30 - ((i + 1) * 20)));
+            }
+
+            if (CloseButton.Visible) CloseButton.DrawItem(e.Graphics);
+        }
         /// <summary>
         /// Handles the timer tick event to trigger a repaint of the control.
         /// </summary>
@@ -1042,12 +1038,12 @@ namespace DynamicTimeDraw
             if (ItemReq.NeedsDeadReset())
                 ItemReq.ResetDeadShips();
         }
-        private void BgPlatform_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            // Ensure that the space cache bitmap is properly disposed of when the form is closed
-            _spaceCache?.Dispose();
-            _spaceCache = null;
-        }
+        /// <summary>
+        /// Handles the actions required when the form is closed.
+        /// </summary>
+        /// <remarks>This method releases resources associated with the form and ensures proper cleanup.
+        /// It is called when the form is closed, either by the user or programmatically.</remarks>
+        /// <param name="e">A FormClosedEventArgs that contains the event data.</param>
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             _spaceCache?.Dispose();
@@ -1071,8 +1067,8 @@ namespace DynamicTimeDraw
         /// <remarks>
         /// Single point of Change (SPOC) for any future adjustments to how the form size is calculated or returned.
         /// </remarks>
-        private Size FormSize =>
-            this.Size;
+        private Size FormSize 
+            => this.Size;
         #endregion
     }
 }

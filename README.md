@@ -46,7 +46,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
 - **Thread-safe shared state** — a `ConcurrentDictionary` tracks every ship's current position and health, readable by all threads simultaneously.
 - **Conflict-free repair assignments** — a second thread-safe dictionary ensures only one RepairRig claims a dead ally at a time.
-- **Dynamic color health indicator** — ship color shifts as shields drop (green → yellow → orange → red → green tombstone).
+- **Dynamic color health indicator** — ship color shifts as shields drops as hitbox diameter changes base on power transfer if enabled.
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
 - **F-key HUD overlays** — press F1/F2 to view live ship stats; press F5 to instantly revive all dead ships.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
@@ -60,17 +60,20 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 |---|---|---|---|
 | `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
 | `ShowStars` | bool | true | Toggle visibility of random stars in the background |
-| `ShowNaturalStarfield` | bool | false | Toggle visibility of the natural starfield background layer |
+| `NaturalStarfield` | bool | true | Toggle natural starfield background layer vs artificial starfield |
 | `ShowPlanet` | bool | true | Toggle visibility of the rotating planet in the background |
 | `ShowComet` | bool | true | Toggle visibility of the flying comet in the background |
-| `PlanetSize` | int | 300 | Diameter of the rotating planet in pixels |
+| `PlanetSize` | int | 150 | Diameter of the rotating planet in pixels |
 | `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
-| `TotalBattleShips` | int | 120 | Total number of ships (Fighters + Raiders) to spawn in the simulation |
+| `TotalBattleShips` | int | 100 | Total number of ships (Fighters + Raiders) to spawn in the simulation |
 | `ShowVersion` | bool | true | Show the app version near the bottom left of the screen. |
-| `CriticalTransferRaiders` | bool | false | If true, this allows a raider to transfer half their power * 50 to their shields, when their shields drop below 25%. |
-| `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power * 50 to their shields, when their shields drop below 25%. |
+| `CriticalTransferRaiders` | bool | true | If true, this allows a raider to transfer half their power for 100% to their shields, when their shields drop below 25%. |
+| `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power for 100% to their shields, when their shields drop below 25%. |
+| `ShowMatrixGrid` | bool | true | Toggle visibility of the background "Matrix"-style grid |
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
+> **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, Fighters once, and Capital Ships can use this twice within one battle.
+> **Shield Transfer Color**: When a ship performs a critical transfer, the hitbox displayed around the ship changes color.  Based on the amount of times the ship has performed a critical transfer, the color changes to reflect the increasing risk and desperation of the move.  During each of as a shipt takes damage, the color will get dim until it's unable to transfer on the last 25%.  Original power, hitbox is green/25%-red.  Half power, Cyan/25%-DarkOrchid.  Quarter power, Orange/25%-BlueViolet.  Eighth power, Silver/25%-HotPink.
 
 ---
 
@@ -97,12 +100,16 @@ Default counts are set in `BgPlatform.cs`:
 
 ```csharp
 // configuration:
-int _flierCount    = 100;                 // Total Fighters + Raiders
-int _capShipCount  = _flierCount / 10;    // 10 Capital Ships
-int _repairRigCount   = _flierCount / 10; // 10 RepairRigs / Healers
+const float _percentRepairRigs = 0.10f;     // set percentage of total ships that are repair rigs, rest will be Fighters and Raiders.
+const float _percentCapitalShips = 0.10f;   // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
+private int _totalBattleShips = 100;        // pulled from app config, Total number of Fighters and Raiders combined, default 100
+private int _capShipCount = 0;              // calculated later, _totalBattleShips / 10, do not modify this here.
+private int _repairRigCount = 0;            // calculated later, _totalBattleShips / 10, do not modify this here.
+private int _planetSize = 150;              // pulled from app config, diameter of the planet in pixels, default 150
+private int _planetWrapWidth = 0;           // calculated later, _planetSize * 2, do not modify this here.
 ```
 
-The `_flierCount` is split so that **Raiders outnumber Fighters** by roughly 2:1**, creating strong enemy pressure that the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where neither side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight last around 5-10 minutes before one side is completely wiped out, at which point the (30sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
+The `_totalBattleShips` is split so that **Raiders outnumber Fighters** by roughly 2:1**, creating strong enemy pressure that if 100 total fighters, the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where neither side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight with 100 fighters, with CriticalTransferRaiders set to true, can last around 10-12 minutes before one side is completely wiped out, at which point the (30sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
 
 | Group | Default Count |
 |-------|---------------|

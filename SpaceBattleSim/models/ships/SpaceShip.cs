@@ -11,7 +11,7 @@ namespace DynamicTimeDraw
     public class SpaceShip : DRectangleF
     {
         private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
-        private static readonly List<Pen> _hitboxCircleList = new List<Pen>() {
+        private static readonly List<Pen> _hitboxLowestCircleList = new List<Pen>() {
             new Pen(Color.FromArgb(0, Color.HotPink), 1),
             new Pen(Color.FromArgb(100, Color.HotPink), 1),
             new Pen(Color.FromArgb(25, Color.Silver), 1),
@@ -19,8 +19,23 @@ namespace DynamicTimeDraw
             new Pen(Color.FromArgb(75, Color.Silver), 1),
             new Pen(Color.FromArgb(100, Color.Silver), 1)
         };
-
-        private static readonly List<Pen> _hitboxGreenCircleList = new List<Pen>() {
+        private static readonly List<Pen> _hitboxLowCircleList = new List<Pen>() {
+            new Pen(Color.FromArgb(0, Color.BlueViolet), 1),
+            new Pen(Color.FromArgb(100, Color.BlueViolet), 1),
+            new Pen(Color.FromArgb(25, Color.Orange), 1),
+            new Pen(Color.FromArgb(50, Color.Orange), 1),
+            new Pen(Color.FromArgb(75, Color.Orange), 1),
+            new Pen(Color.FromArgb(100, Color.Orange), 1)
+        };
+        private static readonly List<Pen> _hitboxMidCircleList = new List<Pen>() {
+            new Pen(Color.FromArgb(0, Color.DarkOrchid), 1),
+            new Pen(Color.FromArgb(100, Color.DarkOrchid), 1),
+            new Pen(Color.FromArgb(25, Color.Cyan), 1),
+            new Pen(Color.FromArgb(50, Color.Cyan), 1),
+            new Pen(Color.FromArgb(75, Color.Cyan), 1),
+            new Pen(Color.FromArgb(100, Color.Cyan), 1)
+        };
+        private static readonly List<Pen> _hitboxHighCircleList = new List<Pen>() {
             new Pen(Color.FromArgb(0, Color.Red), 1),
             new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Green), 1),
@@ -45,7 +60,7 @@ namespace DynamicTimeDraw
         private string _shipsView = string.Empty;
         private string _shipsViewOrig = string.Empty;
         private float _rotate = 0.0f;
-        private Pen _hitboxCircle = _hitboxGreenCircleList[5];   //default, alpha will be changed based on damage level.
+        private Pen _hitboxCircle = _hitboxHighCircleList[5];   //default, alpha will be changed based on damage level.
         // The last attack time is stored as an Atomic DateTime, which can be used
         // to track if currently in battle. This allows for cooldown management,
         // attack rate limiting, and other time-based mechanics in the game or
@@ -398,19 +413,23 @@ namespace DynamicTimeDraw
             else
             {
                 _shields -= damage;
-                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && (_power / 2) > 2)
+                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && (_power / 2) >= 2)
                 {
                     _nextCriticalTransfer.AdjustTime(DateTime.UtcNow.AddSeconds(2));
 
-                    uint transfer = transfer = _power / 2;
-                    _power -= transfer;
-                    if ((transfer * 50) > _orgShields)
-                        _shields = _orgShields;
-                    else
-                        _shields += (transfer * 50);   // Yes, this means the first time, Raiders will get 100% of their shields back, but lose half their power.
+                    uint newPower = _power / 2;
+                    ResetStats();   //resets health, shields
+                    _power = newPower;  // set power to half of what it was before the reset,
+                                        // which is the critical transfer mechanic for all.
+                                        // This allows them to sacrifice some of their power
+                                        // to regain shields when they are critically damaged.
+                    //if ((transfer * 50) > _orgShields)
+                    //    _shields = _orgShields;
+                    //else
+                    //    _shields += (transfer * 50);   // Yes, this means the first time, Raiders will get 100% of their shields back, but lose half their power.
 
-                    _shipStatus = ShipStatus.Operational;
-                    _damageColor = Color.Transparent;
+                    //_shipStatus = ShipStatus.Operational;
+                    //_damageColor = Color.Transparent;
                 }
             }
 
@@ -450,9 +469,17 @@ namespace DynamicTimeDraw
             var alpha = 128;
             var dmgLevel = DamageLevel;     
             var prevDamageColor = _damageColor;
-            var hitboxList = _hitboxGreenCircleList;
-            if (_power < _orgPower)
-                hitboxList = _hitboxCircleList;
+            var hitboxList = _hitboxHighCircleList;
+
+            if (_power > 0)
+            {
+                if (_power < _orgPower / 4)
+                    hitboxList = _hitboxLowestCircleList;
+                else if (_power < _orgPower / 2)
+                    hitboxList = _hitboxLowCircleList;
+                else if (_power < _orgPower)
+                    hitboxList = _hitboxMidCircleList;
+            }
 
             if (_shields == 0)
             {
