@@ -34,6 +34,8 @@ namespace SpaceBattleSim
         private int _planetSize = 150;              // pulled from app config
         private float _planetSpinSpeed = 0.1f;      // pulled from app config
         private bool _naturalStarfield = true;      // pulled from app config
+        private bool _disableAutoLock = false;      // pulled from app config
+        private bool _topmostWindow = false;        // pulled from app config
         private bool _mouseOverShips = true;        // pulled from app config, Allows the user to mouse over ships to see their stats.
 
         // const bool _showAsteroids = false;
@@ -246,11 +248,10 @@ namespace SpaceBattleSim
                     this.Invoke(new Action(() => { this.TransparencyKey = this.BackColor; }));
             });
 
-//#if DEBUG
-//            this.TopMost = false;
-//#else 
-//            this.TopMost = true;
-//#endif
+            if (_topmostWindow)
+                this.TopMost = true;
+            else
+                this.TopMost = false;
         }
 
         #region Build Paint Objects
@@ -847,6 +848,8 @@ namespace SpaceBattleSim
             SetConfigValue("TotalBattleShips", ref _totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);
             SetConfigValue("CriticalTransferRaiders", ref _criticalTransferRaiders);
             SetConfigValue("CriticalTransferAlly", ref _criticalTransferAlly);
+            SetConfigValue("DisableAutoLock", ref _disableAutoLock);
+            SetConfigValue("TopmostWindow", ref _topmostWindow);
             SetConfigValue("MouseOverShips", ref _mouseOverShips);
 
             // Clamp the total number of battle ships to create based on the defined limits to prevent
@@ -1041,7 +1044,40 @@ namespace SpaceBattleSim
             if (ItemReq.NeedsDeadReset())
                 ItemReq.ResetDeadShips();
 
-            SendKeys.SendWait("^"); // keep windows alive by sending CTRL key once every 30 seconds.
+            if (_disableAutoLock)
+            {
+                // Use a short delay to ensure that the system's idle timer is reset effectively.
+                // This allows any pending operations to complete and ensures that the keystrokes
+                // sent by SendKeys will be received by the intended application.
+                // By using Task.Delay, we can create a brief pause before sending the keystrokes,
+                // which can help improve the reliability of the auto-lock prevention mechanism.
+                _ = Task.Delay(100).ContinueWith(_ =>
+                {
+                    // Use Invoke to ensure we're on the UI thread when sending keys
+                    this.Invoke(new Action(() =>
+                    {
+                        if (!this.Focused)
+                        {
+                            // Bring the form to the front and set focus to ensure that the SendKeys command is effective.
+                            this.BringToFront();
+
+                            // Setting focus to the form is crucial for the SendKeys command to work properly. If the
+                            // form does not have focus, the keystrokes sent by SendKeys may not be received by the
+                            // intended application or may be ignored entirely. By calling this.Focus(), we ensure that
+                            // the form is active and ready to receive input, allowing the SendKeys command to successfully
+                            // send the Ctrl key and help prevent the system from auto-locking the screen.
+                            this.Focus();
+                        }
+
+                        // sending Ctrl key to help prevent the system from auto-locking the screen.
+                        // This is a common workaround to keep the system active without simulating
+                        // mouse movement or other more intrusive actions. By sending the Ctrl key,
+                        // we can reset the system's idle timer and help prevent it from locking the
+                        // screen due to inactivity.
+                        SendKeys.SendWait("^"); 
+                    }));
+                });
+            }
         }
         /// <summary>
         /// Handles the actions required when the form is closed.
