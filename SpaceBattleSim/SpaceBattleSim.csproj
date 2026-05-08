@@ -37,6 +37,7 @@
 
 		<ItemGroup>
 				<Folder Include="imgs\" />
+				<Folder Include="examples\" />
 				<Folder Include="skins\" />
 		</ItemGroup>
 

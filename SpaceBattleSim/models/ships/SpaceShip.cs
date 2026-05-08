@@ -420,24 +420,23 @@ namespace SpaceBattleSim
             else
             {
                 _shields -= damage;
-                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && (_power / 2) >= 2)
+                // Calculate the new power value as half of the current power, allowing for a critical
+                // transfer mechanic that sacrifices some power to regain shields when critically damaged.
+                uint newPower = _power / 2;
+
+                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && newPower >= 2)
                 {
-                    BattleStats.Audit(this.Name, ActionType.CriticalTransfer); // using Critical Transfer
+                    // using Critical Transfer
+                    BattleStats.Audit(this.Name, ActionType.CriticalTransfer, $"Power was: {_power}, Power now: {newPower}");
                     _nextCriticalTransfer.AdjustTime(DateTime.UtcNow.AddSeconds(2));
 
-                    uint newPower = _power / 2;
-                    ResetStats();   //resets health, shields
-                    _power = newPower;  // set power to half of what it was before the reset,
-                                        // which is the critical transfer mechanic for all.
-                                        // This allows them to sacrifice some of their power
-                                        // to regain shields when they are critically damaged.
-                    //if ((transfer * 50) > _orgShields)
-                    //    _shields = _orgShields;
-                    //else
-                    //    _shields += (transfer * 50);   // Yes, this means the first time, Raiders will get 100% of their shields back, but lose half their power.
-
-                    //_shipStatus = ShipStatus.Operational;
-                    //_damageColor = Color.Transparent;
+                    //resets health, shields
+                    ResetStats();
+                    // set power to half of what it was before the reset,
+                    // which is the critical transfer mechanic for all.
+                    // This allows them to sacrifice some of their power
+                    // to regain shields when they are critically damaged.
+                    _power = newPower;  
                 }
             }
 
