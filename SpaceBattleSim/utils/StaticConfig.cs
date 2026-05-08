@@ -1,4 +1,4 @@
-﻿namespace DynamicTimeDraw
+﻿namespace SpaceBattleSim
 {
     internal static class StaticConfig
     {

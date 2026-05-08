@@ -3,7 +3,7 @@ using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 // using System.Numerics; //Vector2 is not used in the current implementation, but it can be useful for future enhancements or alternative distance calculations.
 
-namespace DynamicTimeDraw
+namespace SpaceBattleSim
 {
     /// <summary>
     /// Represents a spaceship with various attributes such as type, status, shields, power, and location.<br/>
@@ -101,6 +101,11 @@ namespace DynamicTimeDraw
         {
             if (!string.IsNullOrWhiteSpace(name))
             {
+                // for audit purposes, we want to add the ship to the audit
+                // log as soon as it's created, so we can track its stats
+                // throughout the match.
+                BattleStats.AddShip(name, type);
+
                 _isEmpty = false;
                 _shipName = name;
                 _shipType = type;
@@ -409,12 +414,15 @@ namespace DynamicTimeDraw
                 _shields = 0;
                 _power = 0;
                 _shipStatus = ShipStatus.Dead;
+                BattleStats.Audit(this.Name, ActionType.Death, $"Killed by: {byWho}"); //I died
+                BattleStats.Audit(byWho, ActionType.Kill, $"Killed: {this.Name}");      //this ship killed me
             }
             else
             {
                 _shields -= damage;
                 if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && (_power / 2) >= 2)
                 {
+                    BattleStats.Audit(this.Name, ActionType.CriticalTransfer); // using Critical Transfer
                     _nextCriticalTransfer.AdjustTime(DateTime.UtcNow.AddSeconds(2));
 
                     uint newPower = _power / 2;

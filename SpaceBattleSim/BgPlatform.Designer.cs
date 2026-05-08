@@ -1,6 +1,6 @@
 ﻿using Chizl.ThreadSupport;
 
-namespace DynamicTimeDraw
+namespace SpaceBattleSim
 {
     partial class BgPlatform
     {

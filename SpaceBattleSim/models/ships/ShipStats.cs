@@ -1,4 +1,4 @@
-﻿namespace DynamicTimeDraw
+﻿namespace SpaceBattleSim
 {
     /// <summary>
     /// Represents the readonly statistics and configuration for a specific type of ship, including shields, power, speed, hitbox

@@ -1,4 +1,4 @@
-﻿namespace DynamicTimeDraw
+﻿namespace SpaceBattleSim
 {
     public class DRectangleF
     {

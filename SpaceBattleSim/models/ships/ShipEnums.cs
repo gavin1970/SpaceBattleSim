@@ -1,4 +1,4 @@
-﻿namespace DynamicTimeDraw
+﻿namespace SpaceBattleSim
 {
     /// <summary>
     /// Specifies the relative priority or severity for recovery operations.

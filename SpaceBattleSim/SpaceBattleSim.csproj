@@ -17,8 +17,8 @@
 				<ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
 				<PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
 				<AssemblyVersion>6.0.0.0</AssemblyVersion>
-				<FileVersion>6.5.7.1129</FileVersion>
-				<Version>6.5.7.0</Version>
+				<FileVersion>6.5.8.2123</FileVersion>
+				<Version>6.5.8.0</Version>
 		</PropertyGroup>
 
 		<ItemGroup>
@@ -41,6 +41,9 @@
 		</ItemGroup>
 
 		<ItemGroup>
+		  <None Update="App.config">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  </None>
 		  <None Update="skins\fungal_planet.png">
 		    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		  </None>

@@ -1,4 +1,4 @@
-﻿namespace DynamicTimeDraw
+﻿namespace SpaceBattleSim
 {
     /// <summary>
     /// Provides pure-draw generators for space background elements: star fields,

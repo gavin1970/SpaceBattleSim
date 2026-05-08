@@ -1,6 +1,6 @@
 ﻿using static DDefaults;
 
-namespace DynamicTimeDraw
+namespace SpaceBattleSim
 {
     public enum ItemType
     {

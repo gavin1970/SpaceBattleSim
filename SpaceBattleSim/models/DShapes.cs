@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using static DDefaults;
 
-namespace DynamicTimeDraw
+namespace SpaceBattleSim
 {
     /// <summary>
     /// Represents a collection of drawable polygonal shapes.

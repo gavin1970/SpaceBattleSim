@@ -1,11 +1,12 @@
 ﻿using Chizl.StandAloneLogging;
 using Chizl.ThreadSupport;
 using Microsoft.VisualBasic.Logging;
+using SpaceBattleSim;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using static DDefaults;
 
-namespace DynamicTimeDraw
+namespace SpaceBattleSim
 {
     /// <summary>
     /// Can be used as an abstract or standalone class request for boxing 
@@ -409,14 +410,11 @@ namespace DynamicTimeDraw
         /// raider ships or all repair rigs. This can be useful for triggering game state changes or recovery logic when
         /// all critical ship types are incapacitated.</remarks>
         /// <returns>true if all raider ships or all repair rigs are dead; otherwise, false.</returns>
+        public static bool AnyRaiderAlive => _allSpaceShips.Where(w => w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Any();
+        public static bool AnyAllyAlive => _allSpaceShips.Where(w => !w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Any();
         public static bool NeedsDeadReset()
         {
-            var allRaders = _allSpaceShips.Where(w => w.Value.IsRaider).Select(s => s.Value.Status).ToList();
-            if (allRaders.Any() && allRaders.Where(w => w == ShipStatus.Dead).Count() == allRaders.Count())
-                return true;
-
-            var allRepairRigs = _allSpaceShips.Where(w => w.Value.IsRepairRig).Select(s => s.Value.Status).ToList();
-            if (allRepairRigs.Any() && allRepairRigs.Where(w => w == ShipStatus.Dead).Count() == allRepairRigs.Count())
+            if (!AnyRaiderAlive || !AnyAllyAlive)
                 return true;
 
             return false;
@@ -432,13 +430,18 @@ namespace DynamicTimeDraw
         public static void ResetDeadShips()
         {
             _battleTime = ADateTime.UtcNow - _startBattle.Value;
+
+            var raiderWin = AnyRaiderAlive;
+            var allyWin = AnyAllyAlive;
+
+            var aliveRepairRigs = _allSpaceShips.Where(w => w.Value.IsRepairRig && w.Value.Status != ShipStatus.Dead).Any();
+            var winMessage = raiderWin && allyWin ? "Manual Reset" : raiderWin ? "Raiders win" : "Ally win";
+
+            BattleStats.SaveAudit(_startBattle.Value, ADateTime.UtcNow, winMessage);
+
             foreach (var ship in _allSpaceShips)
-            {
-                if (_allSpaceShips[ship.Key].Status == ShipStatus.Dead)
-                {
-                    _allSpaceShips[ship.Key].ResetStats();
-                }
-            }
+                _allSpaceShips[ship.Key].ResetStats();
+
             _spaceShipsInRepair.Clear();
             _startBattle = ADateTime.UtcNow;
         }
@@ -608,6 +611,7 @@ namespace DynamicTimeDraw
                                                 else
                                                 {
                                                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
+                                                    BattleStats.Audit(this.Name, ActionType.Heal, $"Healed: {_activeTargetName}");
                                                     _allSpaceShips[_activeTargetName].ResetStats();
                                                     _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
                                                     _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));

@@ -2,9 +2,9 @@
 using Chizl.Configurations;
 using Chizl.ThreadSupport;
 using System.Drawing.Drawing2D;
-using static DynamicTimeDraw.StaticConfig;
+using static SpaceBattleSim.StaticConfig;
 
-namespace DynamicTimeDraw
+namespace SpaceBattleSim
 {
     public partial class BgPlatform : Form
     {
@@ -900,6 +900,9 @@ namespace DynamicTimeDraw
                 retval = value;
             else
                 AppConfig.SetConfigValue(key, $"{retval}");
+            
+            // audit only.
+            BattleStats.AddSetting(key, $"{retval}");
         }
         /// <summary>
         /// Retrieves a configuration value for the specified key and assigns it to the provided variable, ensuring the
@@ -1037,6 +1040,8 @@ namespace DynamicTimeDraw
         {
             if (ItemReq.NeedsDeadReset())
                 ItemReq.ResetDeadShips();
+
+            SendKeys.SendWait("^"); // keep windows alive by sending CTRL key once every 30 seconds.
         }
         /// <summary>
         /// Handles the actions required when the form is closed.
