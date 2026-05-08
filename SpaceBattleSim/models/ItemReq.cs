@@ -1,7 +1,5 @@
 ﻿using Chizl.StandAloneLogging;
 using Chizl.ThreadSupport;
-using Microsoft.VisualBasic.Logging;
-using SpaceBattleSim;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using static DDefaults;

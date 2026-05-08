@@ -1,8 +1,6 @@
 ﻿using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace SpaceBattleSim
 {
