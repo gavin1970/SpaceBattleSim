@@ -852,6 +852,14 @@ namespace SpaceBattleSim
             SetConfigValue("TopmostWindow", ref _topmostWindow);
             SetConfigValue("MouseOverShips", ref _mouseOverShips);
 
+            // If auto-lock is disabled in the configuration, call the method to prevent the
+            // system from automatically locking the screen. This is important for ensuring
+            // that the animation can run uninterrupted without the screen locking due to
+            // inactivity. By preventing auto-lock, users can enjoy the visual experience
+            // without having to interact with the system to keep it active.
+            if (_disableAutoLock)
+                Externs.PreventAutoLock();
+
             // Clamp the total number of battle ships to create based on the defined limits to prevent
             // excessive numbers that could cause performance issues or visual clutter. This ensures
             // that the animation remains visually appealing and runs smoothly without overwhelming the
@@ -1043,41 +1051,6 @@ namespace SpaceBattleSim
         {
             if (ItemReq.NeedsDeadReset())
                 ItemReq.ResetDeadShips();
-
-            if (_disableAutoLock)
-            {
-                // Use a short delay to ensure that the system's idle timer is reset effectively.
-                // This allows any pending operations to complete and ensures that the keystrokes
-                // sent by SendKeys will be received by the intended application.
-                // By using Task.Delay, we can create a brief pause before sending the keystrokes,
-                // which can help improve the reliability of the auto-lock prevention mechanism.
-                _ = Task.Delay(100).ContinueWith(_ =>
-                {
-                    // Use Invoke to ensure we're on the UI thread when sending keys
-                    this.Invoke(new Action(() =>
-                    {
-                        if (!this.Focused)
-                        {
-                            // Bring the form to the front and set focus to ensure that the SendKeys command is effective.
-                            this.BringToFront();
-
-                            // Setting focus to the form is crucial for the SendKeys command to work properly. If the
-                            // form does not have focus, the keystrokes sent by SendKeys may not be received by the
-                            // intended application or may be ignored entirely. By calling this.Focus(), we ensure that
-                            // the form is active and ready to receive input, allowing the SendKeys command to successfully
-                            // send the Ctrl key and help prevent the system from auto-locking the screen.
-                            this.Focus();
-                        }
-
-                        // sending Ctrl key to help prevent the system from auto-locking the screen.
-                        // This is a common workaround to keep the system active without simulating
-                        // mouse movement or other more intrusive actions. By sending the Ctrl key,
-                        // we can reset the system's idle timer and help prevent it from locking the
-                        // screen due to inactivity.
-                        SendKeys.SendWait("^"); 
-                    }));
-                });
-            }
         }
         /// <summary>
         /// Handles the actions required when the form is closed.
@@ -1089,6 +1062,10 @@ namespace SpaceBattleSim
         {
             _spaceCache?.Dispose();
             _spaceCache = null;
+
+            if (_disableAutoLock)
+                Externs.RestoreAutoLock();
+           
             base.OnFormClosed(e);
         }
         #endregion
