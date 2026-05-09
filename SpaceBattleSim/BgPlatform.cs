@@ -79,13 +79,13 @@ namespace SpaceBattleSim
         //readonly string _repairRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
 
         // Moves X position of HomeBase and _capitalShip anchor points if changed.
-        const float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
+        private static float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
         // Moves Y position of HomeBase and _capitalShip anchor points if changed.
-        const float _moveY = 0.0f;          // Center Screen: 0.0f, Far Top: -455.0f, Far Bottom: 450.0f.
+        private static float _moveY = 0.0f;          // Center Screen: 0.0f, Far Top: -455.0f, Far Bottom: 450.0f.
         // _capitalShip Lines: - Base X anchor point of lines to the large _battleShips moving items.
-        const float _anchorX = 758.0f;
+        private static float _anchorX = 758.0f;
         // _capitalShip Lines: - Base Y anchor point of lines to the large _battleShips moving items.
-        const float _anchorY = 540.0f;
+        private static float _anchorY = 540.0f;
         // Tuple to hold the shadow color and depth for consistent styling across controls.
         readonly (Color color, uint depth) _shadowStyle = (Color.FromArgb(64, Color.White), 5);
         // Fonts for different controls, using Arial as a common font for simplicity. Adjust sizes and styles as needed.
@@ -110,7 +110,7 @@ namespace SpaceBattleSim
         // Add this field alongside _spaceShapes / _cometShapes
         private static Bitmap? _spaceCache = null;
         private static DShapes _testingShapes = new DShapes();
-
+        private static DRectangleF _formBounds = DRectangleF.Default;
         private static float _xCounter = 0.0f;
         private static float _yCounter = 0.0f;
         private static Point _lastStartPoint = Point.Empty;
@@ -235,6 +235,7 @@ namespace SpaceBattleSim
                 // =================================================================
                 // Build other controls on top of the matrix background, but in the order of which layer they should appear.
                 BuildHomeBase();
+                // Fliers are built after the HomeBase so RapairRigs will appear around it. 
                 BuildFliers();
 
                 // =================================================================
@@ -274,8 +275,7 @@ namespace SpaceBattleSim
 
             if (_showPlanets)
             {
-                this.Invoke(new Action(() =>
-                {
+                this.Invoke(new Action(() => {
                     int xOffset = Math.Clamp(_planetSize, 25, 100) * 2;
                     int yOffset = Math.Clamp(_planetSize, 25, 100);
 
@@ -297,8 +297,7 @@ namespace SpaceBattleSim
 
             if (_spaceCache == null)
             {
-                this.Invoke(new Action(() =>
-                {
+                this.Invoke(new Action(() => {
                     if (_showStars || _showNebulae)
                     {
                         // Bake the static background (stars + nebulae) into a bitmap once.
@@ -353,8 +352,7 @@ namespace SpaceBattleSim
             // Comet stays in _cometShapes (it animates each frame)
             if (_cometShapes.DrawList.Count == 0)
             {
-                this.Invoke(new Action(() =>
-                {
+                this.Invoke(new Action(() => {
                     var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
                                                 this.ViewSize.Width, this.ViewSize.Height);
 
@@ -545,8 +543,8 @@ namespace SpaceBattleSim
             // Calculate the X/Y Location of the close button that will be in the top-right corner
             // of the screen. Accounting for top and right padding along with the MatrixArray border
             // width to ensure it doesn't overlap with the matrix grid lines
-            var w = this.FormSize.Width;
-            var h = this.FormSize.Height;
+            var w = this.ViewSize.Width;
+            var h = this.ViewSize.Height;
 
             this.Invoke(new Action(() =>
             {
@@ -564,16 +562,10 @@ namespace SpaceBattleSim
                     x = Random.Shared.Next(0, w + 1);
                     y = Random.Shared.Next(0, h + 1);
 
-                    // Alternate between two different ship characters for visual variety
-                    // By use 3, it there will be more raiders than fighters, which adds more
-                    // visual interest and variety to the animation. You can adjust the modulo
-                    // value and the conditions to create different patterns of ship
-                    // types (e.g., every 2nd item is a fighter, every 5th item is a raider, etc.)
-                    // depending on the look you want to achieve.
-
-                    //var shipImg = (x % 3) == 0 ? fighterImage : raidImage;
-                    //var shipType = (x % 3) == 0 ? ShipType.Fighter : ShipType.Raider;
-                    //var shipColor = (x % 3) == 0 ? _fighterColor : _raiderColor;
+                    // Creating 1/3 of the total ships, the fighter, then building raider ship styles based on the count, with fighters appearing
+                    // first. This creates visual variety among the flier items, making the scene more dynamic and interesting.
+                    // The critical transfer settings are also applied based on the ship type to add an extra layer of interaction
+                    // and strategy to the animation.
                     var shipImg = cnt < fighterCnt ? fight.ShipView : raid.ShipView;
                     var shipType = cnt < fighterCnt ? ShipType.Fighter : ShipType.Raider;
                     var shipColor = cnt < fighterCnt ? fight.ShipColor : raid.ShipColor;
@@ -632,13 +624,16 @@ namespace SpaceBattleSim
                     _battleShips.Add(fly);
                 }
 
+                var anchorX = HomeBase.Center.X;  // _anchorX + _moveX;
+                var anchorY = HomeBase.Center.Y;  // _anchorY + _moveY;
+
                 var repairRig = new ShipStats(ShipType.RepairRig);
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
                 for (int cnt = 0; cnt < _repairRigCount; cnt++)
                 {
-                    x = Random.Shared.Next((int)(_anchorX - 100.0f), (int)(_anchorX + 100.0f));
-                    y = Random.Shared.Next((int)(_anchorY - 100.0f), (int)(_anchorY + 100.0f));
+                    x = Random.Shared.Next((int)(anchorX - 100.0f), (int)(anchorX + 100.0f));
+                    y = Random.Shared.Next((int)(anchorY - 100.0f), (int)(anchorY + 100.0f));
 
                     var fly = new ItemReq(this, $"RepairRig_{cnt:000}")
                     {
@@ -695,8 +690,9 @@ namespace SpaceBattleSim
                     },
                 };
 
+                var homeSize = new SizeF(125.0f, 144.0f);
+                // Size of HomeBase: 125 x 144
                 List<float[]> coordsList = new List<float[]>();
-
                 // ---===[ Outer, Top, Left ]===---
                 coordsList.Add(new float[] { 697, 506, 723, 491, 723, 520, 697, 536 });
                 // ---===[ Outer, Top ]===---
@@ -716,8 +712,16 @@ namespace SpaceBattleSim
                 // ---===[ Inner, Bottom ]===---
                 coordsList.Add(new float[] { 727.5f, 560, 757.5f, 543, 788, 560, 788, 593, 757.5f, 575, 727.5f, 593 });
 
-                _testingShapes.FillPolygonalShapes(coordsList, Brushes.Yellow, true, new Pen(Color.FromArgb(128, Color.White), 2));
+                // Move ship based on window sizes and if multiple monitors are involved or not.
+                var anchorX = _formBounds.Center.X - homeSize.Width;
+                var anchorY = _formBounds.Center.Y - homeSize.Height;
+                _moveX += anchorX > _anchorX ? anchorX - _anchorX : anchorX - _anchorX;
+                _moveY += anchorY - _anchorY;
 
+                HomeBase.Location = new PointF(coordsList[0][0] + _moveX, coordsList[0][1] + _moveY);
+
+                _testingShapes.FillPolygonalShapes(coordsList, Brushes.Yellow, true, new Pen(Color.FromArgb(128, Color.White), 2));
+//                _formBounds.Center - 
                 // lines from center point for all corners of the inner HomeBase shape
                 foreach (var cords in coordsList)
                 {
@@ -892,6 +896,10 @@ namespace SpaceBattleSim
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.WindowState = FormWindowState.Maximized;
             }
+
+            _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
+                                        this.ViewSize.Width, this.ViewSize.Height, this.ViewSize);
+            
             // If auto-lock is disabled in the configuration, call the method to prevent the
             // system from automatically locking the screen. This is important for ensuring
             // that the animation can run uninterrupted without the screen locking due to

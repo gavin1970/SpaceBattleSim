@@ -6,21 +6,41 @@
         private readonly SizeF _boundary;
 
         /// <summary>
-        /// Initializes a new instance of the DRectangleF class with a default rectangle and an unbounded maximum size.
+        /// Initializes a new instance of the DRectangleF class with a default rectangle.<br/>
+        /// Default: No Boundary constraints (maximum size is set to the largest possible floating-point values).
         /// </summary>
         /// <remarks>This constructor creates a rectangle at position (0, 0) with a width and height of
         /// 100, and sets the maximum size to the largest possible floating-point values. This is useful for scenarios
         /// where an initial, unconstrained rectangle is needed.</remarks>
         public DRectangleF() : this(new RectangleF(0, 0, 100, 100), new SizeF(float.MaxValue, float.MaxValue)) { }
         /// <summary>
-        /// Initializes a new instance of the DRectangleF structure using the specified rectangle and a default maximum
-        /// size.
+        /// Initializes a new instance of the DRectangleF structure.<br/>
+        /// Default: No Boundary constraints (maximum size is set to the largest possible floating-point values).
         /// </summary>
         /// <remarks>This constructor sets the maximum size to the largest possible floating-point values
         /// by default. Use this overload when you want to specify only the rectangle and do not need to limit its
         /// size.</remarks>
         /// <param name="rectVal">The RectangleF value that defines the position and size of the rectangle.</param>
         public DRectangleF(RectangleF rectVal) : this(rectVal, new SizeF(float.MaxValue, float.MaxValue)) { }
+        /// <summary>
+        /// Initializes a new instance of the DRectangleF structure with the specified position and size.<br/>
+        /// Default: No Boundary constraints (maximum size is set to the largest possible floating-point values).
+        /// </summary>
+        /// <param name="left">The x-coordinate of the upper-left corner of the rectangle.</param>
+        /// <param name="top">The y-coordinate of the upper-left corner of the rectangle.</param>
+        /// <param name="width">The width of the rectangle. Must be a non-negative value.</param>
+        /// <param name="height">The height of the rectangle. Must be a non-negative value.</param>
+        public DRectangleF(float left, float top, float width, float height) : this(new RectangleF(left, top, width, height), new SizeF(float.MaxValue, float.MaxValue)) { }
+        /// <summary>
+        /// Initializes a new instance of the DRectangleF structure with the specified position, size, and boundary
+        /// constraints.
+        /// </summary>
+        /// <param name="left">The x-coordinate of the upper-left corner of the rectangle.</param>
+        /// <param name="top">The y-coordinate of the upper-left corner of the rectangle.</param>
+        /// <param name="width">The width of the rectangle, in pixels. Must be a non-negative value.</param>
+        /// <param name="height">The height of the rectangle, in pixels. Must be a non-negative value.</param>
+        /// <param name="sizeBoundary">The size boundary that constrains the rectangle. Specifies the maximum allowed width and height.</param>
+        public DRectangleF(float left, float top, float width, float height, SizeF sizeBoundary) : this(new RectangleF(left, top, width, height), sizeBoundary) { }
         /// <summary>
         /// Initializes a new instance of the DRectangleF structure with the specified rectangle and boundary size.
         /// </summary>
