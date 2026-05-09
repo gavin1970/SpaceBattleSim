@@ -864,6 +864,10 @@ namespace SpaceBattleSim
             SetConfigValue("TopmostWindow", ref _topmostWindow);
             SetConfigValue("MouseOverShips", ref _mouseOverShips);
 
+            var thisScreen = Screen.AllScreens.Where(w=>w.Bounds.Contains(this.Left, this.Top)).FirstOrDefault();
+            this.Location = thisScreen.Bounds.Location;
+            this.Size = thisScreen.Bounds.Size;
+
             if (_screenViewType == SimScreenView.Windowed)
             {
                 this.FormBorderStyle = FormBorderStyle.Sizable;
