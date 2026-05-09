@@ -52,12 +52,11 @@ namespace SpaceBattleSim
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(5, 5, 5);
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1471, 795);
             Cursor = Cursors.Cross;
             DoubleBuffered = true;
             FormBorderStyle = FormBorderStyle.None;
             Name = "BgPlatform";
-            WindowState = FormWindowState.Maximized;
             Paint += BgPlatform_Paint;
             ResumeLayout(false);
         }

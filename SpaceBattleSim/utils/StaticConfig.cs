@@ -1,5 +1,12 @@
 ﻿namespace SpaceBattleSim
 {
+    public enum SimScreenView
+    {
+        Windowed = 1,
+        FullScreenCurrent,
+        FullScreenAll
+    }
+
     internal static class StaticConfig
     {
         /// <summary>

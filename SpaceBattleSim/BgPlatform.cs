@@ -11,6 +11,7 @@ namespace SpaceBattleSim
         // Set to true to make the background transparent
         // while keeping the grid lines visible.
         static bool _transparentBG = false;
+        static ABool _startup = ABool.True;
         const string _appTitle = "WinForm Random Battleground";
         static string _appInfo = "Version: {0} - Press F5 reset dead, Press F1 or F2 for Ship Info/Stats, Mouse over far right top for close button, Mouse over far left top and click banner that pops up for transparent background..";
         const string _appTitleAbout = "chizl.com";
@@ -21,12 +22,6 @@ namespace SpaceBattleSim
         readonly static (int min, int max) _totalBattleShipsLimits = (10, 150);         // set limits for total number of Fighters and Raiders combined.
         readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
         readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 1.0f);   // set limits for planet spin speed.
-        private enum SimScreenView
-        {
-            Windowed = 1,
-            FullScreenCurrent,
-            FullScreenAll
-        }
         private SimScreenView _screenViewType = 
                 SimScreenView.FullScreenCurrent;    // pulled from app config, Total number of Fighters and Raiders combined.
         private bool _showMatrixGrid = false;       // pulled from app config.
@@ -46,6 +41,7 @@ namespace SpaceBattleSim
         private bool _mouseOverShips = true;        // pulled from app config, Allows the user to mouse over ships to see their stats.
 
         // const bool _showAsteroids = false;
+        private ABool _showCloseButton = ABool.True;// If form is Windowed, we don't need a close button, but if it's full screen, we do.
         private int _capShipCount = 0;              // calculated later, _totalBattleShips / 10, do not modify this here.
         private int _repairRigCount = 0;            // calculated later, _totalBattleShips / 10, do not modify this here.
         private int _planetWrapWidth = 0;           // calculated later, _planetSize * 2, do not modify this here.
@@ -193,6 +189,8 @@ namespace SpaceBattleSim
                 else if (isF5)
                     ItemReq.ResetDeadShips();
             };
+
+            _startup.SetFalse();
         }
 
         /// <summary>
@@ -422,7 +420,7 @@ namespace SpaceBattleSim
         /// </remarks>
         private void BuildCloseButton()
         {
-            if (!CloseButton.IsEmpty)
+            if (!CloseButton.IsEmpty || !_showCloseButton)
                 return;
 
             // Size of the close button
@@ -864,15 +862,32 @@ namespace SpaceBattleSim
             SetConfigValue("TopmostWindow", ref _topmostWindow);
             SetConfigValue("MouseOverShips", ref _mouseOverShips);
 
-            var thisScreen = Screen.AllScreens.Where(w=>w.Bounds.Contains(this.Left, this.Top)).FirstOrDefault();
-            this.Location = thisScreen.Bounds.Location;
-            this.Size = thisScreen.Bounds.Size;
+            var thisScreen = Screen.AllScreens.Where(w => w.Bounds.Contains(this.Left, this.Top)).FirstOrDefault() ?? Screen.PrimaryScreen;
 
             if (_screenViewType == SimScreenView.Windowed)
             {
-                this.FormBorderStyle = FormBorderStyle.Sizable;
-                this.WindowState = FormWindowState.Maximized;
+                // In Windowed mode, we disable the painted close button because we don't need both the painted and standard windowed close buttons.
+                _showCloseButton.SetFalse();
+
+                var appHeight = 1002;  // 1002 = 1080
+                                       //        - 48 (Toolbar height)
+                                       //        - 30 Titlebar height (approx, varies based on font and DPI)
+
+                // since I'm disabling the maximize box, disabling resize, and setting a fixed size, I want to ensure that the form is large enough
+                // to show the full animation without being too large for smaller screens. Setting the height to 1002 allows
+                // for a good balance between visibility and compatibility with various screen sizes, while also accounting
+                // for the space taken up by the toolbar and title bar.
+
+                // Users can still minimize and close via window controls, but not resize or maximize. Animation contained within a consistent window
+                // size and prevents layout issues that could arise from resizing.
                 this.MaximizeBox = false;
+
+                this.Location = thisScreen != null ? thisScreen.WorkingArea.Location : new Point(0, 0); // Assuming toolbar on bottom.
+                this.Size = thisScreen != null ? new Size(thisScreen.WorkingArea.Width, appHeight) : new Size(1920, appHeight);
+
+                this.StartPosition = FormStartPosition.CenterScreen;
+                this.FormBorderStyle = FormBorderStyle.Fixed3D;
+                this.WindowState = FormWindowState.Normal;
             }
             else if (_screenViewType == SimScreenView.FullScreenAll)
             {
@@ -897,6 +912,8 @@ namespace SpaceBattleSim
             }
             else  // default to FullScreenCurrent
             {
+                this.Location = thisScreen != null ? thisScreen.Bounds.Location : new Point(0, 0);
+                this.Size = thisScreen != null ? thisScreen.Bounds.Size : new Size(1920, 1080);
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.WindowState = FormWindowState.Maximized;
             }
@@ -1138,7 +1155,7 @@ namespace SpaceBattleSim
         /// Single point of Change (SPOC) for any future adjustments to how the form size is calculated or returned.
         /// </remarks>
         private Size FormSize 
-            => this.Size;
+            => this.ClientSize;
         #endregion
     }
 }

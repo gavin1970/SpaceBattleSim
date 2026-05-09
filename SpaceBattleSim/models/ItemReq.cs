@@ -11,7 +11,7 @@ namespace SpaceBattleSim
     /// operations, encapsulating properties for identification, z-order,
     /// creation time, and rectangular bounds.
     /// </summary>
-    internal class ItemReq
+    internal class ItemReq : IDisposable
     {
         const int _alternateShadowDepth = 7;
         internal static readonly object _logLocker = new();
@@ -23,16 +23,8 @@ namespace SpaceBattleSim
         // Start time of the current battle, used to track the duration of battles and reset times
         // when all ships are dead.
         private static ADateTime _startBattle = ADateTime.MinValue;
-        // Since the ItemReq class is designed to be used for drawing on a form, it
-        // requires a reference to a Form object to perform its drawing operations.
-        // The _parentForm field is initialized with a dummy invisible form to satisfy
-        // this requirement without impacting the actual application. This allows the
-        // ItemReq class to be instantiated and used even in contexts where a real form
-        // is not available or necessary, while still providing the necessary infrastructure
-        // for drawing operations when needed. The dummy form is created with a unique name
-        // based on the current time to avoid conflicts and is immediately closed and
-        // disposed to ensure it does not consume resources or interfere with the
-        // application's UI.
+        // Reference to the parent form, used for drawing and subscribing to mouse
+        // events for interaction with the item.
         private Form _parentForm = new() { Name = DateTime.Now.ToString($"DummyForm_HHmmssffff"), Visible = false };
 
         /// <summary>
@@ -107,9 +99,40 @@ namespace SpaceBattleSim
         private DRectangleF  _rectangleF = DRectangleF.Default;
         private DLine _dLine = new();
         private DText _dText = new();
-        //private Pen _hitboxCircle = new Pen(Color.FromArgb(64, Color.Silver), 1);
+        private bool disposedValue;
 
         #region Constructors
+        ~ItemReq()=> Dispose(disposing: false);
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (_parentForm != null)
+                    {
+                        _parentForm.MouseMove -= _parentForm_MouseMove;
+                        _parentForm.MouseUp -= _parentForm_MouseUp;
+                        _parentForm.MouseDown -= _parentForm_MouseDown;
+                        // Since this is multithreaded and all instances of this class have reference to the
+                        // parent, we don't want to close the parent and dispose it for each open instance.
+                        ///_parentForm.Close();    // Close the dummy form to ensure it is not visible or interactable.
+                        ///_parentForm.Dispose();  // Ensure the dummy form does not consume resources.
+                    }
+                }
+
+                disposedValue = true;
+            }
+        }
+        /// <summary>
+        /// Dispose class instance and free resources. Since the ItemReq class is designed
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
         /// <summary>
         /// Initializes a new empty instance of the ItemReq class.
         /// </summary>
@@ -129,8 +152,8 @@ namespace SpaceBattleSim
             // requirement of having a parent form for drawing, without affecting the actual application. Close and
             // Dispose out this dummy form immediately since it is not needed and should not be visible or
             // interactable in any way.
-            _parentForm.Close();    // Close the dummy form to ensure it is not visible or interactable.
-            _parentForm.Dispose();  // Ensure the dummy form does not consume resources.
+            _parentForm?.Close();    // Close the dummy form to ensure it is not visible or interactable.
+            _parentForm?.Dispose();  // Ensure the dummy form does not consume resources.
         }
         /// <summary>
         /// Initializes a new instance of the BoxingReq class with the specified name, rectangle, and optional z-order.<br/>
@@ -163,13 +186,17 @@ namespace SpaceBattleSim
                 }
             }
 
+            // passing reference from the form that creates the ItemReq instance, so we can subscribe to
+            // its mouse events for interaction with the item, such as clicking animations, and to have a
+            // valid reference for drawing operations. This allows the ItemReq to respond to user
+            // interactions and update its state accordingly based on mouse events.
             _parentForm = parentForm;
             // Mouse events are used for interaction with the item, such
             // as clicking animations, so we subscribe to them here.
             _parentForm.MouseMove += _parentForm_MouseMove;
             _parentForm.MouseUp += _parentForm_MouseUp;
             _parentForm.MouseDown += _parentForm_MouseDown;
-            
+
             _rectangleF = new DRectangleF(RectangleF.Empty, _parentForm.Size);
 
             this.MouseDown += (e, args) => { };      // initialize the event to prevent validate subscribers .
@@ -1245,11 +1272,11 @@ namespace SpaceBattleSim
         /// <summary>
         /// Gets the client area size of the parent form.
         /// </summary>
-        private Size ParentSize { get { return _parentForm.ClientSize; } }
+        private SizeF ParentSize { get { return _parentForm?.ClientSize ?? SizeF.Empty; } }
         /// <summary>
         /// Gets the padding within the parent form.
         /// </summary>
-        private Padding Padding { get { return _parentForm.Padding; } }
+        private Padding Padding { get { return _parentForm?.Padding ?? Padding.Empty; } }
         #endregion
     }
 }
