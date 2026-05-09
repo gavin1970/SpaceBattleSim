@@ -1,0 +1,910 @@
+Summary of Raiders win: 5/9/2026 3:04:06 PM - 5/9/2026 3:08:06 PM (00:04:00.0204637)
+------------------------------------------------------------------------------------
+RepairRig->Shields: 400 | Power: 1 | Speed: 2 | HasCritalTransfer: True | Hitbox: 20 | Recovery: Critical | Visiual: ❖
+Raider->Shields: 400 | Power: 16 | Speed: 1 | HasCritalTransfer: True | Hitbox: 50 | Recovery: None | Visiual: Ⳮ
+Fighter->Shields: 200 | Power: 4 | Speed: 1 | HasCritalTransfer: True | Hitbox: 50 | Recovery: Low | Visiual: ⬙
+Capital->Shields: 800 | Power: 8 | Speed: 0.3 | HasCritalTransfer: True | Hitbox: 75 | Recovery: High | Visiual: ⸎
+------------------------------------------------------------------------------------
+NaturalStarfield: True
+CriticalTransferRaiders: True
+ShowStars: True
+PlanetSpinSpeed: 0.1
+ShowVersion: False
+ShowNebulae: True
+TopmostWindow: False
+ShowMatrixGrid: True
+MouseOverShips: False
+DisableAutoLock: True
+ShowPlanets: False
+PlanetSize: 150
+TotalBattleShips: 100
+CriticalTransferAlly: True
+ShowComet: False
+------------------------------------------------------------------------------------
+Capital_000 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_001 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_002 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_003 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_004 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_005 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_006 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_007 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_008 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Capital_009 | Capital | Deaths: 1 | Kills: 0 | CritTransfers: 2
+Fighter_000 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_001 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_002 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_003 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_004 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_005 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_006 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_007 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_008 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_009 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_010 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_011 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_012 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_013 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_014 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_015 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_016 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_017 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_018 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_019 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_020 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_021 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_022 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_023 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_024 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_025 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_026 | Fighter | Deaths: 3 | Kills: 0 | CritTransfers: 3
+Fighter_027 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_028 | Fighter | Deaths: 1 | Kills: 0 | CritTransfers: 1
+Fighter_029 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_030 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_031 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Fighter_032 | Fighter | Deaths: 2 | Kills: 0 | CritTransfers: 2
+Raider_033 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_034 | Raider | Deaths: 0 | Kills: 3 | CritTransfers: 0
+Raider_035 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_036 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_037 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_038 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_039 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_040 | Raider | Deaths: 0 | Kills: 5 | CritTransfers: 0
+Raider_041 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 1
+Raider_042 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_043 | Raider | Deaths: 0 | Kills: 3 | CritTransfers: 0
+Raider_044 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 1
+Raider_045 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_046 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_047 | Raider | Deaths: 0 | Kills: 5 | CritTransfers: 0
+Raider_048 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 1
+Raider_049 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 2
+Raider_050 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 1
+Raider_051 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_052 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_053 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_054 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 1
+Raider_055 | Raider | Deaths: 0 | Kills: 4 | CritTransfers: 0
+Raider_056 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 1
+Raider_057 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_058 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_059 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_060 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_061 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_062 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 1
+Raider_063 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_064 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_065 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 1
+Raider_066 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_067 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_068 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_069 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_070 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_071 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_072 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_073 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_074 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_075 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_076 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_077 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_078 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 1
+Raider_079 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_080 | Raider | Deaths: 0 | Kills: 3 | CritTransfers: 0
+Raider_081 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_082 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 2
+Raider_083 | Raider | Deaths: 0 | Kills: 4 | CritTransfers: 0
+Raider_084 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 1
+Raider_085 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_086 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_087 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 1
+Raider_088 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_089 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_090 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_091 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 1
+Raider_092 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 0
+Raider_093 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 1
+Raider_094 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_095 | Raider | Deaths: 0 | Kills: 2 | CritTransfers: 0
+Raider_096 | Raider | Deaths: 0 | Kills: 0 | CritTransfers: 0
+Raider_097 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 1
+Raider_098 | Raider | Deaths: 0 | Kills: 3 | CritTransfers: 1
+Raider_099 | Raider | Deaths: 0 | Kills: 1 | CritTransfers: 1
+RepairRig_000 | RepairRig | Deaths: 4 | Kills: 0 | CritTransfers: 0 | Heals: 3
+RepairRig_001 | RepairRig | Deaths: 2 | Kills: 0 | CritTransfers: 0 | Heals: 1
+RepairRig_002 | RepairRig | Deaths: 2 | Kills: 0 | CritTransfers: 0 | Heals: 4
+RepairRig_003 | RepairRig | Deaths: 4 | Kills: 0 | CritTransfers: 0 | Heals: 4
+RepairRig_004 | RepairRig | Deaths: 1 | Kills: 0 | CritTransfers: 0 | Heals: 3
+RepairRig_005 | RepairRig | Deaths: 1 | Kills: 0 | CritTransfers: 0 | Heals: 7
+RepairRig_006 | RepairRig | Deaths: 3 | Kills: 0 | CritTransfers: 0 | Heals: 3
+RepairRig_007 | RepairRig | Deaths: 2 | Kills: 0 | CritTransfers: 0 | Heals: 3
+RepairRig_008 | RepairRig | Deaths: 2 | Kills: 0 | CritTransfers: 0 | Heals: 1
+RepairRig_009 | RepairRig | Deaths: 3 | Kills: 0 | CritTransfers: 0 | Heals: 2
+------------------------------------------------------------------------------------
+Details of Raiders win: 5/9/2026 7:04:06 PM - 5/9/2026 7:08:06 PM (00:04:00.0204637)
+------------------------------------------------------------------------------------
+03:04:07.2818 PM: Fighter_016->CriticalTransfer - Power was: 4, Power now: 2
+03:04:07.4435 PM: Fighter_017->CriticalTransfer - Power was: 4, Power now: 2
+03:04:07.6039 PM: Fighter_009->CriticalTransfer - Power was: 4, Power now: 2
+03:04:08.2416 PM: Fighter_009->AlmostDead - Last moments are from: Raider_060 (16 dmg)
+03:04:08.2426 PM: Fighter_009->AlmostDead - Last moments are from: Raider_072 (16 dmg)
+03:04:08.4033 PM: Fighter_009->AlmostDead - Last moments are from: Raider_060 (16 dmg)
+03:04:08.4046 PM: Fighter_009->Death - Killed by: Raider_072
+03:04:08.4046 PM: Raider_072->Kill - Killed: Fighter_009
+03:04:08.5573 PM: Fighter_019->CriticalTransfer - Power was: 4, Power now: 2
+03:04:08.8761 PM: Fighter_016->AlmostDead - Last moments are from: Raider_055 (16 dmg)
+03:04:08.8779 PM: Fighter_016->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:04:08.8782 PM: Fighter_016->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:04:09.0371 PM: Fighter_016->Death - Killed by: Raider_055
+03:04:09.0372 PM: Raider_055->Kill - Killed: Fighter_016
+03:04:09.0373 PM: Fighter_017->AlmostDead - Last moments are from: Raider_056 (16 dmg)
+03:04:09.2031 PM: Fighter_017->AlmostDead - Last moments are from: Raider_056 (16 dmg)
+03:04:09.2059 PM: Fighter_026->CriticalTransfer - Power was: 4, Power now: 2
+03:04:09.3778 PM: Fighter_017->AlmostDead - Last moments are from: Raider_056 (16 dmg)
+03:04:09.5593 PM: Fighter_017->Death - Killed by: Raider_056
+03:04:09.5593 PM: Raider_056->Kill - Killed: Fighter_017
+03:04:09.5620 PM: Fighter_032->CriticalTransfer - Power was: 4, Power now: 2
+03:04:10.1960 PM: Fighter_002->CriticalTransfer - Power was: 4, Power now: 2
+03:04:10.1961 PM: Fighter_019->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:10.3550 PM: Fighter_019->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:10.3582 PM: Fighter_030->CriticalTransfer - Power was: 4, Power now: 2
+03:04:10.5138 PM: Fighter_019->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:10.6747 PM: Fighter_019->Death - Killed by: Raider_041
+03:04:10.6747 PM: Raider_041->Kill - Killed: Fighter_019
+03:04:10.8406 PM: Fighter_026->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:04:10.9968 PM: Fighter_026->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:04:11.1559 PM: Fighter_026->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:04:11.3133 PM: Fighter_000->CriticalTransfer - Power was: 4, Power now: 2
+03:04:11.3154 PM: Fighter_026->Death - Killed by: Raider_093
+03:04:11.3154 PM: Raider_093->Kill - Killed: Fighter_026
+03:04:11.7902 PM: Fighter_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:04:11.7904 PM: Fighter_020->CriticalTransfer - Power was: 4, Power now: 2
+03:04:11.9500 PM: Fighter_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:04:12.1245 PM: Fighter_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:04:12.1260 PM: Fighter_000->AlmostDead - Last moments are from: Raider_060 (16 dmg)
+03:04:12.2845 PM: Fighter_002->Death - Killed by: Raider_040
+03:04:12.2845 PM: Raider_040->Kill - Killed: Fighter_002
+03:04:12.2847 PM: Fighter_000->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:12.2863 PM: Fighter_000->AlmostDead - Last moments are from: Raider_060 (16 dmg)
+03:04:12.4439 PM: Fighter_000->Death - Killed by: Raider_041
+03:04:12.4439 PM: Raider_041->Kill - Killed: Fighter_000
+03:04:12.4476 PM: Fighter_021->CriticalTransfer - Power was: 4, Power now: 2
+03:04:13.3993 PM: Fighter_031->CriticalTransfer - Power was: 4, Power now: 2
+03:04:14.1922 PM: Fighter_005->CriticalTransfer - Power was: 4, Power now: 2
+03:04:14.3557 PM: Fighter_031->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:14.3594 PM: RepairRig_002->Heal - Healed: Fighter_017
+03:04:14.5154 PM: Fighter_031->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:14.5168 PM: Fighter_032->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:14.5177 PM: Raider_050->CriticalTransfer - Power was: 16, Power now: 8
+03:04:14.6723 PM: Fighter_031->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:14.6734 PM: Fighter_031->Death - Killed by: Raider_080
+03:04:14.6734 PM: Raider_080->Kill - Killed: Fighter_031
+03:04:14.6748 PM: Fighter_032->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:14.8349 PM: Fighter_032->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:14.9946 PM: Fighter_032->Death - Killed by: Raider_098
+03:04:14.9947 PM: Raider_098->Kill - Killed: Fighter_032
+03:04:15.4685 PM: Fighter_023->CriticalTransfer - Power was: 4, Power now: 2
+03:04:16.4381 PM: Fighter_015->CriticalTransfer - Power was: 4, Power now: 2
+03:04:16.4410 PM: Fighter_023->AlmostDead - Last moments are from: Raider_095 (16 dmg)
+03:04:16.7577 PM: Fighter_007->CriticalTransfer - Power was: 4, Power now: 2
+03:04:16.9148 PM: Fighter_011->CriticalTransfer - Power was: 4, Power now: 2
+03:04:16.9173 PM: Fighter_025->CriticalTransfer - Power was: 4, Power now: 2
+03:04:17.2348 PM: Fighter_015->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:04:17.3939 PM: Fighter_015->AlmostDead - Last moments are from: Raider_055 (16 dmg)
+03:04:17.3943 PM: Fighter_015->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:04:17.3958 PM: Capital_003->CriticalTransfer - Power was: 8, Power now: 4
+03:04:17.5523 PM: Fighter_015->Death - Killed by: Raider_055
+03:04:17.5523 PM: Raider_055->Kill - Killed: Fighter_015
+03:04:17.5583 PM: RepairRig_004->Heal - Healed: Fighter_026
+03:04:17.8710 PM: Fighter_011->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:18.0321 PM: Fighter_011->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:18.1906 PM: Fighter_011->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:18.3521 PM: Fighter_011->Death - Killed by: Raider_061
+03:04:18.3521 PM: Raider_061->Kill - Killed: Fighter_011
+03:04:18.6686 PM: Fighter_029->CriticalTransfer - Power was: 4, Power now: 2
+03:04:18.9899 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:19.1462 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_036 (16 dmg)
+03:04:19.1484 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:19.1495 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:19.1509 PM: Capital_007->CriticalTransfer - Power was: 8, Power now: 4
+03:04:19.3054 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_036 (16 dmg)
+03:04:19.3081 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:19.3092 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:19.4700 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_036 (16 dmg)
+03:04:19.4726 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:19.6405 PM: RepairRig_001->Death - Killed by: Raider_036
+03:04:19.6405 PM: Raider_036->Kill - Killed: RepairRig_001
+03:04:19.9579 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_036 (16 dmg)
+03:04:20.1181 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_036 (16 dmg)
+03:04:20.1222 PM: Fighter_023->AlmostDead - Last moments are from: Raider_083 (16 dmg)
+03:04:20.1243 PM: Raider_084->CriticalTransfer - Power was: 16, Power now: 8
+03:04:20.2758 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_036 (16 dmg)
+03:04:20.2763 PM: Fighter_029->AlmostDead - Last moments are from: Raider_043 (16 dmg)
+03:04:20.2794 PM: Fighter_023->AlmostDead - Last moments are from: Raider_083 (16 dmg)
+03:04:20.4357 PM: RepairRig_000->Death - Killed by: Raider_036
+03:04:20.4357 PM: Raider_036->Kill - Killed: RepairRig_000
+03:04:20.4364 PM: Fighter_029->AlmostDead - Last moments are from: Raider_043 (16 dmg)
+03:04:20.4397 PM: Fighter_023->Death - Killed by: Raider_083
+03:04:20.4397 PM: Raider_083->Kill - Killed: Fighter_023
+03:04:20.5956 PM: Fighter_029->AlmostDead - Last moments are from: Raider_043 (16 dmg)
+03:04:20.6023 PM: RepairRig_005->Heal - Healed: Fighter_002
+03:04:20.7554 PM: Fighter_029->Death - Killed by: Raider_043
+03:04:20.7554 PM: Raider_043->Kill - Killed: Fighter_029
+03:04:20.9221 PM: RepairRig_003->Heal - Healed: Fighter_019
+03:04:21.5529 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:21.5533 PM: Fighter_006->CriticalTransfer - Power was: 4, Power now: 2
+03:04:21.5549 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:21.5551 PM: Fighter_012->CriticalTransfer - Power was: 4, Power now: 2
+03:04:21.5560 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:21.5571 PM: Fighter_028->CriticalTransfer - Power was: 4, Power now: 2
+03:04:21.7118 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:21.7120 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_067 (16 dmg)
+03:04:21.8705 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:21.8706 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_067 (16 dmg)
+03:04:22.0313 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:22.0314 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_067 (16 dmg)
+03:04:22.1893 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_067 (16 dmg)
+03:04:22.3471 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_067 (16 dmg)
+03:04:22.6640 PM: Fighter_002->CriticalTransfer - Power was: 4, Power now: 2
+03:04:22.6665 PM: Fighter_017->CriticalTransfer - Power was: 4, Power now: 2
+03:04:22.6675 PM: Fighter_026->CriticalTransfer - Power was: 4, Power now: 2
+03:04:22.8293 PM: Fighter_028->AlmostDead - Last moments are from: Raider_089 (16 dmg)
+03:04:22.8297 PM: Fighter_028->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:22.9868 PM: Fighter_028->AlmostDead - Last moments are from: Raider_089 (16 dmg)
+03:04:22.9873 PM: Fighter_028->Death - Killed by: Raider_094
+03:04:22.9873 PM: Raider_094->Kill - Killed: Fighter_028
+03:04:23.1467 PM: Raider_048->CriticalTransfer - Power was: 16, Power now: 8
+03:04:23.3066 PM: RepairRig_002->Heal - Healed: Fighter_011
+03:04:23.4568 PM: Raider_087->CriticalTransfer - Power was: 16, Power now: 8
+03:04:23.6260 PM: RepairRig_006->Heal - Healed: Fighter_000
+03:04:23.9435 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:24.0955 PM: Fighter_002->AlmostDead - Last moments are from: Raider_049 (16 dmg)
+03:04:24.0986 PM: Fighter_006->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:24.0994 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:24.2553 PM: Fighter_002->AlmostDead - Last moments are from: Raider_049 (16 dmg)
+03:04:24.2582 PM: Fighter_030->AlmostDead - Last moments are from: Raider_079 (16 dmg)
+03:04:24.2588 PM: Fighter_006->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:24.2596 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:24.4138 PM: Fighter_002->AlmostDead - Last moments are from: Raider_049 (16 dmg)
+03:04:24.4162 PM: Fighter_030->AlmostDead - Last moments are from: Raider_079 (16 dmg)
+03:04:24.4169 PM: Fighter_006->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:24.5727 PM: Fighter_002->Death - Killed by: Raider_049
+03:04:24.5727 PM: Raider_049->Kill - Killed: Fighter_002
+03:04:24.5755 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:24.5760 PM: Fighter_006->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:24.7337 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:24.7341 PM: RepairRig_009->Death - Killed by: Raider_066
+03:04:24.7341 PM: Raider_066->Kill - Killed: RepairRig_009
+03:04:24.7358 PM: Fighter_006->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:24.8947 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:24.8969 PM: Fighter_006->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:25.0546 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:25.0568 PM: Fighter_006->Death - Killed by: Raider_087
+03:04:25.0568 PM: Raider_087->Kill - Killed: Fighter_006
+03:04:25.2117 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:25.2129 PM: Fighter_020->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:04:25.3731 PM: Fighter_020->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:04:25.5284 PM: Fighter_021->AlmostDead - Last moments are from: Raider_038 (16 dmg)
+03:04:25.5307 PM: Fighter_014->CriticalTransfer - Power was: 4, Power now: 2
+03:04:25.6877 PM: Fighter_021->AlmostDead - Last moments are from: Raider_038 (16 dmg)
+03:04:26.0104 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_092 (16 dmg)
+03:04:26.1674 PM: Fighter_000->CriticalTransfer - Power was: 4, Power now: 2
+03:04:26.1722 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_092 (16 dmg)
+03:04:26.1723 PM: Fighter_005->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:26.3294 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_092 (16 dmg)
+03:04:26.3295 PM: Fighter_005->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:26.4896 PM: RepairRig_008->Death - Killed by: Raider_092
+03:04:26.4896 PM: Raider_092->Kill - Killed: RepairRig_008
+03:04:26.4898 PM: Fighter_005->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:26.6484 PM: Fighter_005->Death - Killed by: Raider_094
+03:04:26.6484 PM: Raider_094->Kill - Killed: Fighter_005
+03:04:26.6512 PM: RepairRig_007->Heal - Healed: Fighter_031
+03:04:27.1195 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:04:27.1202 PM: Fighter_008->CriticalTransfer - Power was: 4, Power now: 2
+03:04:27.2798 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:04:27.4378 PM: Fighter_018->CriticalTransfer - Power was: 4, Power now: 2
+03:04:27.4382 PM: RepairRig_003->Death - Killed by: Raider_042
+03:04:27.4382 PM: Raider_042->Kill - Killed: RepairRig_003
+03:04:27.5998 PM: Fighter_024->CriticalTransfer - Power was: 4, Power now: 2
+03:04:27.7585 PM: Capital_005->CriticalTransfer - Power was: 8, Power now: 4
+03:04:27.7588 PM: Fighter_000->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:04:27.7629 PM: Fighter_001->CriticalTransfer - Power was: 4, Power now: 2
+03:04:27.9172 PM: Fighter_004->CriticalTransfer - Power was: 4, Power now: 2
+03:04:27.9177 PM: Fighter_000->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:04:28.0755 PM: Fighter_000->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:04:28.2338 PM: Fighter_000->Death - Killed by: Raider_047
+03:04:28.2338 PM: Raider_047->Kill - Killed: Fighter_000
+03:04:28.3918 PM: Fighter_018->AlmostDead - Last moments are from: Raider_037 (16 dmg)
+03:04:28.3967 PM: Fighter_018->AlmostDead - Last moments are from: Raider_099 (16 dmg)
+03:04:28.3981 PM: Raider_099->CriticalTransfer - Power was: 16, Power now: 8
+03:04:28.5526 PM: Fighter_018->AlmostDead - Last moments are from: Raider_037 (16 dmg)
+03:04:28.5544 PM: RepairRig_006->Death - Killed by: Raider_059
+03:04:28.5544 PM: Raider_059->Kill - Killed: RepairRig_006
+03:04:28.5575 PM: Fighter_018->Death - Killed by: Raider_099
+03:04:28.5575 PM: Raider_099->Kill - Killed: Fighter_018
+03:04:28.5583 PM: Raider_049->CriticalTransfer - Power was: 16, Power now: 8
+03:04:29.1928 PM: Fighter_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:04:29.3491 PM: Fighter_019->CriticalTransfer - Power was: 4, Power now: 2
+03:04:29.3512 PM: Fighter_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:04:29.5104 PM: Fighter_004->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:04:29.5104 PM: Fighter_004->AlmostDead - Last moments are from: Raider_043 (16 dmg)
+03:04:29.5138 PM: Fighter_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:04:29.6690 PM: Fighter_004->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:04:29.6690 PM: Fighter_004->Death - Killed by: Raider_043
+03:04:29.6690 PM: Raider_043->Kill - Killed: Fighter_004
+03:04:29.6722 PM: Fighter_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:04:29.8278 PM: Fighter_025->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:04:29.8298 PM: Fighter_001->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:04:29.8318 PM: Fighter_001->Death - Killed by: Raider_084
+03:04:29.8318 PM: Raider_084->Kill - Killed: Fighter_001
+03:04:29.9867 PM: Fighter_025->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:04:30.1456 PM: Fighter_025->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:04:30.1468 PM: Capital_007->CriticalTransfer - Power was: 4, Power now: 2
+03:04:30.1487 PM: Fighter_021->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:04:30.2992 PM: Fighter_025->Death - Killed by: Raider_040
+03:04:30.2992 PM: Raider_040->Kill - Killed: Fighter_025
+03:04:30.3021 PM: Fighter_021->Death - Killed by: Raider_075
+03:04:30.3021 PM: Raider_075->Kill - Killed: Fighter_021
+03:04:30.6262 PM: Fighter_026->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:30.7839 PM: Fighter_026->AlmostDead - Last moments are from: Raider_065 (16 dmg)
+03:04:30.7864 PM: Fighter_026->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:30.9436 PM: Fighter_026->Death - Killed by: Raider_065
+03:04:30.9436 PM: Raider_065->Kill - Killed: Fighter_026
+03:04:31.4194 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_059 (16 dmg)
+03:04:31.5779 PM: Fighter_012->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:04:31.5789 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_059 (16 dmg)
+03:04:31.5807 PM: Fighter_012->AlmostDead - Last moments are from: Raider_079 (16 dmg)
+03:04:31.5813 PM: Capital_003->CriticalTransfer - Power was: 4, Power now: 2
+03:04:31.7371 PM: Fighter_012->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:04:31.7398 PM: Fighter_012->Death - Killed by: Raider_079
+03:04:31.7398 PM: Raider_079->Kill - Killed: Fighter_012
+03:04:31.9011 PM: Fighter_017->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:32.0601 PM: Fighter_017->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:32.2190 PM: Fighter_017->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:04:32.2192 PM: Fighter_030->AlmostDead - Last moments are from: Raider_083 (16 dmg)
+03:04:32.3780 PM: Fighter_017->Death - Killed by: Raider_080
+03:04:32.3780 PM: Raider_080->Kill - Killed: Fighter_017
+03:04:32.3782 PM: Fighter_030->Death - Killed by: Raider_083
+03:04:32.3782 PM: Raider_083->Kill - Killed: Fighter_030
+03:04:32.5375 PM: Capital_006->CriticalTransfer - Power was: 8, Power now: 4
+03:04:32.5421 PM: RepairRig_005->Heal - Healed: RepairRig_003
+03:04:33.1754 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:33.1757 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_067 (16 dmg)
+03:04:33.1784 PM: Raider_082->CriticalTransfer - Power was: 16, Power now: 8
+03:04:33.3297 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:33.3312 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:04:33.3317 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_067 (16 dmg)
+03:04:33.4892 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:33.4911 PM: RepairRig_002->Death - Killed by: Raider_067
+03:04:33.4911 PM: Raider_067->Kill - Killed: RepairRig_002
+03:04:33.4938 PM: Fighter_003->CriticalTransfer - Power was: 4, Power now: 2
+03:04:34.1295 PM: Fighter_019->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:04:34.2872 PM: Fighter_031->CriticalTransfer - Power was: 4, Power now: 2
+03:04:34.2903 PM: Fighter_019->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:04:34.8942 PM: RepairRig_003->Heal - Healed: RepairRig_006
+03:04:34.9238 PM: Fighter_024->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:04:35.0783 PM: Fighter_024->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:04:35.1477 PM: Fighter_020->AlmostDead - Last moments are from: Raider_095 (16 dmg)
+03:04:35.1500 PM: RepairRig_004->Heal - Healed: RepairRig_000
+03:04:35.2424 PM: Fighter_024->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:04:35.3055 PM: Fighter_020->Death - Killed by: Raider_095
+03:04:35.3055 PM: Raider_095->Kill - Killed: Fighter_020
+03:04:35.4049 PM: Fighter_024->Death - Killed by: Raider_039
+03:04:35.4049 PM: Raider_039->Kill - Killed: Fighter_024
+03:04:35.4056 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_048 (8 dmg)
+03:04:35.4637 PM: Fighter_031->AlmostDead - Last moments are from: Raider_088 (16 dmg)
+03:04:35.4642 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:35.5577 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_048 (8 dmg)
+03:04:35.6240 PM: Fighter_031->AlmostDead - Last moments are from: Raider_088 (16 dmg)
+03:04:35.6244 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:35.6880 PM: RepairRig_000->Heal - Healed: Fighter_009
+03:04:35.7143 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_048 (8 dmg)
+03:04:35.7816 PM: Fighter_031->AlmostDead - Last moments are from: Raider_088 (16 dmg)
+03:04:35.7823 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_094 (16 dmg)
+03:04:35.8742 PM: RepairRig_007->Death - Killed by: Raider_048
+03:04:35.8742 PM: Raider_048->Kill - Killed: RepairRig_007
+03:04:36.2614 PM: Raider_056->CriticalTransfer - Power was: 16, Power now: 8
+03:04:36.4163 PM: Capital_008->CriticalTransfer - Power was: 8, Power now: 4
+03:04:38.1987 PM: Fighter_014->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:38.3576 PM: Fighter_014->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:38.5333 PM: Capital_005->CriticalTransfer - Power was: 4, Power now: 2
+03:04:38.5339 PM: Fighter_014->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:38.6923 PM: Fighter_014->Death - Killed by: Raider_090
+03:04:38.6923 PM: Raider_090->Kill - Killed: Fighter_014
+03:04:38.6951 PM: RepairRig_005->Heal - Healed: RepairRig_007
+03:04:38.9121 PM: Fighter_031->Death - Killed by: Raider_047
+03:04:38.9121 PM: Raider_047->Kill - Killed: Fighter_031
+03:04:39.6517 PM: Raider_097->CriticalTransfer - Power was: 16, Power now: 8
+03:04:40.2556 PM: RepairRig_006->Heal - Healed: RepairRig_008
+03:04:40.3130 PM: Capital_001->CriticalTransfer - Power was: 8, Power now: 4
+03:04:40.4105 PM: Fighter_011->CriticalTransfer - Power was: 4, Power now: 2
+03:04:41.7131 PM: RepairRig_004->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:04:41.8781 PM: RepairRig_008->Heal - Healed: Fighter_032
+03:04:41.9420 PM: RepairRig_007->Heal - Healed: RepairRig_002
+03:04:42.7341 PM: Fighter_009->CriticalTransfer - Power was: 4, Power now: 2
+03:04:42.8336 PM: RepairRig_002->Heal - Healed: RepairRig_009
+03:04:43.0651 PM: Fighter_019->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:04:43.2173 PM: Fighter_019->Death - Killed by: Raider_069
+03:04:43.2173 PM: Raider_069->Kill - Killed: Fighter_019
+03:04:43.3726 PM: Fighter_010->CriticalTransfer - Power was: 4, Power now: 2
+03:04:43.5367 PM: RepairRig_005->Heal - Healed: Fighter_026
+03:04:43.9388 PM: Fighter_008->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:04:44.0990 PM: Fighter_008->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:04:44.1000 PM: Fighter_013->CriticalTransfer - Power was: 4, Power now: 2
+03:04:44.2587 PM: Fighter_008->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:04:44.3255 PM: Fighter_022->CriticalTransfer - Power was: 4, Power now: 2
+03:04:44.4187 PM: Fighter_008->Death - Killed by: Raider_034
+03:04:44.4187 PM: Raider_034->Kill - Killed: Fighter_008
+03:04:44.9597 PM: Fighter_027->CriticalTransfer - Power was: 4, Power now: 2
+03:04:45.1233 PM: Fighter_007->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:04:45.2905 PM: Fighter_007->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:04:45.4667 PM: Fighter_010->AlmostDead - Last moments are from: Raider_065 (16 dmg)
+03:04:45.4692 PM: Fighter_007->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:04:45.4693 PM: Capital_000->CriticalTransfer - Power was: 8, Power now: 4
+03:04:45.6270 PM: Fighter_010->AlmostDead - Last moments are from: Raider_065 (16 dmg)
+03:04:45.6294 PM: Fighter_007->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:04:45.7028 PM: Fighter_013->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:04:45.7854 PM: Fighter_010->AlmostDead - Last moments are from: Raider_065 (16 dmg)
+03:04:45.7880 PM: Fighter_007->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:04:45.8797 PM: Fighter_013->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:04:45.9463 PM: Fighter_010->Death - Killed by: Raider_065
+03:04:45.9463 PM: Raider_065->Kill - Killed: Fighter_010
+03:04:45.9487 PM: Fighter_007->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:04:46.0393 PM: Fighter_013->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:04:46.1103 PM: Fighter_007->Death - Killed by: Raider_097
+03:04:46.1103 PM: Raider_097->Kill - Killed: Fighter_007
+03:04:46.1979 PM: Fighter_013->Death - Killed by: Raider_047
+03:04:46.1979 PM: Raider_047->Kill - Killed: Fighter_013
+03:04:47.0637 PM: Raider_082->CriticalTransfer - Power was: 8, Power now: 4
+03:04:47.3818 PM: Fighter_011->AlmostDead - Last moments are from: Raider_055 (16 dmg)
+03:04:47.5466 PM: Fighter_011->AlmostDead - Last moments are from: Raider_055 (16 dmg)
+03:04:47.7268 PM: Fighter_011->AlmostDead - Last moments are from: Raider_055 (16 dmg)
+03:04:47.8851 PM: Fighter_011->Death - Killed by: Raider_055
+03:04:47.8852 PM: Raider_055->Kill - Killed: Fighter_011
+03:04:49.0003 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:49.1578 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:49.1612 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:49.3156 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:49.3181 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:49.3205 PM: RepairRig_007->Heal - Healed: Fighter_029
+03:04:49.4781 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:49.6278 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:49.6285 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:49.7280 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_043 (16 dmg)
+03:04:49.8784 PM: RepairRig_003->Death - Killed by: Raider_043
+03:04:49.8784 PM: Raider_043->Kill - Killed: RepairRig_003
+03:04:50.3854 PM: RepairRig_009->Heal - Healed: Fighter_015
+03:04:51.2428 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:51.4031 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:51.5683 PM: Fighter_032->CriticalTransfer - Power was: 4, Power now: 2
+03:04:51.5687 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:51.7236 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:54.0344 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:54.1936 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:54.3599 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:54.5198 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:54.5789 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:04:54.6779 PM: RepairRig_008->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:04:54.6785 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:54.7380 PM: RepairRig_008->Death - Killed by: Raider_034
+03:04:54.7380 PM: Raider_034->Kill - Killed: RepairRig_008
+03:04:54.8358 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:04:54.8376 PM: Fighter_029->CriticalTransfer - Power was: 4, Power now: 2
+03:04:54.8380 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:54.9943 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:04:54.9961 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_098 (16 dmg)
+03:04:54.9982 PM: RepairRig_004->Heal - Healed: Fighter_020
+03:04:55.1527 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:04:55.1545 PM: RepairRig_009->Death - Killed by: Raider_098
+03:04:55.1546 PM: Raider_098->Kill - Killed: RepairRig_009
+03:04:55.3691 PM: RepairRig_004->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:04:55.5495 PM: RepairRig_004->AlmostDead - Last moments are from: Raider_041 (16 dmg)
+03:04:55.5504 PM: RepairRig_004->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:04:55.6487 PM: Fighter_029->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:04:55.7150 PM: Fighter_029->AlmostDead - Last moments are from: Raider_035 (16 dmg)
+03:04:55.7166 PM: RepairRig_004->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:04:55.8061 PM: Fighter_029->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:04:55.8080 PM: Raider_049->CriticalTransfer - Power was: 8, Power now: 4
+03:04:55.8718 PM: Fighter_029->Death - Killed by: Raider_035
+03:04:55.8718 PM: Raider_035->Kill - Killed: Fighter_029
+03:04:55.8734 PM: RepairRig_004->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:04:56.0292 PM: RepairRig_004->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:04:56.5993 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:04:56.7577 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:04:56.8146 PM: Fighter_026->CriticalTransfer - Power was: 4, Power now: 2
+03:04:56.9174 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:04:57.0768 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:57.0800 PM: RepairRig_005->Heal - Healed: Fighter_025
+03:04:57.2489 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_064 (16 dmg)
+03:04:57.2515 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:04:57.4119 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_064 (16 dmg)
+03:04:57.4149 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:57.5662 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_064 (16 dmg)
+03:04:57.5689 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:57.7273 PM: Fighter_020->CriticalTransfer - Power was: 4, Power now: 2
+03:04:57.7289 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:57.8861 PM: Fighter_026->AlmostDead - Last moments are from: Raider_060 (16 dmg)
+03:04:57.8894 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:58.0446 PM: Fighter_026->AlmostDead - Last moments are from: Raider_060 (16 dmg)
+03:04:58.0497 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:58.2054 PM: Fighter_026->AlmostDead - Last moments are from: Raider_060 (16 dmg)
+03:04:58.2062 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_068 (16 dmg)
+03:04:58.2087 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_099 (8 dmg)
+03:04:58.3625 PM: Fighter_026->Death - Killed by: Raider_060
+03:04:58.3625 PM: Raider_060->Kill - Killed: Fighter_026
+03:04:58.3632 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_068 (16 dmg)
+03:04:58.4628 PM: RepairRig_002->Heal - Healed: RepairRig_003
+03:04:58.5254 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_068 (16 dmg)
+03:04:58.6811 PM: RepairRig_000->Death - Killed by: Raider_068
+03:04:58.6811 PM: Raider_068->Kill - Killed: RepairRig_000
+03:04:58.8408 PM: RepairRig_004->Death - Killed by: Raider_059
+03:04:58.8409 PM: Raider_059->Kill - Killed: RepairRig_004
+03:04:58.9360 PM: Capital_009->CriticalTransfer - Power was: 8, Power now: 4
+03:04:59.1660 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:59.3182 PM: RepairRig_002->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:04:59.4772 PM: RepairRig_002->Death - Killed by: Raider_066
+03:04:59.4772 PM: Raider_066->Kill - Killed: RepairRig_002
+03:05:00.0564 PM: RepairRig_003->Heal - Healed: RepairRig_001
+03:05:00.2666 PM: Capital_002->CriticalTransfer - Power was: 8, Power now: 4
+03:05:00.3673 PM: Fighter_027->AlmostDead - Last moments are from: Raider_037 (16 dmg)
+03:05:00.5256 PM: Fighter_027->AlmostDead - Last moments are from: Raider_037 (16 dmg)
+03:05:00.7010 PM: Fighter_027->AlmostDead - Last moments are from: Raider_037 (16 dmg)
+03:05:00.7374 PM: Raider_091->CriticalTransfer - Power was: 16, Power now: 8
+03:05:00.8582 PM: Fighter_027->Death - Killed by: Raider_037
+03:05:00.8582 PM: Raider_037->Kill - Killed: Fighter_027
+03:05:01.0575 PM: Raider_054->CriticalTransfer - Power was: 16, Power now: 8
+03:05:01.3374 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:01.4962 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:01.6702 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:01.8302 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:01.9896 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:02.1503 PM: RepairRig_007->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:02.3051 PM: RepairRig_007->Death - Killed by: Raider_047
+03:05:02.3051 PM: Raider_047->Kill - Killed: RepairRig_007
+03:05:02.3695 PM: Fighter_025->CriticalTransfer - Power was: 4, Power now: 2
+03:05:03.0600 PM: RepairRig_001->Heal - Healed: Fighter_016
+03:05:03.3908 PM: Fighter_020->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:05:03.5500 PM: Fighter_020->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:05:03.7082 PM: Fighter_020->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:05:03.7087 PM: Fighter_020->Death - Killed by: Raider_078
+03:05:03.7087 PM: Raider_078->Kill - Killed: Fighter_020
+03:05:03.7088 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_079 (16 dmg)
+03:05:03.8697 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_079 (16 dmg)
+03:05:03.8724 PM: Raider_062->CriticalTransfer - Power was: 16, Power now: 8
+03:05:04.0303 PM: Fighter_025->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:04.0317 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_079 (16 dmg)
+03:05:04.1950 PM: Fighter_025->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:04.1963 PM: RepairRig_006->Death - Killed by: Raider_079
+03:05:04.1963 PM: Raider_079->Kill - Killed: RepairRig_006
+03:05:04.3459 PM: Fighter_025->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:04.5189 PM: Fighter_025->Death - Killed by: Raider_063
+03:05:04.5189 PM: Raider_063->Kill - Killed: Fighter_025
+03:05:05.0177 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:05.1770 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:05.3381 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:05.4974 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:06.1477 PM: Fighter_022->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:05:06.1484 PM: Fighter_022->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:05:06.2429 PM: Fighter_003->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:05:06.3079 PM: Fighter_022->AlmostDead - Last moments are from: Raider_080 (16 dmg)
+03:05:06.4001 PM: Fighter_003->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:05:06.4673 PM: Fighter_022->Death - Killed by: Raider_080
+03:05:06.4673 PM: Raider_080->Kill - Killed: Fighter_022
+03:05:06.5578 PM: Fighter_003->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:05:06.5581 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_044 (16 dmg)
+03:05:06.7167 PM: Fighter_003->Death - Killed by: Raider_040
+03:05:06.7168 PM: Raider_040->Kill - Killed: Fighter_003
+03:05:06.7170 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_044 (16 dmg)
+03:05:06.7831 PM: Capital_000->CriticalTransfer - Power was: 4, Power now: 2
+03:05:06.8742 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_044 (16 dmg)
+03:05:07.7861 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:05:07.9457 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:05:08.0052 PM: Capital_003->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:05:08.0055 PM: Capital_003->AlmostDead - Last moments are from: Raider_050 (8 dmg)
+03:05:08.1050 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:05:08.1631 PM: Capital_003->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:05:08.1634 PM: Capital_003->AlmostDead - Last moments are from: Raider_050 (8 dmg)
+03:05:08.2639 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_097 (8 dmg)
+03:05:08.3225 PM: Capital_003->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:05:08.3228 PM: Capital_003->AlmostDead - Last moments are from: Raider_050 (8 dmg)
+03:05:08.4818 PM: Capital_003->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:05:08.6533 PM: Capital_003->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:05:08.7731 PM: Fighter_015->CriticalTransfer - Power was: 4, Power now: 2
+03:05:08.8330 PM: Capital_003->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:05:08.9923 PM: Capital_003->AlmostDead - Last moments are from: Raider_046 (16 dmg)
+03:05:10.2354 PM: Fighter_015->AlmostDead - Last moments are from: Raider_081 (16 dmg)
+03:05:10.2366 PM: Fighter_015->AlmostDead - Last moments are from: Raider_095 (16 dmg)
+03:05:10.3979 PM: Fighter_015->AlmostDead - Last moments are from: Raider_081 (16 dmg)
+03:05:10.3990 PM: Fighter_015->Death - Killed by: Raider_095
+03:05:10.3990 PM: Raider_095->Kill - Killed: Fighter_015
+03:05:13.3698 PM: Capital_003->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:13.3701 PM: Fighter_009->AlmostDead - Last moments are from: Raider_051 (16 dmg)
+03:05:13.3702 PM: Fighter_016->CriticalTransfer - Power was: 4, Power now: 2
+03:05:13.5433 PM: Capital_003->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:13.5436 PM: Fighter_009->AlmostDead - Last moments are from: Raider_051 (16 dmg)
+03:05:13.7161 PM: Capital_003->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:13.7165 PM: Fighter_009->AlmostDead - Last moments are from: Raider_051 (16 dmg)
+03:05:13.8935 PM: Capital_003->AlmostDead - Last moments are from: Raider_047 (16 dmg)
+03:05:13.8940 PM: Fighter_009->Death - Killed by: Raider_051
+03:05:13.8940 PM: Raider_051->Kill - Killed: Fighter_009
+03:05:14.0535 PM: Capital_003->Death - Killed by: Raider_047
+03:05:14.0535 PM: Raider_047->Kill - Killed: Capital_003
+03:05:14.7051 PM: Fighter_016->AlmostDead - Last moments are from: Raider_053 (16 dmg)
+03:05:14.7712 PM: Fighter_016->AlmostDead - Last moments are from: Raider_083 (16 dmg)
+03:05:14.8647 PM: Fighter_016->AlmostDead - Last moments are from: Raider_053 (16 dmg)
+03:05:14.9319 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_078 (16 dmg)
+03:05:14.9325 PM: Fighter_016->Death - Killed by: Raider_083
+03:05:14.9325 PM: Raider_083->Kill - Killed: Fighter_016
+03:05:15.2644 PM: Capital_005->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:15.2667 PM: Capital_005->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:05:15.4239 PM: Capital_005->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:15.4259 PM: Capital_005->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:05:15.5845 PM: Capital_005->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:15.5868 PM: Capital_005->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:05:15.7414 PM: Capital_005->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:15.7436 PM: Capital_005->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:05:15.9008 PM: Capital_005->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:15.9029 PM: Capital_005->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:05:16.0642 PM: Capital_005->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:16.0662 PM: Capital_005->AlmostDead - Last moments are from: Raider_090 (16 dmg)
+03:05:16.2200 PM: Capital_005->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:05:16.2238 PM: Capital_005->Death - Killed by: Raider_090
+03:05:16.2238 PM: Raider_090->Kill - Killed: Capital_005
+03:05:16.3931 PM: Capital_001->CriticalTransfer - Power was: 4, Power now: 2
+03:05:18.1125 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:05:18.2722 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:05:18.3343 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_096 (16 dmg)
+03:05:18.4325 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:05:18.5010 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_096 (16 dmg)
+03:05:18.5909 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_042 (16 dmg)
+03:05:18.6604 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_096 (16 dmg)
+03:05:18.7508 PM: RepairRig_003->Death - Killed by: Raider_042
+03:05:18.7508 PM: Raider_042->Kill - Killed: RepairRig_003
+03:05:18.9925 PM: RepairRig_005->Heal - Healed: RepairRig_000
+03:05:20.0502 PM: Capital_002->CriticalTransfer - Power was: 4, Power now: 2
+03:05:21.2941 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_096 (16 dmg)
+03:05:21.4685 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_096 (16 dmg)
+03:05:22.4774 PM: Fighter_032->AlmostDead - Last moments are from: Raider_068 (16 dmg)
+03:05:22.6384 PM: Fighter_032->AlmostDead - Last moments are from: Raider_068 (16 dmg)
+03:05:24.0884 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:05:24.2119 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_049 (4 dmg)
+03:05:24.2451 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:05:24.2457 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:05:24.2478 PM: RepairRig_000->Heal - Healed: Fighter_006
+03:05:24.4044 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:05:24.4050 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_093 (16 dmg)
+03:05:24.5733 PM: RepairRig_001->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:05:24.7534 PM: RepairRig_001->Death - Killed by: Raider_086
+03:05:24.7534 PM: Raider_086->Kill - Killed: RepairRig_001
+03:05:24.7535 PM: Capital_007->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:05:24.7538 PM: Capital_008->CriticalTransfer - Power was: 4, Power now: 2
+03:05:24.8478 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:24.9155 PM: Capital_007->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:05:25.0062 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:25.0737 PM: Capital_007->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:05:25.1706 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:25.2322 PM: Capital_007->AlmostDead - Last moments are from: Raider_087 (8 dmg)
+03:05:25.3261 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:25.4835 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:25.6418 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:25.8025 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:25.9628 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:26.1208 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:26.2805 PM: Capital_007->AlmostDead - Last moments are from: Raider_052 (16 dmg)
+03:05:26.4390 PM: Capital_007->Death - Killed by: Raider_052
+03:05:26.4390 PM: Raider_052->Kill - Killed: Capital_007
+03:05:27.9825 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:28.1424 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:28.3026 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:28.4640 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:28.6221 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:28.7813 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:28.9399 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:29.0987 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:29.2749 PM: Capital_000->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:29.9130 PM: Raider_078->CriticalTransfer - Power was: 16, Power now: 8
+03:05:30.5464 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_085 (16 dmg)
+03:05:30.7054 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:30.7056 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_085 (16 dmg)
+03:05:30.8653 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_085 (16 dmg)
+03:05:31.0240 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_085 (16 dmg)
+03:05:31.1834 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_085 (16 dmg)
+03:05:31.8485 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_055 (16 dmg)
+03:05:31.8488 PM: Capital_002->AlmostDead - Last moments are from: Raider_059 (16 dmg)
+03:05:32.0063 PM: RepairRig_000->Death - Killed by: Raider_055
+03:05:32.0063 PM: Raider_055->Kill - Killed: RepairRig_000
+03:05:32.0066 PM: Capital_002->AlmostDead - Last moments are from: Raider_059 (16 dmg)
+03:05:32.1662 PM: Capital_002->AlmostDead - Last moments are from: Raider_059 (16 dmg)
+03:05:32.5175 PM: Capital_000->AlmostDead - Last moments are from: Raider_083 (16 dmg)
+03:05:32.6777 PM: Capital_000->AlmostDead - Last moments are from: Raider_083 (16 dmg)
+03:05:32.8383 PM: Capital_000->AlmostDead - Last moments are from: Raider_083 (16 dmg)
+03:05:32.9966 PM: Capital_000->Death - Killed by: Raider_083
+03:05:32.9966 PM: Raider_083->Kill - Killed: Capital_000
+03:05:33.3186 PM: Raider_044->CriticalTransfer - Power was: 16, Power now: 8
+03:05:37.8306 PM: RepairRig_005->Heal - Healed: RepairRig_003
+03:05:38.3965 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:05:38.4631 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_082 (4 dmg)
+03:05:38.4641 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_096 (16 dmg)
+03:05:38.5548 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:05:38.6225 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_082 (4 dmg)
+03:05:38.6237 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_096 (16 dmg)
+03:05:38.7186 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:05:38.7804 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_082 (4 dmg)
+03:05:38.8732 PM: RepairRig_005->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:05:39.0331 PM: RepairRig_005->Death - Killed by: Raider_040
+03:05:39.0331 PM: Raider_040->Kill - Killed: RepairRig_005
+03:05:39.3340 PM: RepairRig_003->Heal - Healed: RepairRig_009
+03:05:40.6969 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:05:40.6989 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_076 (16 dmg)
+03:05:40.8608 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:05:40.8624 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_076 (16 dmg)
+03:05:40.9200 PM: RepairRig_009->Heal - Healed: RepairRig_000
+03:05:41.0120 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:05:41.0137 PM: RepairRig_003->AlmostDead - Last moments are from: Raider_076 (16 dmg)
+03:05:41.1906 PM: RepairRig_003->Death - Killed by: Raider_058
+03:05:41.1907 PM: Raider_058->Kill - Killed: RepairRig_003
+03:05:42.1791 PM: Raider_093->CriticalTransfer - Power was: 16, Power now: 8
+03:05:42.8156 PM: Fighter_032->AlmostDead - Last moments are from: Raider_076 (16 dmg)
+03:05:42.9759 PM: Fighter_032->Death - Killed by: Raider_076
+03:05:42.9760 PM: Raider_076->Kill - Killed: Fighter_032
+03:05:44.4090 PM: Raider_041->CriticalTransfer - Power was: 16, Power now: 8
+03:05:45.8838 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:46.0544 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:46.2325 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:46.3920 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:46.4535 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:05:46.5577 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:46.6218 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:05:46.7095 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:46.7791 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:05:46.7851 PM: RepairRig_000->Heal - Healed: RepairRig_006
+03:05:46.8760 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:46.8773 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:05:47.0367 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:47.0379 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:05:47.1972 PM: Capital_001->AlmostDead - Last moments are from: Raider_069 (16 dmg)
+03:05:47.1986 PM: RepairRig_009->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:05:47.1996 PM: RepairRig_009->Death - Killed by: Raider_098
+03:05:47.1996 PM: Raider_098->Kill - Killed: RepairRig_009
+03:05:47.9230 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:05:47.9998 PM: Fighter_006->CriticalTransfer - Power was: 4, Power now: 2
+03:05:48.1061 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:05:48.2716 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:05:48.4409 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:05:48.5988 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_039 (16 dmg)
+03:05:49.6545 PM: Fighter_006->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:05:49.8155 PM: Fighter_006->AlmostDead - Last moments are from: Raider_076 (16 dmg)
+03:05:49.8156 PM: Fighter_006->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:05:49.8796 PM: RepairRig_006->Heal - Healed: Fighter_030
+03:05:49.9724 PM: Fighter_006->Death - Killed by: Raider_076
+03:05:49.9724 PM: Raider_076->Kill - Killed: Fighter_006
+03:05:51.5835 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_095 (16 dmg)
+03:05:51.6736 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_033 (16 dmg)
+03:05:51.8335 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_033 (16 dmg)
+03:05:51.9930 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_033 (16 dmg)
+03:05:52.1522 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_033 (16 dmg)
+03:05:52.3098 PM: RepairRig_006->AlmostDead - Last moments are from: Raider_033 (16 dmg)
+03:05:52.4701 PM: RepairRig_006->Death - Killed by: Raider_039
+03:05:52.4701 PM: Raider_039->Kill - Killed: RepairRig_006
+03:05:52.6275 PM: RepairRig_000->AlmostDead - Last moments are from: Raider_034 (16 dmg)
+03:05:52.7881 PM: RepairRig_000->Death - Killed by: Raider_034
+03:05:52.7881 PM: Raider_034->Kill - Killed: RepairRig_000
+03:05:53.2058 PM: Capital_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:53.3661 PM: Capital_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:53.5243 PM: Capital_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:53.6838 PM: Capital_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:53.8441 PM: Capital_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:54.0146 PM: Capital_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:54.1933 PM: Capital_001->AlmostDead - Last moments are from: Raider_084 (8 dmg)
+03:05:54.3517 PM: Capital_001->Death - Killed by: Raider_084
+03:05:54.3517 PM: Raider_084->Kill - Killed: Capital_001
+03:05:59.3490 PM: Capital_006->CriticalTransfer - Power was: 4, Power now: 2
+03:06:03.0414 PM: Raider_098->CriticalTransfer - Power was: 16, Power now: 8
+03:06:06.0073 PM: Raider_065->CriticalTransfer - Power was: 16, Power now: 8
+03:06:09.5150 PM: Capital_002->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:06:09.6802 PM: Capital_002->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:06:09.8347 PM: Capital_002->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:06:09.8354 PM: Capital_009->CriticalTransfer - Power was: 4, Power now: 2
+03:06:09.9928 PM: Capital_002->AlmostDead - Last moments are from: Raider_058 (16 dmg)
+03:06:11.2440 PM: Fighter_030->CriticalTransfer - Power was: 4, Power now: 2
+03:06:12.2165 PM: Capital_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:06:12.3794 PM: Capital_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:06:12.5549 PM: Capital_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:06:12.7124 PM: Capital_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:06:12.8713 PM: Capital_002->AlmostDead - Last moments are from: Raider_040 (16 dmg)
+03:06:13.0310 PM: Capital_002->Death - Killed by: Raider_040
+03:06:13.0310 PM: Raider_040->Kill - Killed: Capital_002
+03:06:13.3586 PM: Capital_008->AlmostDead - Last moments are from: Raider_091 (8 dmg)
+03:06:13.5204 PM: Capital_008->AlmostDead - Last moments are from: Raider_091 (8 dmg)
+03:06:13.6730 PM: Capital_008->AlmostDead - Last moments are from: Raider_091 (8 dmg)
+03:06:13.8338 PM: Capital_008->AlmostDead - Last moments are from: Raider_091 (8 dmg)
+03:06:13.9978 PM: Capital_008->AlmostDead - Last moments are from: Raider_091 (8 dmg)
+03:06:14.2412 PM: Capital_004->CriticalTransfer - Power was: 8, Power now: 4
+03:06:14.4035 PM: Fighter_030->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:06:14.5774 PM: Fighter_030->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:06:14.7358 PM: Fighter_030->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:06:14.8948 PM: Fighter_030->Death - Killed by: Raider_077
+03:06:14.8948 PM: Raider_077->Kill - Killed: Fighter_030
+03:06:22.7866 PM: Capital_008->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:06:22.9461 PM: Capital_008->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:06:23.1252 PM: Capital_008->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:06:23.2842 PM: Capital_008->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:06:23.4549 PM: Capital_008->AlmostDead - Last moments are from: Raider_063 (16 dmg)
+03:06:23.6058 PM: Capital_008->AlmostDead - Last moments are from: Raider_062 (8 dmg)
+03:06:23.7693 PM: Capital_008->AlmostDead - Last moments are from: Raider_062 (8 dmg)
+03:06:23.9524 PM: Capital_008->AlmostDead - Last moments are from: Raider_062 (8 dmg)
+03:06:24.1252 PM: Capital_008->AlmostDead - Last moments are from: Raider_062 (8 dmg)
+03:06:24.2823 PM: Capital_008->AlmostDead - Last moments are from: Raider_062 (8 dmg)
+03:06:34.7459 PM: Capital_008->AlmostDead - Last moments are from: Raider_070 (16 dmg)
+03:06:34.9263 PM: Capital_008->AlmostDead - Last moments are from: Raider_070 (16 dmg)
+03:06:35.0859 PM: Capital_008->Death - Killed by: Raider_070
+03:06:35.0859 PM: Raider_070->Kill - Killed: Capital_008
+03:06:49.5559 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:06:49.7102 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:06:49.8683 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:06:50.0241 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:06:50.1821 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:06:50.3407 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:06:50.4997 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:06:50.6583 PM: Capital_006->AlmostDead - Last moments are from: Raider_075 (16 dmg)
+03:07:01.4039 PM: Capital_009->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:07:01.5628 PM: Capital_009->AlmostDead - Last moments are from: Raider_086 (16 dmg)
+03:07:02.0427 PM: Capital_006->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:07:02.2009 PM: Capital_006->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:07:02.3746 PM: Capital_006->AlmostDead - Last moments are from: Raider_061 (16 dmg)
+03:07:03.4824 PM: Capital_006->AlmostDead - Last moments are from: Raider_057 (16 dmg)
+03:07:03.6426 PM: Capital_006->Death - Killed by: Raider_057
+03:07:03.6426 PM: Raider_057->Kill - Killed: Capital_006
+03:07:04.6105 PM: Capital_009->AlmostDead - Last moments are from: Raider_056 (8 dmg)
+03:07:04.7693 PM: Capital_009->AlmostDead - Last moments are from: Raider_056 (8 dmg)
+03:07:04.9262 PM: Capital_009->AlmostDead - Last moments are from: Raider_056 (8 dmg)
+03:07:05.0904 PM: Capital_009->AlmostDead - Last moments are from: Raider_056 (8 dmg)
+03:07:05.2441 PM: Capital_009->AlmostDead - Last moments are from: Raider_056 (8 dmg)
+03:07:05.4034 PM: Capital_009->AlmostDead - Last moments are from: Raider_056 (8 dmg)
+03:07:05.5613 PM: Capital_009->AlmostDead - Last moments are from: Raider_056 (8 dmg)
+03:07:09.3901 PM: Capital_004->CriticalTransfer - Power was: 4, Power now: 2
+03:07:10.2185 PM: Capital_009->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:07:10.3795 PM: Capital_009->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:07:10.5410 PM: Capital_009->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:07:10.6995 PM: Capital_009->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:07:10.8719 PM: Capital_009->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:07:11.0278 PM: Capital_009->AlmostDead - Last moments are from: Raider_066 (16 dmg)
+03:07:27.6681 PM: Capital_004->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:07:27.8436 PM: Capital_004->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:07:28.0009 PM: Capital_004->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:07:28.1768 PM: Capital_004->AlmostDead - Last moments are from: Raider_077 (16 dmg)
+03:07:28.8115 PM: Capital_009->AlmostDead - Last moments are from: Raider_057 (16 dmg)
+03:07:28.9691 PM: Capital_009->Death - Killed by: Raider_057
+03:07:28.9691 PM: Raider_057->Kill - Killed: Capital_009
+03:07:33.3137 PM: Capital_004->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:07:33.4714 PM: Capital_004->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:07:33.6305 PM: Capital_004->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:07:33.7895 PM: Capital_004->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:07:33.9496 PM: Capital_004->AlmostDead - Last moments are from: Raider_073 (16 dmg)
+03:07:40.5560 PM: Capital_004->AlmostDead - Last moments are from: Raider_045 (16 dmg)
+03:07:40.7131 PM: Capital_004->AlmostDead - Last moments are from: Raider_045 (16 dmg)
+03:07:40.8737 PM: Capital_004->AlmostDead - Last moments are from: Raider_045 (16 dmg)
+03:07:41.0310 PM: Capital_004->AlmostDead - Last moments are from: Raider_045 (16 dmg)
+03:07:41.1918 PM: Capital_004->Death - Killed by: Raider_045
+03:07:41.1918 PM: Raider_045->Kill - Killed: Capital_004

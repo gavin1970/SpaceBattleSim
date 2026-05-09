@@ -51,6 +51,8 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 - **F-key HUD overlays** — press F1/F2 to view live ship stats; press F5 to instantly revive all dead ships.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
 - **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
+- **Audit Logging** — All ship actions (Kills, Deaths, Heals, CriticalTransfers, Damage taken at those last moments.) are logged to a file with timestamps for post-simulation analysis.  
+  - Audit files are stored in the `.\\audit\\` directory with filenames like `260509_1504.log` (YearMonthDay_HourMin.log).  You can see 3 examples of these audit files found here: [SpaceBattleSim\auditLogs](SpaceBattleSim\auditLogs)
 
 ---
 
