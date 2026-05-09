@@ -70,6 +70,9 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 | `CriticalTransferRaiders` | bool | true | If true, this allows a raider to transfer half their power for 100% to their shields, when their shields drop below 25%. |
 | `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power for 100% to their shields, when their shields drop below 25%. |
 | `ShowMatrixGrid` | bool | true | Toggle visibility of the background "Matrix"-style grid |
+| `DisableAutoLock` | bool | false | If true, disables automatic locking of the Windows and stops screensavers. |
+| `TopmostWindow` | bool | false | If true, keeps the window always on top of other windows, unless they are also set to topmost. |
+| `ScreenViewType` | string | (3) Options: `FullScreenCurrent` | Set to FullScreen for full-screen mode, `FullScreenAll` for shared full-screen across all monitors, or `Windowed` for a resizable window with title bar |
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
 > **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, Fighters once, and Capital Ships can use this twice within one battle.

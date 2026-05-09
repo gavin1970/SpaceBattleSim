@@ -30,10 +30,10 @@
         readonly static Color _deadShipColor = _unuseDefault;
 
         static private readonly Dictionary<ShipType, 
-                (uint Shields, uint Power, uint HitBox, float Speed, 
+                (int Shields, int Power, int HitBox, float Speed, 
                 RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)> 
           _shipsAvailable = new Dictionary<ShipType, 
-                (uint Shields, uint Power, uint HitBox, float Speed, 
+                (int Shields, int Power, int HitBox, float Speed, 
                 RecoverOrder Recovery, string ShipInText, Color ShipColor, float Rotate)>()
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
@@ -55,10 +55,10 @@
             { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) }, // rotate 90.0f - not working as intended.
         };
 
-        private uint _shields = 0;
-        private uint _power = 0;
+        private int _shields = 0;
+        private int _power = 0;
         private float _speed = 0.0f;
-        private uint _hitbox = 0;
+        private int _hitbox = 0;
         private string _shipView = string.Empty;
         private Color _shipColor = Color.Empty;
         private float _rotate = 0;
@@ -73,7 +73,8 @@
         /// <param name="type">The type of ship for which to initialize statistics.</param>
         public ShipStats(ShipType type)
         {
-            if (_shipsAvailable.TryGetValue(type, out (uint shields, uint power, uint hitBox, float speed, RecoverOrder recovery, string shipView, Color shipColor, float rotate) value))
+            if (_shipsAvailable.TryGetValue(type, out (int shields, int power, int hitBox, float speed, RecoverOrder recovery, 
+                                                       string shipView, Color shipColor, float rotate) value))
             {
                 this.Ship = type;
                 _shields = value.shields;
@@ -106,11 +107,11 @@
         /// <summary>
         /// Gets the current shield value for the ship.
         /// </summary>
-        public uint Shields { get { return _shields; } }
+        public int Shields { get { return _shields; } }
         /// <summary>
         /// Gets the current power value for the ship.
         /// </summary>
-        public uint Power { get { return _power; } }
+        public int Power { get { return _power; } }
         /// <summary>
         /// Gets the current recovery order for the ship.
         /// </summary>
@@ -122,7 +123,7 @@
         /// <summary>
         /// Gets the current hitbox size for the ship.
         /// </summary>
-        public uint Hitbox { get { return _hitbox; } }
+        public int Hitbox { get { return _hitbox; } }
         /// <summary>
         /// Gets the current ship in text representation.
         /// </summary>

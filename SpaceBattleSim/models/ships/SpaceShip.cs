@@ -49,10 +49,10 @@ namespace SpaceBattleSim
         // character representation of the ship's radar distance to pick up ships,
         // based on ShipType. This drops as they take damage.
         private char _hitBox = (char)0;
-        private uint _orgShields = 0;
-        private uint _shields = 0;
-        private uint _orgPower = 0;
-        private uint _power = 0;
+        private int _orgShields = 0;
+        private int _shields = 0;
+        private int _orgPower = 0;
+        private int _power = 0;
         private float _speed = 0.5f;
         private int _recovery = 0;
         private ADateTime _nextCriticalTransfer = ADateTime.UtcNow;
@@ -189,7 +189,7 @@ namespace SpaceBattleSim
         /// representation of the ship's vulnerability and detection range, which can be used in various<br/>
         /// contexts such as gameplay mechanics or visual representations in a game or simulation.<br/>
         /// </summary>
-        public uint HitBox => _hitBox;
+        public int HitBox => _hitBox;
         /// <summary>
         /// The order in which a ship is recovered after being destroyed. The recovery order 
         /// can be used to determine the priority of repairs or salvage operations, with 
@@ -272,7 +272,7 @@ namespace SpaceBattleSim
         /// The shield value is used to determine the ship's status and can affect its performance in various<br/>
         /// ways, such as reducing power or changing its visual representation based on the damage level.<br/>
         /// </summary>
-        public uint Shields => _shields;
+        public int Shields => Volatile.Read(ref _shields);
         /// <summary>
         /// Gets the current shield integrity as a percentage of the original shield value.
         /// </summary>
@@ -285,7 +285,7 @@ namespace SpaceBattleSim
         /// The power value is used to determine the ship's status and can affect its performance in various<br/>
         /// ways, such as reducing speed or changing its visual representation based on the damage level.<br/>
         /// </summary>
-        public uint Power => _power;
+        public int Power => Volatile.Read(ref _power);
         /// <summary>
         /// Gets the current speed value. The speed represents the ship's movement capabilities, and as the ship<br/>
         /// takes damage, the speed value may decrease. When the speed reaches zero, the ship is considered dead.<br/>
@@ -397,46 +397,59 @@ namespace SpaceBattleSim
         /// critical, or dead.<br/>
         /// </summary>
         /// <param name="damage">The amount of damage to apply to the ship.</param>
-        public void TakeDamage(uint damage, string byWho)
+        public void TakeDamage(int damage, string byWho)
         {
             if (this.IsEmpty || _shipStatus == ShipStatus.Dead)
                 return;
-            
-            var afterDmg = _shields - damage;
+
+            // Because more than one ship can attack at the same time, we need to make sure that
+            // the damage is applied in a thread-safe way, and that the ship's status is updated
+            // correctly based on the new shield level. We also want to log the incoming data to
+            // try to figure out why no damage is being taken, but ships are still dying.
+            // This allows us to track the ship's condition and performance in various contexts,
+            // such as gameplay mechanics or visual representations in a simulation.
+            for (int i = 0; i < damage; i++)
+                Interlocked.Decrement(ref _shields);
+
+            // this.Shields is a Volatile read, so we get the current value after we potentially
+            // update it with damage. We then clamp the value to ensure it does not go below zero
+            // or above the original shield value.
+            _shields = Math.Clamp(this.Shields, 0, _orgShields);
+
             // log incoming data, trying to figure out why no damage is being taken, but ships are still dying.
             _lastAttack.AdjustTime(DateTime.UtcNow);
 
             // Reduce the ship's shields by the damage taken, and update the power based on the new shield level.
             // The power is calculated as a percentage of the maximum power based on the current shield level,
             // allowing for a dynamic relationship between shields and power.
-            if (afterDmg <= 0 || afterDmg > int.MaxValue)
+            if (this.Shields == 0) // Volatile read
             {
-                _shields = 0;
-                _power = 0;
+                Interlocked.Exchange(ref _power, 0);
                 _shipStatus = ShipStatus.Dead;
                 BattleStats.Audit(this.Name, ActionType.Death, $"Killed by: {byWho}"); //I died
                 BattleStats.Audit(byWho, ActionType.Kill, $"Killed: {this.Name}");      //this ship killed me
             }
             else
             {
-                _shields -= damage;
-                // Calculate the new power value as half of the current power, allowing for a critical
-                // transfer mechanic that sacrifices some power to regain shields when critically damaged.
-                uint newPower = _power / 2;
-
-                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && newPower >= 2)
+                // So we get the current value before we potentially update it with Critical Transfer.
+                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && this.Power > 2)
                 {
+                    //Volatile read, then divided by 2 for the critical transfer mechanic.
+                    var prevPower = Interlocked.Exchange(ref _power, this.Power / 2);   
+                    _power = Math.Clamp(this.Power, 2, _orgPower);
+
                     // using Critical Transfer
-                    BattleStats.Audit(this.Name, ActionType.CriticalTransfer, $"Power was: {_power}, Power now: {newPower}");
+                    BattleStats.Audit(this.Name, ActionType.CriticalTransfer, $"Power was: {prevPower}, Power now: {_power}");
                     _nextCriticalTransfer.AdjustTime(DateTime.UtcNow.AddSeconds(2));
 
                     //resets health, shields
-                    ResetStats();
-                    // set power to half of what it was before the reset,
-                    // which is the critical transfer mechanic for all.
-                    // This allows them to sacrifice some of their power
-                    // to regain shields when they are critically damaged.
-                    _power = newPower;  
+                    _shields = _orgShields;
+                    _shipsMission = ShipMission.Idle;
+
+                    // Reset stats without resetting power, since we just updated it with the critical transfer mechanic.
+                    // This allows the ship to have a chance to recover and continue fighting, while still maintaining the
+                    // strategic element of managing power and shields in battle.
+                    ResetStats(false);
                 } 
                 else if (ShieldIntegrity <= 25)
                 {
@@ -451,14 +464,15 @@ namespace SpaceBattleSim
         /// <summary>
         /// Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
         /// </summary>
-        public void ResetStats()
+        public void ResetStats(bool includePower = true)
         {
             if (this.IsEmpty || !_reset.TrySetTrue())
                 return;
             try
             {
-                _power = _orgPower;
-                _shields = _orgShields;
+                if (includePower)
+                    Interlocked.Exchange(ref _power, _orgPower);
+                Interlocked.Exchange(ref _shields, _orgShields);
                 _shipsMission = ShipMission.Idle;
 
                 UpdateStatus();
@@ -481,18 +495,19 @@ namespace SpaceBattleSim
             var dmgLevel = DamageLevel;     
             var prevDamageColor = _damageColor;
             var hitboxList = _hitboxHighCircleList;
+            var currentPower = this.Power;      // One time Volatile read
 
-            if (_power > 0)
+            if (currentPower > 0)
             {
-                if (_power < _orgPower / 4)
+                if (currentPower < _orgPower / 4)
                     hitboxList = _hitboxLowestCircleList;
-                else if (_power < _orgPower / 2)
+                else if (currentPower < _orgPower / 2)
                     hitboxList = _hitboxLowCircleList;
-                else if (_power < _orgPower)
+                else if (currentPower < _orgPower)
                     hitboxList = _hitboxMidCircleList;
             }
 
-            if (_shields == 0)
+            if (this.Shields == 0)
             {
                 _hitboxCircle = hitboxList[0];
                 _shipStatus = ShipStatus.Dead;

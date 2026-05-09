@@ -249,11 +249,15 @@ namespace SpaceBattleSim
         /// Used for auto setting of next destination point when the item reaches its current destination, 
         /// creating a continuous movement effect.<br/>
         /// </summary>
-        public uint DestinationRange { get; set; } = 1024;
+        public uint DestinationRange { get; set; } = 4096;
         /// <summary>
         /// Gets or sets the destination point for the animation.
         /// </summary>
         public PointF NextDestination { get; set; } = PointF.Empty;
+        /// <summary>
+        /// Gets or sets the destination point for the animation.
+        /// </summary>
+        public PointF LastDestination { get; set; } = PointF.Empty;
         /// <summary>
         /// Gets or sets a value indicating whether ghost effects are enabled. Creates a ghost affect as the<br/>
         /// item moves, leaving behind a fading trail that visually represents the path of the animation.<br/>
@@ -707,7 +711,7 @@ namespace SpaceBattleSim
                                                 }
                                             }
 
-                                            if(_spaceShip.CurrentMission != ShipMission.OnRepair&& _spaceShip.CurrentMission != ShipMission.HeadingHome)
+                                            if(_spaceShip.CurrentMission != ShipMission.OnRepair && _spaceShip.CurrentMission != ShipMission.HeadingHome)
                                             {
                                                 _spaceShip.CurrentMission = ShipMission.Idle;
                                                 _lastTargetLocation = _pendingDestination;
@@ -809,10 +813,10 @@ namespace SpaceBattleSim
                     {
                         // we don't want _spaceShip.IsRepairRig random walking around, they
                         // should only move toward targets and home base.
-                        var lX = Math.Min(_pendingDestination.X, this.ShipInfo.Location.X);
-                        var hX = Math.Min(_pendingDestination.X, this.ShipInfo.Location.X);
-                        var lY = Math.Min(_pendingDestination.Y, this.ShipInfo.Location.Y);
-                        var hY = Math.Min(_pendingDestination.Y, this.ShipInfo.Location.Y);
+                        var lX = Math.Min(_pendingDestination.X, x);
+                        var hX = Math.Min(_pendingDestination.X, x);
+                        var lY = Math.Min(_pendingDestination.Y, y);
+                        var hY = Math.Min(_pendingDestination.Y, y);
 
                         // this way theyare not on top of each other constantly.
                         var rX = Random.Shared.Next((int)lX, (int)hX) + (lX - (int)lX);
@@ -821,6 +825,7 @@ namespace SpaceBattleSim
                         this.NextDestination = new PointF(
                             Math.Clamp(rX, 0, ParentSize.Width - this.ShipInfo.Width),
                             Math.Clamp(rY, 0, ParentSize.Height - this.Height));
+
                         _pendingDestination = PointF.Empty;
                     }
                     else if ((this.Location.X == this.NextDestination.X ||
@@ -830,9 +835,11 @@ namespace SpaceBattleSim
                         y += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
 
                         this.NextDestination = new PointF(
-                            Math.Clamp(x, 0, ParentSize.Width - this.Width),
-                            Math.Clamp(y, 0, ParentSize.Height - this.Height)
+                            Math.Clamp(x, 0, ParentSize.Width - _spaceShip.HitBoxRect.Width),
+                            Math.Clamp(y, 0, ParentSize.Height - _spaceShip.HitBoxRect.Height)
                         );
+
+                        this.LastDestination = this.Location;
                     }
 
                     if (_isSpaceBattle)

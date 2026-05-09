@@ -44,7 +44,7 @@ namespace SpaceBattleSim
             // AutoResetTimer
             // 
             AutoResetTimer.Enabled = true;
-            AutoResetTimer.Interval = 30000;
+            AutoResetTimer.Interval = 15000;
             AutoResetTimer.Tick += AutoResetTimer_Tick;
             // 
             // BgPlatform

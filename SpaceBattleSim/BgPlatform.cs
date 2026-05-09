@@ -21,7 +21,14 @@ namespace SpaceBattleSim
         readonly static (int min, int max) _totalBattleShipsLimits = (10, 150);         // set limits for total number of Fighters and Raiders combined.
         readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
         readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 1.0f);   // set limits for planet spin speed.
-
+        private enum SimScreenView
+        {
+            Windowed = 1,
+            FullScreenCurrent,
+            FullScreenAll
+        }
+        private SimScreenView _screenViewType = 
+                SimScreenView.FullScreenCurrent;    // pulled from app config, Total number of Fighters and Raiders combined.
         private bool _showMatrixGrid = false;       // pulled from app config.
         private bool _showPlanets = true;           // pulled from app config
         private bool _showNebulae = true;           // pulled from app config
@@ -836,6 +843,7 @@ namespace SpaceBattleSim
         /// configuration fields to apply the latest settings.</remarks>
         private void LoadConfigurations()
         {
+            SetConfigValue("ScreenViewType", ref _screenViewType);
             SetConfigValue("ShowMatrixGrid", ref _showMatrixGrid);
             SetConfigValue("ShowPlanets", ref _showPlanets);
             SetConfigValue("ShowNebulae", ref _showNebulae);
@@ -852,6 +860,38 @@ namespace SpaceBattleSim
             SetConfigValue("TopmostWindow", ref _topmostWindow);
             SetConfigValue("MouseOverShips", ref _mouseOverShips);
 
+            if (_screenViewType == SimScreenView.Windowed)
+            {
+                this.FormBorderStyle = FormBorderStyle.Sizable;
+                this.WindowState = FormWindowState.Maximized;
+                this.MaximizeBox = false;
+            }
+            else if (_screenViewType == SimScreenView.FullScreenAll)
+            {
+                this.FormBorderStyle = FormBorderStyle.None;
+                this.WindowState = FormWindowState.Normal;
+
+                // If a user has a monitor to the left of the primary, its Left will be
+                // negative (e.g., -1920). SystemInformation.VirtualScreen already accounts
+                // for this in its X/Y. With the Union approach, Left will also be negative.
+                ///var virtualBounds = Screen.AllScreens
+                ///    .Select(s => s.Bounds)
+                ///    .Aggregate(Rectangle.Union);
+                ///this.Location = new Point(virtualBounds.Left, virtualBounds.Top);
+                ///this.Size = new Size(virtualBounds.Width, virtualBounds.Height);
+
+                // SystemInformation.VirtualScreen wins — just want to cover all screens with
+                // no filtering, and it handles all edge cases including negative coordinates
+                // automatically. Save Rectangle.Union for when you need per-screen control.
+                var virtualScreen = SystemInformation.VirtualScreen;
+                this.Location = new Point(virtualScreen.Left, virtualScreen.Top);
+                this.Size = new Size(virtualScreen.Width, virtualScreen.Height);
+            }
+            else  // default to FullScreenCurrent
+            {
+                this.FormBorderStyle = FormBorderStyle.None;
+                this.WindowState = FormWindowState.Maximized;
+            }
             // If auto-lock is disabled in the configuration, call the method to prevent the
             // system from automatically locking the screen. This is important for ensuring
             // that the animation can run uninterrupted without the screen locking due to
