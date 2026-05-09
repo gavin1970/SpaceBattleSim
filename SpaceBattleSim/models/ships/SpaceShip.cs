@@ -12,24 +12,24 @@ namespace SpaceBattleSim
     {
         private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
         private static readonly List<Pen> _hitboxLowestCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(0, Color.HotPink), 1),
-            new Pen(Color.FromArgb(100, Color.HotPink), 1),
+            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Silver), 1),
             new Pen(Color.FromArgb(50, Color.Silver), 1),
             new Pen(Color.FromArgb(75, Color.Silver), 1),
             new Pen(Color.FromArgb(100, Color.Silver), 1)
         };
         private static readonly List<Pen> _hitboxLowCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(0, Color.BlueViolet), 1),
-            new Pen(Color.FromArgb(100, Color.BlueViolet), 1),
+            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Orange), 1),
             new Pen(Color.FromArgb(50, Color.Orange), 1),
             new Pen(Color.FromArgb(75, Color.Orange), 1),
             new Pen(Color.FromArgb(100, Color.Orange), 1)
         };
         private static readonly List<Pen> _hitboxMidCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(0, Color.DarkOrchid), 1),
-            new Pen(Color.FromArgb(100, Color.DarkOrchid), 1),
+            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Cyan), 1),
             new Pen(Color.FromArgb(50, Color.Cyan), 1),
             new Pen(Color.FromArgb(75, Color.Cyan), 1),
@@ -437,6 +437,10 @@ namespace SpaceBattleSim
                     // This allows them to sacrifice some of their power
                     // to regain shields when they are critically damaged.
                     _power = newPower;  
+                } 
+                else if (ShieldIntegrity <= 25)
+                {
+                    BattleStats.Audit(this.Name, ActionType.AlmostDead, $"Last moments are from: {byWho} ({damage} dmg)");
                 }
             }
 

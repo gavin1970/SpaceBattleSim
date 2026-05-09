@@ -9,7 +9,8 @@ namespace SpaceBattleSim
         Kill,
         Death,
         CriticalTransfer,
-        Heal
+        Heal,
+        AlmostDead
     }
     public static class BattleStats
     {
@@ -48,14 +49,14 @@ namespace SpaceBattleSim
             var auditName = $"{AuditFolder}\\{DateTime.Now:yyMMdd_HHmm}.log";
             StringBuilder sb = new();
 
-            var fLine = $"Summary of {winners}: {startDate} - {endDate} ({endDate - startDate})";
+            var fLine = $"Summary of {winners}: {startDate.ToLocalTime()} - {endDate.ToLocalTime()} ({endDate - startDate})";
             sb.AppendLine(fLine);
             sb.AppendLine(new string('-', fLine.Length));
 
             foreach(ShipType sType in Enum.GetValues(typeof(ShipType)))
             {
-            if (sType == ShipType.Bomber || sType == ShipType.Transport)
-                continue;
+                if (sType == ShipType.Bomber || sType == ShipType.Transport)
+                    continue;
                 
                 var ship = new ShipStats(sType);
                 sb.AppendLine($"{sType}->Shields: {ship.Shields} | Power: {ship.Power} | Speed: {ship.Speed} | " +
@@ -94,7 +95,7 @@ namespace SpaceBattleSim
             while(_detailAudit.TryDequeue(out var detail))
             {
                 var (dt, note) = detail;
-                sb.AppendLine($"{dt}: {note}");
+                sb.AppendLine($"{dt:hh:mm:ss.ffff tt}: {note}");
             }
 
             // reset detail

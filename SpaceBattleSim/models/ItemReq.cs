@@ -427,7 +427,8 @@ namespace SpaceBattleSim
         /// </summary>
         public static void ResetDeadShips()
         {
-            _battleTime = ADateTime.UtcNow - _startBattle.Value;
+            var utc = ADateTime.UtcNow;
+            _battleTime = utc - _startBattle.Value;
 
             var raiderWin = AnyRaiderAlive;
             var allyWin = AnyAllyAlive;
@@ -435,7 +436,7 @@ namespace SpaceBattleSim
             var aliveRepairRigs = _allSpaceShips.Where(w => w.Value.IsRepairRig && w.Value.Status != ShipStatus.Dead).Any();
             var winMessage = raiderWin && allyWin ? "Manual Reset" : raiderWin ? "Raiders win" : "Ally win";
 
-            BattleStats.SaveAudit(_startBattle.Value, ADateTime.UtcNow, winMessage);
+            BattleStats.SaveAudit(_startBattle.Value, utc, winMessage);
 
             foreach (var ship in _allSpaceShips)
                 _allSpaceShips[ship.Key].ResetStats();
