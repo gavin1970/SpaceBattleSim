@@ -495,7 +495,14 @@ namespace SpaceBattleSim
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Shields", 7)} | " +
                              $"{CreatePaddedString("Power", 5)} | {CreatePaddedString("HitBox", 6)} | " +
                              $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} | " +
-                             $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} | ";
+                             $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} ";
+
+                retVal.Add($"This Battle Time: {ADateTime.UtcNow - _startBattle.Value}");
+                retVal.Add($"Last Total Battle Time: {_battleTime}");
+
+                retVal.Add(new string('-', header.Length));
+                retVal.Add(header);
+                retVal.Add(new string('-', header.Length));
 
                 foreach (ShipType sType in Enum.GetValues(typeof(ShipType)))
                 {
@@ -507,21 +514,17 @@ namespace SpaceBattleSim
                     retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{shipStats.Shields}", 7)} | " +
                                  $"{CreatePaddedString($"{shipStats.Power}", 5)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
                                  $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
-                                 $"{CreatePaddedString($"{shipStats.HasCritalTransfer}", 4)} |{CreatePaddedString($" {shipStats.ShipView}", 4)}|");
+                                 $"{CreatePaddedString($"{shipStats.HasCritalTransfer}", 4)} |{CreatePaddedString($" {shipStats.ShipView}", 4)} ");
                 }
-
-                retVal.Add(new string('_', header.Length));
-                retVal.Add(header);
-                retVal.Add(new string('_', header.Length));
-
-                retVal.Add($"This Battle Time: {ADateTime.UtcNow - _startBattle.Value}");
-                retVal.Add($"Last Total Battle Time: {_battleTime}");
             }
             else
             {
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Total", 5)} | " +
-                             $"{CreatePaddedString("Alive", 6)} | {CreatePaddedString("Dead", 4)} |";
+                             $"{CreatePaddedString("Alive", 6)} | {CreatePaddedString("Dead", 4)} ";
 
+                retVal.Add(new string('-', header.Length));
+                retVal.Add(header);
+                retVal.Add(new string('-', header.Length));
 
                 foreach (ShipType sType in Enum.GetValues(typeof(ShipType)))
                 {
@@ -532,12 +535,8 @@ namespace SpaceBattleSim
                     var totalByType = _allSpaceShips.Where(w => w.Value.ShipType == sType).Count();
                     var deadByType = _allSpaceShips.Where(w => w.Value.ShipType == sType && w.Value.Status == ShipStatus.Dead).Count();
                     retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{totalByType}", 5)} | " +
-                               $"{CreatePaddedString($"{totalByType-deadByType}", 6)} | {CreatePaddedString($"{deadByType}", 4)} |");
+                               $"{CreatePaddedString($"{totalByType-deadByType}", 6)} | {CreatePaddedString($"{deadByType}", 4)} ");
                 }
-
-                retVal.Add(new string('_', header.Length));
-                retVal.Add(header);
-                retVal.Add(new string('_', header.Length));
             }
 
             return retVal.ToArray();

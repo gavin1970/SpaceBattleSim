@@ -12,8 +12,16 @@ namespace SpaceBattleSim
         // while keeping the grid lines visible.
         static bool _transparentBG = false;
         static ABool _startup = ABool.True;
-        const string _appTitle = "WinForm Random Battleground";
-        static string _appInfo = "Version: {0} - Press F5 reset dead, Press F1 or F2 for Ship Info/Stats, Mouse over far right top for close button, Mouse over far left top and click banner that pops up for transparent background..";
+        const string _appTitle = "Space Battleground Simulation";
+        static string _appInfo = "Version: {0} - F1 (Help)";
+        static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
+            "F2 - Ship's class type information\n " +
+            "F3 - Battle Stats\n " +
+            "F5 - Revive the dead and refresh all ships to 100%\n " +
+            "Mouse over the far top right for make close button.\n\t" +
+            "* Only available when not in Windowed mode\n " +
+            "Mouse over far left top and click banner that pops up for toggle background transparent.\n\t" +
+            "* May be hard to toggle back, because the background is click through.";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
         const float _percentRepairRigs = 0.10f;              // set percentage of total ships that are repair rigs, rest will be Fighters and Raiders.
@@ -38,7 +46,7 @@ namespace SpaceBattleSim
         private bool _naturalStarfield = true;      // pulled from app config
         private bool _disableAutoLock = false;      // pulled from app config
         private bool _topmostWindow = false;        // pulled from app config
-        private bool _mouseOverShips = true;        // pulled from app config, Allows the user to mouse over ships to see their stats.
+        // private bool _mouseOverShips = true;     // Not used at the moment.
 
         // const bool _showAsteroids = false;
         private ABool _showCloseButton = ABool.True;// If form is Windowed, we don't need a close button, but if it's full screen, we do.
@@ -113,7 +121,7 @@ namespace SpaceBattleSim
         private static PointF _versionLoc = PointF.Empty;
 
         internal static List<ItemReq> _battleShips = new List<ItemReq>();
-        private static string[] _shipInfo = { };
+        private static string[] _fKeyDisplay = { };
 
         public BgPlatform()
         {
@@ -163,31 +171,36 @@ namespace SpaceBattleSim
             {
                 var isF1 = e.KeyCode == Keys.F1;    //details
                 var isF2 = e.KeyCode == Keys.F2;    //summary
-                if (isF1 || isF2)
+                var isF3 = e.KeyCode == Keys.F3;
+                var isF5 = e.KeyCode == Keys.F5;
+
+                if (isF1)
+                    _fKeyDisplay = this.HelpDisplayText();
+                else if (isF2)
+                    _fKeyDisplay = ItemReq.GetShipStatus(true);
+                else if (isF3)
+                    _fKeyDisplay = ItemReq.GetShipStatus(false);
+                else if (isF5)
                 {
-                    // Use Invoke to ensure we're on the UI thread when closing the form
-                    this.Invoke(new Action(() =>
-                    {
-                        // if not F1, then F2
-                        _shipInfo = ItemReq.GetShipStatus(isF1);
-                    }));
+                    this.AutoResetTimer.Enabled = false;
+                    this.RefreshTimer.Enabled = false;
                 }
             };
+
             this.KeyUp += (s, e) =>
             {
-                var isF5 = e.KeyCode == Keys.F5;    //refresh
                 var isF1 = e.KeyCode == Keys.F1;
                 var isF2 = e.KeyCode == Keys.F2;
-                if (isF1 || isF2)
-                {
-                    // Use Invoke to ensure we're on the UI thread when closing the form
-                    this.Invoke(new Action(() =>
-                    {
-                        _shipInfo = new string[] { };
-                    }));
-                }
+                var isF3 = e.KeyCode == Keys.F3;
+                var isF5 = e.KeyCode == Keys.F5;
+                if (isF1 || isF2 || isF3)
+                    _fKeyDisplay = new string[] { };
                 else if (isF5)
+                {
                     ItemReq.ResetDeadShips();
+                    this.AutoResetTimer.Enabled = true;
+                    this.RefreshTimer.Enabled = true;
+                }
             };
 
             _startup.SetFalse();
@@ -833,6 +846,12 @@ namespace SpaceBattleSim
 
             return retVal.ToArray();
         }
+        private string[] HelpDisplayText()
+        {
+            var retVal = new List<string>();
+
+            return _helpInfo.Split('\n'); // retVal.ToArray();
+        }
         #endregion
 
         #region Configuration
@@ -845,35 +864,58 @@ namespace SpaceBattleSim
         /// configuration fields to apply the latest settings.</remarks>
         private void LoadConfigurations()
         {
+            // System configuration settings
             SetConfigValue("ScreenViewType", ref _screenViewType);
-            SetConfigValue("ShowMatrixGrid", ref _showMatrixGrid);
-            SetConfigValue("ShowPlanets", ref _showPlanets);
-            SetConfigValue("ShowNebulae", ref _showNebulae);
-            SetConfigValue("ShowStars", ref _showStars);
-            SetConfigValue("NaturalStarfield", ref _naturalStarfield);
-            SetConfigValue("PlanetSize", ref _planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
-            SetConfigValue("PlanetSpinSpeed", ref _planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max);
-            SetConfigValue("ShowComet", ref _showComet);
             SetConfigValue("ShowVersion", ref _showVersion);
+            SetConfigValue("DisableAutoLock", ref _disableAutoLock);
+            SetConfigValue("TopmostWindow", ref _topmostWindow);
+
+            // Battle and ship configuration settings
             SetConfigValue("TotalBattleShips", ref _totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);
             SetConfigValue("CriticalTransferRaiders", ref _criticalTransferRaiders);
             SetConfigValue("CriticalTransferAlly", ref _criticalTransferAlly);
-            SetConfigValue("DisableAutoLock", ref _disableAutoLock);
-            SetConfigValue("TopmostWindow", ref _topmostWindow);
+
+            // Background and visual configuration settings
+            SetConfigValue("ShowMatrixGrid", ref _showMatrixGrid);
+            SetConfigValue("ShowComet", ref _showComet);
+            SetConfigValue("ShowNebulae", ref _showNebulae);
+            SetConfigValue("ShowPlanets", ref _showPlanets);
+            SetConfigValue("ShowStars", ref _showStars);
+
+            // only show the planet configuration options if planets are enabled, since they
+            // have no effect without planets and would just take up space in the config
+            if (_showPlanets) 
+            {
+                SetConfigValue("PlanetSize", ref _planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
+                SetConfigValue("PlanetSpinSpeed", ref _planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max);
+            }
+            // only show the natural starfield option if stars are enabled, since it
+            // has no effect without stars and would just take up space in the config
+            if (_showStars)
+                SetConfigValue("NaturalStarfield", ref _naturalStarfield);
+
+            /*
+            // Interactive configuration settings (not implemented yet)
             SetConfigValue("MouseOverShips", ref _mouseOverShips);
+			<!-- 
+			Allows the user to mouse over ships to see their stats. (NOT IMPLEMENTED YET)
+			-->
+			<add key="MouseOverShips" value="false"/>
+            /**/
 
             var thisScreen = Screen.AllScreens.Where(w => w.Bounds.Contains(this.Left, this.Top)).FirstOrDefault() ?? Screen.PrimaryScreen;
 
             if (_screenViewType == SimScreenView.Windowed)
             {
-                // In Windowed mode, we disable the painted close button because we don't need both the painted and standard windowed close buttons.
+                // In Windowed mode, we disable the painted close button because we
+                // don't need both the painted and standard windowed close buttons.
                 _showCloseButton.SetFalse();
 
                 var appHeight = 1002;  // 1002 = 1080
                                        //        - 48 (Toolbar height)
                                        //        - 30 Titlebar height (approx, varies based on font and DPI)
 
-                // since I'm disabling the maximize box, disabling resize, and setting a fixed size, I want to ensure that the form is large enough
+                // Since I'm disabling the maximize box, disabling resize, and setting a fixed size, I want to ensure that the form is large enough
                 // to show the full animation without being too large for smaller screens. Setting the height to 1002 allows
                 // for a good balance between visibility and compatibility with various screen sizes, while also accounting
                 // for the space taken up by the toolbar and title bar.
@@ -1084,16 +1126,17 @@ namespace SpaceBattleSim
             if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
             if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
 
-            if (_shipInfo.Length > 0)
+            if (_fKeyDisplay.Length > 0)
             {
-                float y = this.FormSize.Height - this.Padding.Bottom - (_shipInfo.Length * 24);
-                float width = _shipInfo.OrderByDescending(s => s.Length).FirstOrDefault()?.Length ?? 60.0f;
-                RectangleF rect = new RectangleF(this.Padding.Left + 5, y - 5, (width * 10.0f) + 10.0f, (_shipInfo.Length * 20) + 20);
+                float y = this.FormSize.Height - this.Padding.Bottom - (_fKeyDisplay.Length * 24);
+                float width = _fKeyDisplay.OrderByDescending(s => s.Length).FirstOrDefault()?.Length ?? 60.0f;
+                RectangleF rect = new RectangleF(this.Padding.Left + 5, y - 5, (width * 10.0f) + 10.0f, (_fKeyDisplay.Length * 20) + 20);
                 g.FillRectangle(Brushes.Blue, rect);
                 g.DrawRectangle(new Pen(Brushes.Yellow, 1), rect);
 
-                for (int i = 0; i < _shipInfo.Length; i++)
-                    g.DrawString(_shipInfo[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 30 - ((i + 1) * 20)));
+                var yStart = this.ViewSize.Height - Padding.Bottom - 30 - ((_fKeyDisplay.Length - 1) * 20);
+                for (int i = 0; i < _fKeyDisplay.Length; i++)
+                    g.DrawString(_fKeyDisplay[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, yStart + ((i * 20))));
             }
 
             if (CloseButton.Visible) CloseButton.DrawItem(e.Graphics);

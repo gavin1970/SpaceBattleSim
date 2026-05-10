@@ -24,9 +24,14 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 ## What It Is
 
-**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, rotating planet, and Raiders fighting against Friendly autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.
+**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, rotating planet, and Raiders fighting against Friendly autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.<br/>
 
-![Battleground full-screen view](imgs/full_screen_view.png)
+**Single Monitor - Full Screen**
+![Single Monitor full-screen view](imgs/full_screen_view.png)
+
+**All Monitors - Full Screen**<br/>
+Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid: `True`, ShowStars: `True`, NaturalStarfield: `True`, ShowComet: `False`, ShowNebulae: `False`, ShowPlanets: `False`, ShowVersion: `False`
+![All Monitor full-screen view](imgs/full_all_screens_view.png)
 
 > Can run by itself or with project in Visual Studio.  Press (F5) at any time to revive all the dead.  This will happen automatically within 30 seconds of all healers or all raiders being destroyed, but you can also trigger it manually with F5. The F1 and F2 keys show different levels of ship info overlays.
 
@@ -62,19 +67,19 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 |---|---|---|---|
 | `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
 | `ShowStars` | bool | true | Toggle visibility of random stars in the background |
-| `NaturalStarfield` | bool | true | Toggle natural starfield background layer vs artificial starfield |
-| `ShowPlanet` | bool | true | Toggle visibility of the rotating planet in the background |
-| `ShowComet` | bool | true | Toggle visibility of the flying comet in the background |
+| `NaturalStarfield` | bool | false | Toggle natural starfield background layer vs artificial starfield |
+| `ShowPlanet` | bool | false | Toggle visibility of the rotating planet in the background |
+| `ShowComet` | bool | false | Toggle visibility of the flying comet in the background |
 | `PlanetSize` | int | 150 | Diameter of the rotating planet in pixels |
 | `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
-| `TotalBattleShips` | int | 100 | Total number of ships (Fighters + Raiders) to spawn in the simulation |
+| `TotalBattleShips` | int | 30 | (10-150) Total number of ships (Fighters + Raiders) to spawn in the simulation |
 | `ShowVersion` | bool | true | Show the app version near the bottom left of the screen. |
-| `CriticalTransferRaiders` | bool | true | If true, this allows a raider to transfer half their power for 100% to their shields, when their shields drop below 25%. |
+| `CriticalTransferRaiders` | bool | false | If true, this allows a raider to transfer half their power for 100% to their shields, when their shields drop below 25%. |
 | `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power for 100% to their shields, when their shields drop below 25%. |
 | `ShowMatrixGrid` | bool | true | Toggle visibility of the background "Matrix"-style grid |
 | `DisableAutoLock` | bool | false | If true, disables automatic locking of the Windows and stops screensavers. |
 | `TopmostWindow` | bool | false | If true, keeps the window always on top of other windows, unless they are also set to topmost. |
-| `ScreenViewType` | string | (3) Options: `FullScreenCurrent` | Set to FullScreen for full-screen mode, `FullScreenAll` for shared full-screen across all monitors, or `Windowed` for a resizable window with title bar |
+| `ScreenViewType` | string | `FullScreenCurrent` | Default: `FullScreenCurrent` - Full screen.  `FullScreenAll` - Set to FullScreen across all monitors.  `Windowed` - for a resizable window with title bar |
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
 > **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, Fighters once, and Capital Ships can use this twice within one battle.
@@ -92,8 +97,8 @@ All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 | **Capital Ship** | **800** | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, Twice Raider shields, but half their power |
 | **Fighter** | 200 | 4 | 1.0 | 50 px | **Low** (3rd) | Balanced grunt unit; home-team protector |
 | **Raider** (Enemy) | 400 | **16** | 1.0 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed |
-| *Bomber* | 400 | 6 | 0.5 | 60 px | **Medium** | *Reserved — not currently deployed* |
-| *Transport* | 2000 | 0 | 2.0 | 40 px | **Low** | *Reserved — not currently deployed* |
+| ~~Bomber~~ | 400 | 6 | 0.5 | 60 px | **Medium** | **Reserved — not currently deployed** |
+| ~~Transport~~ | 2000 | 0 | 2.0 | 40 px | **Low** | **Reserved — not currently deployed** |
 
 > **Raider vs Capital comparison:** Raiders carry twice the firepower (16 vs 8) but only half the shields (400 vs 800), making them glass-cannon enemies.
 
