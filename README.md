@@ -30,7 +30,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 ![Single Monitor full-screen view](imgs/full_screen_view.png)
 
 **All Monitors - Full Screen**<br/>
-Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid: `True`, ShowStars: `True`, NaturalStarfield: `True`, ShowComet: `False`, ShowNebulae: `False`, ShowPlanets: `False`, ShowVersion: `False`
+Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid: `True`, ShowStars: `True`, NaturalStarfield: `True`, ShowComet: `False`, ShowNebulae: `true`, ShowPlanets: `False`, ShowVersion: `False`
 ![All Monitor full-screen view](imgs/full_all_screens_view.png)
 
 > Can run by itself or with project in Visual Studio.  Press (F5) at any time to revive all the dead.  This will happen automatically within 30 seconds of all healers or all raiders being destroyed, but you can also trigger it manually with F5. The F1 and F2 keys show different levels of ship info overlays.
