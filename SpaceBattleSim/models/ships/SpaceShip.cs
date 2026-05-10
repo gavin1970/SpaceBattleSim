@@ -278,7 +278,7 @@ namespace SpaceBattleSim
         /// </summary>
         /// <remarks>Returns 0 if the original shield value is zero. The value represents the proportion
         /// of remaining shields relative to the initial amount, expressed as a percentage.</remarks>
-        public float ShieldIntegrity => _orgShields == 0 ? 0 : (_shields / (float)_orgShields) * 100.0f;
+        public float ShieldIntegrity => _orgShields == 0 ? 0 : (this.Shields / (float)_orgShields) * 100.0f;
         /// <summary>
         /// Gets the current power value. The power represents the ship's operational capabilities, and as the ship<br/>
         /// takes damage, the power value decreases. When the power reaches zero, the ship is considered dead.<br/>
@@ -329,7 +329,7 @@ namespace SpaceBattleSim
         /// <remarks>A value of 0 indicates no damage, while a value of 1 indicates maximum damage. The
         /// damage level is calculated based on the ratio of current shields to maximum shields.</remarks>
         /// public double DamageLevel => 1 - ((double)(_shields / _orgShields));
-        public double DamageLevel => _orgShields == 0 ? 0 : 100.0 - ((_shields / (double)_orgShields) * 100.0);
+        public double DamageLevel => _orgShields == 0 ? 0 : 100.0 - ((this.Shields / (double)_orgShields) * 100.0);
         /// <summary>
         /// Gets the brush used to represent the ship's color. The color can be customized through the 
         /// ship's custom data, allowing for dynamic visual representations based on the ship's status 
@@ -402,11 +402,12 @@ namespace SpaceBattleSim
             if (this.IsEmpty || _shipStatus == ShipStatus.Dead)
                 return;
 
-            // Because more than one ship can attack at the same time, we need to make sure that
-            // the damage is applied in a thread-safe way, and that the ship's status is updated
-            // correctly based on the new shield level. We also want to log the incoming data to
-            // try to figure out why no damage is being taken, but ships are still dying.
-            // This allows us to track the ship's condition and performance in various contexts,
+            // Because more than one ship can attack at the same time, we need to make sure that the damage is
+            // applied in a thread-safe way, and that the ship's status is updated correctly based on the new
+            // shield level. Because of this I moved away from:
+            /// Interlocked.Exchange(ref _shields, this.Shields - damage);
+            // We also want to log the incoming data to try to figure out why no damage is being taken, but ships
+            // are still dying. This allows us to track the ship's condition and performance in various contexts,
             // such as gameplay mechanics or visual representations in a simulation.
             for (int i = 0; i < damage; i++)
                 Interlocked.Decrement(ref _shields);
@@ -414,7 +415,7 @@ namespace SpaceBattleSim
             // this.Shields is a Volatile read, so we get the current value after we potentially
             // update it with damage. We then clamp the value to ensure it does not go below zero
             // or above the original shield value.
-            _shields = Math.Clamp(this.Shields, 0, _orgShields);
+            Interlocked.Exchange(ref _shields, Math.Clamp(this.Shields, 0, _orgShields));
 
             // log incoming data, trying to figure out why no damage is being taken, but ships are still dying.
             _lastAttack.AdjustTime(DateTime.UtcNow);
@@ -432,29 +433,33 @@ namespace SpaceBattleSim
             else
             {
                 // So we get the current value before we potentially update it with Critical Transfer.
-                if (ShieldIntegrity <=25 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow && this.Power > 2)
+                if (ShieldIntegrity <= 25 && this.Power > 2 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow)
                 {
                     //Volatile read, then divided by 2 for the critical transfer mechanic.
-                    var prevPower = Interlocked.Exchange(ref _power, this.Power / 2);   
-                    _power = Math.Clamp(this.Power, 2, _orgPower);
+                    var prevPower = Interlocked.Exchange(ref _power, Math.Clamp(this.Power / 2, 2, _orgPower));
 
                     // using Critical Transfer
                     BattleStats.Audit(this.Name, ActionType.CriticalTransfer, $"Power was: {prevPower}, Power now: {_power}");
                     _nextCriticalTransfer.AdjustTime(DateTime.UtcNow.AddSeconds(2));
 
                     //resets health, shields
-                    _shields = _orgShields;
+                    Interlocked.Exchange(ref _shields, _orgShields);
                     _shipsMission = ShipMission.Idle;
 
                     // Reset stats without resetting power, since we just updated it with the critical transfer mechanic.
                     // This allows the ship to have a chance to recover and continue fighting, while still maintaining the
                     // strategic element of managing power and shields in battle.
                     ResetStats(false);
-                } 
+                }
                 else if (ShieldIntegrity <= 25)
                 {
-                    BattleStats.Audit(this.Name, ActionType.AlmostDead, $"Last moments are from: {byWho} ({damage} dmg)");
+                    BattleStats.Audit(this.Name, ActionType.AlmostDead, $"Last moments are from: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity}%)");
                 }
+                else
+                {
+                    BattleStats.Audit(this.Name, ActionType.TakeDamage, $"from: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity}%)");
+                }
+
             }
 
             // Update the ship's status based on the new shield level, determining whether it is still operational,

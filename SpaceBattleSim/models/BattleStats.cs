@@ -10,7 +10,8 @@ namespace SpaceBattleSim
         Death,
         CriticalTransfer,
         Heal,
-        AlmostDead
+        AlmostDead,
+        TakeDamage
     }
     public static class BattleStats
     {

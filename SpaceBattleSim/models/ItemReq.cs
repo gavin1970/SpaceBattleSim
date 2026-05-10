@@ -493,7 +493,7 @@ namespace SpaceBattleSim
             if (stats)
             {
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Shields", 7)} | " +
-                             $"{CreatePaddedString("Power", 5)} | {CreatePaddedString("HitBox", 6)} | " +
+                             $"{CreatePaddedString("Power", 10)} | {CreatePaddedString("HitBox", 6)} | " +
                              $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} | " +
                              $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} ";
 
@@ -511,8 +511,12 @@ namespace SpaceBattleSim
                         continue;
                     
                     var shipStats = new ShipStats(sType);
+                    // RepairRig doesn't do damage, so show 0 dps for clarity instead of "Power * 33.33333333333333" which would be misleading.
+                    // Power * 3 is the formula for calculating dps for all other ship types and comes from the refresh timer
+                    // that occurs .30 of a second muliplied by ShipTypes->Power, rounded.
+                    var dps = sType == ShipType.RepairRig ? 0 : shipStats.Power * 3;
                     retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{shipStats.Shields}", 7)} | " +
-                                 $"{CreatePaddedString($"{shipStats.Power}", 5)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
+                                 $"{CreatePaddedString($"{shipStats.Power:00} - {(dps)}dps", 10)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
                                  $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
                                  $"{CreatePaddedString($"{shipStats.HasCritalTransfer}", 4)} |{CreatePaddedString($" {shipStats.ShipView}", 4)} ");
                 }
