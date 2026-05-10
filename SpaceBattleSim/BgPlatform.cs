@@ -12,6 +12,7 @@ namespace SpaceBattleSim
         // while keeping the grid lines visible.
         static bool _transparentBG = false;
         static ABool _startup = ABool.True;
+        static readonly SizeF _homeSize = new SizeF(125.0f, 144.0f);
         const string _appTitle = "Space Battleground Simulation";
         static string _appInfo = "Version: {0} - F1 (Help)";
         static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
@@ -234,6 +235,10 @@ namespace SpaceBattleSim
                 // first object created so it appears behind the others
                 BuildMatrixArray();
 
+                // =================================================================
+                // Build other controls on top of the matrix background, but in the order of which layer they should appear.
+                BuildHomeBase();
+
                 //Build out stars, planets, and other space objects in the background before building the HomeBase
                 //and _battleShips to create a sense of depth and immersion in the space battle scene. By drawing
                 //these elements first, they will appear behind the HomeBase and _battleShips, enhancing the visual
@@ -243,9 +248,6 @@ namespace SpaceBattleSim
                 //the dynamic feel of the scene.
                 BuildSpaceTime();
 
-                // =================================================================
-                // Build other controls on top of the matrix background, but in the order of which layer they should appear.
-                BuildHomeBase();
                 // Fliers are built after the HomeBase so RapairRigs will appear around it. 
                 BuildFliers();
 
@@ -352,6 +354,31 @@ namespace SpaceBattleSim
                                 new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
                                 radius: 80, Color.FromArgb(50, 0, 140, 130), density: 6400, rng);
                         }
+
+                        List<float[]> cords = DDefaults.GetHomeBase();
+                        List<PointF> allPoints = new List<PointF>();
+
+                        using (GraphicsPath path = new GraphicsPath())
+                        {
+                            List<PointF> newPoints = new List<PointF>();
+                            for (int i = 0; i < cords.Count; i++)
+                            {
+                                using GraphicsPath path2 = new GraphicsPath();
+                                var lst = cords[i];
+                                for (int j = 0; j < lst.Length; j += 2)
+                                    newPoints.Add(new PointF(lst[j] + _moveX, lst[j + 1] + _moveY));
+                                path2.AddPolygon(newPoints.ToArray());
+                                path.AddPath(path2, true);
+                                using (SolidBrush brush = new SolidBrush(Color.FromArgb(150, Color.Blue)))
+                                    bg.FillPath(brush, path);
+                                allPoints.AddRange(newPoints);
+                                newPoints.Clear();
+                                path.Reset();
+                            }
+                        }
+
+                        foreach (var (start, end) in HomeBase.DLine.DrawList)
+                            bg.DrawLine(DDefaults.DEF_LINE_SETUP, start, end);
 
                         // Draw all collected segments onto the bitmap
                         foreach (var (start, end, pen) in tmp.DrawList)
@@ -605,6 +632,7 @@ namespace SpaceBattleSim
                 }
 
                 var cap = new ShipStats(ShipType.Capital);
+
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
                 for (int cnt = 0; cnt < _capShipCount; cnt++)
@@ -635,16 +663,13 @@ namespace SpaceBattleSim
                     _battleShips.Add(fly);
                 }
 
-                var anchorX = HomeBase.Center.X;  // _anchorX + _moveX;
-                var anchorY = HomeBase.Center.Y;  // _anchorY + _moveY;
-
                 var repairRig = new ShipStats(ShipType.RepairRig);
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
                 for (int cnt = 0; cnt < _repairRigCount; cnt++)
                 {
-                    x = Random.Shared.Next((int)(anchorX - 100.0f), (int)(anchorX + 100.0f));
-                    y = Random.Shared.Next((int)(anchorY - 100.0f), (int)(anchorY + 100.0f));
+                    x = Random.Shared.Next((int)(_anchorX - 100.0f), (int)(_anchorX + 100.0f));
+                    y = Random.Shared.Next((int)(_anchorY - 100.0f), (int)(_anchorY + 100.0f));
 
                     var fly = new ItemReq(this, $"RepairRig_{cnt:000}")
                     {
@@ -673,7 +698,8 @@ namespace SpaceBattleSim
 
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
-                    fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
+                    //fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
+                    fly.DLine.Add(new PointF(_anchorX, _anchorY), new PointF(fly.Right, fly.Bottom));
                     fly.SetShiptType(ShipType.RepairRig);
                     _battleShips.Add(fly);
                 }
@@ -701,38 +727,20 @@ namespace SpaceBattleSim
                     },
                 };
 
-                var homeSize = new SizeF(125.0f, 144.0f);
-                // Size of HomeBase: 125 x 144
-                List<float[]> coordsList = new List<float[]>();
-                // ---===[ Outer, Top, Left ]===---
-                coordsList.Add(new float[] { 697, 506, 723, 491, 723, 520, 697, 536 });
-                // ---===[ Outer, Top ]===---
-                coordsList.Add(new float[] { 732, 486, 758, 471, 784, 486, 758, 501 });
-                // ---===[ Outer, Top, Right ]===---
-                coordsList.Add(new float[] { 793, 491, 819, 506, 819, 536, 793, 521 });
-                // ---===[ Inner, Top, Left ]===---
-                coordsList.Add(new float[] { 697, 541, 728, 523, 728, 489, 755, 506, 755, 539, 725.5f, 556 });
-                // ---===[ Inner, Top, Right ]===---
-                coordsList.Add(new float[] { 760.5f, 539, 760.5f, 505, 788.5f, 489, 788.5f, 523, 818, 541, 790.5f, 556 });
-                // ---===[ Outer, Bottom, Left ]===---
-                coordsList.Add(new float[] { 697, 546, 723, 561, 723, 591, 697, 576 });
-                // ---===[ Outer, Bottom ]===---
-                coordsList.Add(new float[] { 732, 596, 758, 581, 784, 596, 758, 611 });
-                // ---===[ Outer, Bottom, Right ]===---
-                coordsList.Add(new float[] { 793, 561, 819, 546, 819, 575, 793, 591 });
-                // ---===[ Inner, Bottom ]===---
-                coordsList.Add(new float[] { 727.5f, 560, 757.5f, 543, 788, 560, 788, 593, 757.5f, 575, 727.5f, 593 });
-
+                List<float[]> coordsList = DDefaults.GetHomeBase();
                 // Move ship based on window sizes and if multiple monitors are involved or not.
-                var anchorX = _formBounds.Center.X - homeSize.Width;
-                var anchorY = _formBounds.Center.Y - homeSize.Height;
+                var anchorX = _formBounds.Center.X - _homeSize.Width;
+                var anchorY = _formBounds.Center.Y - _homeSize.Height;
                 _moveX += anchorX > _anchorX ? anchorX - _anchorX : anchorX - _anchorX;
                 _moveY += anchorY - _anchorY;
 
+                _anchorX += _moveX;
+                _anchorY += _moveY;
+
+                //HomeBase.Location = new PointF(coordsList[0][0] + _moveX, coordsList[0][1] + _moveY);
                 HomeBase.Location = new PointF(coordsList[0][0] + _moveX, coordsList[0][1] + _moveY);
 
                 _testingShapes.FillPolygonalShapes(coordsList, Brushes.Yellow, true, new Pen(Color.FromArgb(128, Color.White), 2));
-//                _formBounds.Center - 
                 // lines from center point for all corners of the inner HomeBase shape
                 foreach (var cords in coordsList)
                 {
@@ -1122,8 +1130,6 @@ namespace SpaceBattleSim
             foreach (var ship in _battleShips)
                 if (ship.Visible) ship.DrawItem(e.Graphics);
 
-            // Draw the Infrastructure (HomeBase & UI)
-            if (!HomeBase.IsEmpty) HomeBase.DrawItem(e.Graphics);
             if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
 
             if (_fKeyDisplay.Length > 0)

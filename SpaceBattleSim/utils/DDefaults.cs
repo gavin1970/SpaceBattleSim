@@ -44,4 +44,30 @@
     /// and a width of 2 pixels.
     /// </summary>
     public static readonly Pen DEF_REPAIR_LASER_LINE = new Pen(Color.FromArgb(255, Color.Blue), 2);
+
+    public static List<float[]> GetHomeBase()
+    {
+        // Size of HomeBase: 125 x 144
+        List<float[]> coordsList = new List<float[]>();
+        // ---===[ Outer, Top, Left ]===---
+        coordsList.Add(new float[] { 697, 506, 723, 491, 723, 520, 697, 536 });
+        // ---===[ Outer, Top ]===---
+        coordsList.Add(new float[] { 732, 486, 758, 471, 784, 486, 758, 501 });
+        // ---===[ Outer, Top, Right ]===---
+        coordsList.Add(new float[] { 793, 491, 819, 506, 819, 536, 793, 521 });
+        // ---===[ Inner, Top, Left ]===---
+        coordsList.Add(new float[] { 697, 541, 728, 523, 728, 489, 755, 506, 755, 539, 725.5f, 556 });
+        // ---===[ Inner, Top, Right ]===---
+        coordsList.Add(new float[] { 760.5f, 539, 760.5f, 505, 788.5f, 489, 788.5f, 523, 818, 541, 790.5f, 556 });
+        // ---===[ Outer, Bottom, Left ]===---
+        coordsList.Add(new float[] { 697, 546, 723, 561, 723, 591, 697, 576 });
+        // ---===[ Outer, Bottom ]===---
+        coordsList.Add(new float[] { 732, 596, 758, 581, 784, 596, 758, 611 });
+        // ---===[ Outer, Bottom, Right ]===---
+        coordsList.Add(new float[] { 793, 561, 819, 546, 819, 575, 793, 591 });
+        // ---===[ Inner, Bottom ]===---
+        coordsList.Add(new float[] { 727.5f, 560, 757.5f, 543, 788, 560, 788, 593, 757.5f, 575, 727.5f, 593 });
+        
+        return coordsList;
+    }
 }
