@@ -29,6 +29,10 @@
 		</ItemGroup>
 
 		<ItemGroup>
+		  <None Remove="imgs\chrome_20260510T163038.6084.png" />
+		</ItemGroup>
+
+		<ItemGroup>
 				<None Include="Chizl_Atomic_Blue_512.png" Link="imgs\Chizl_Atomic_Blue_512.png">
 						<Pack>True</Pack>
 						<PackagePath>\</PackagePath>
