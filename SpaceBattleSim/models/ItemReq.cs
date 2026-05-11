@@ -644,8 +644,8 @@ namespace SpaceBattleSim
                                                 else
                                                 {
                                                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
-                                                    BattleStats.Audit(this.Name, ActionType.Heal, $"Healed: {_activeTargetName}");
-                                                    _allSpaceShips[_activeTargetName].ResetStats();
+                                                    //BattleStats.Audit(this.Name, ActionType.Heal, $"Healed: {_activeTargetName}");
+                                                    _allSpaceShips[_activeTargetName].ResetStats(this.Name, true);
                                                     _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
                                                     _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
 
@@ -694,7 +694,7 @@ namespace SpaceBattleSim
                                         {
                                             this.Animation = false;
                                             _spaceShip.CurrentMission = ShipMission.Idle;
-                                            _spaceShip.ResetStats();
+                                            _spaceShip.ResetStats("HomeBase_Healer", false);
                                             _activeTargetName = string.Empty;
                                         }
 

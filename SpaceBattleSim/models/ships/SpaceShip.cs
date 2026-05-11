@@ -140,7 +140,7 @@ namespace SpaceBattleSim
 
                 // Initialize the ship's stats based on its type, setting
                 // the shields, hitbox, power, and status accordingly.
-                ResetStats();
+                ResetStats(string.Empty);
             }
         }
         /// <summary>
@@ -449,7 +449,7 @@ namespace SpaceBattleSim
                     // Reset stats without resetting power, since we just updated it with the critical transfer mechanic.
                     // This allows the ship to have a chance to recover and continue fighting, while still maintaining the
                     // strategic element of managing power and shields in battle.
-                    ResetStats(false);
+                    ResetStats("CritTransfer", false);
                 }
                 else if (ShieldIntegrity <= 25.0f)
                 {
@@ -469,7 +469,7 @@ namespace SpaceBattleSim
         /// <summary>
         /// Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
         /// </summary>
-        public void ResetStats(bool includePower = true)
+        public void ResetStats(string byWho = "System", bool includePower = true)
         {
             if (this.IsEmpty || !_reset.TrySetTrue())
                 return;
@@ -479,6 +479,9 @@ namespace SpaceBattleSim
                     Interlocked.Exchange(ref _power, _orgPower);
                 Interlocked.Exchange(ref _shields, _orgShields);
                 _shipsMission = ShipMission.Idle;
+
+                if (!string.IsNullOrWhiteSpace(byWho))
+                    BattleStats.Audit(this.Name, ActionType.Heal, $"Healed: {byWho}");
 
                 UpdateStatus();
             }
