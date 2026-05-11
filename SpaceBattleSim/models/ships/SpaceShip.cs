@@ -12,7 +12,7 @@ namespace SpaceBattleSim
     {
         private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
         private static readonly List<Pen> _hitboxLowestCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(10, Color.Red), 1),
             new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Silver), 1),
             new Pen(Color.FromArgb(50, Color.Silver), 1),
@@ -20,7 +20,7 @@ namespace SpaceBattleSim
             new Pen(Color.FromArgb(100, Color.Silver), 1)
         };
         private static readonly List<Pen> _hitboxLowCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(10, Color.Red), 1),
             new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Orange), 1),
             new Pen(Color.FromArgb(50, Color.Orange), 1),
@@ -28,7 +28,7 @@ namespace SpaceBattleSim
             new Pen(Color.FromArgb(100, Color.Orange), 1)
         };
         private static readonly List<Pen> _hitboxMidCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(10, Color.Red), 1),
             new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Cyan), 1),
             new Pen(Color.FromArgb(50, Color.Cyan), 1),
@@ -36,7 +36,7 @@ namespace SpaceBattleSim
             new Pen(Color.FromArgb(100, Color.Cyan), 1)
         };
         private static readonly List<Pen> _hitboxHighCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(0, Color.Red), 1),
+            new Pen(Color.FromArgb(10, Color.Red), 1),
             new Pen(Color.FromArgb(100, Color.Red), 1),
             new Pen(Color.FromArgb(25, Color.Green), 1),
             new Pen(Color.FromArgb(50, Color.Green), 1),
@@ -433,7 +433,7 @@ namespace SpaceBattleSim
             else
             {
                 // So we get the current value before we potentially update it with Critical Transfer.
-                if (ShieldIntegrity <= 25 && this.Power > 2 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow)
+                if (ShieldIntegrity <= 25.0f && this.Power > 2 && _criticalTransfer && _nextCriticalTransfer <= ADateTime.UtcNow)
                 {
                     //Volatile read, then divided by 2 for the critical transfer mechanic.
                     var prevPower = Interlocked.Exchange(ref _power, Math.Clamp(this.Power / 2, 2, _orgPower));
@@ -451,13 +451,13 @@ namespace SpaceBattleSim
                     // strategic element of managing power and shields in battle.
                     ResetStats(false);
                 }
-                else if (ShieldIntegrity <= 25)
+                else if (ShieldIntegrity <= 25.0f)
                 {
-                    BattleStats.Audit(this.Name, ActionType.AlmostDead, $"Last moments are from: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity}%)");
+                    BattleStats.Audit(this.Name, ActionType.AlmostDead, $"Last moments are from: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity:00}%)");
                 }
                 else
                 {
-                    BattleStats.Audit(this.Name, ActionType.TakeDamage, $"from: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity}%)");
+                    BattleStats.Audit(this.Name, ActionType.UnderAttack, $"By: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity:00}%)");
                 }
 
             }

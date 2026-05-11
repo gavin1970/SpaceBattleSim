@@ -11,13 +11,17 @@ namespace SpaceBattleSim
         CriticalTransfer,
         Heal,
         AlmostDead,
-        TakeDamage
+        UnderAttack
     }
     public static class BattleStats
     {
-        const string AuditFolder = ".\\audit";
+        const string _auditFolder = ".\\audit";
+        private static readonly string _orgTempDetailsFile = $"{_auditFolder}\\{{0}}.tmp";
+        private static string _tempDetailsFile = string.Empty;
 
+        internal static ADateTime _startDate = ADateTime.MinValue;
         internal static ABool _queueProcessing = ABool.False;
+        internal static ABool _detailProcessing = ABool.False;
         internal static ConcurrentDictionary<string, ShipAudit> _shipAudits = new ConcurrentDictionary<string, ShipAudit>();
         internal static ConcurrentQueue<(string, ActionType, string)> _actionAudit = new ConcurrentQueue<(string, ActionType, string)>();
         internal static ConcurrentDictionary<string, string> _settingValues = new ConcurrentDictionary<string, string>();
@@ -25,9 +29,10 @@ namespace SpaceBattleSim
 
         static BattleStats()
         {
-            if (!Directory.Exists(AuditFolder))
-                Directory.CreateDirectory(AuditFolder);
+            if (!Directory.Exists(_auditFolder))
+                Directory.CreateDirectory(_auditFolder);
         }
+
         public static void AddSetting(string name, object value) => _settingValues.TryAdd(name, $"{value}");
 
         public static void AddShip(string name, ShipType shipType)
@@ -47,7 +52,12 @@ namespace SpaceBattleSim
             if (_shipAudits.IsEmpty)
                 return;
 
-            var auditName = $"{AuditFolder}\\{DateTime.Now:yyMMdd_HHmm}.log";
+            // save name, then switch, for next roleover
+            var tempFile = _tempDetailsFile;
+            _tempDetailsFile = string.Empty;
+            _startDate = ADateTime.MinValue;
+
+            var auditName = tempFile.Replace(".tmp", ".log");   // $"{_auditFolder}\\{DateTime.Now:yyMMdd_HHmmss}.log";
             StringBuilder sb = new();
 
             var fLine = $"Summary of {winners}: {startDate.ToLocalTime()} - {endDate.ToLocalTime()} ({endDate - startDate})";
@@ -93,20 +103,92 @@ namespace SpaceBattleSim
             sb.AppendLine(fLine);
             sb.AppendLine(new string('-', fLine.Length));
 
-            while(_detailAudit.TryDequeue(out var detail))
+            var maxWait = 50;   // 5sec = (50 * 100ms)
+            while (!_queueProcessing.TrySetTrue() && --maxWait > 0)
+                Task.Delay(100).Wait();
+
+            if (maxWait > 0)
             {
-                var (dt, note) = detail;
-                sb.AppendLine($"{dt:hh:mm:ss.ffff tt}: {note}");
+                try
+                {
+                    List<string> detailsFileArray = new List<string>();
+                    // If the details temp file exists, load it up and copy content over the details log
+                    // file, then delete the temp file. 
+                    if (File.Exists(tempFile))
+                    {
+                        detailsFileArray.AddRange(File.ReadAllLines(tempFile));
+                        File.Delete(tempFile);
+                    }
+
+                    // if there are any details, add them to the end of the summary, this way we can be sure to
+                    // get all details without having to worry about memory usage during the match.
+                    if (detailsFileArray.Count > 0)
+                        sb.AppendLine(string.Join(Environment.NewLine, detailsFileArray));
+
+                    // Save the audit info to a file
+                    File.WriteAllText(auditName, sb.ToString());
+                    // give it a moment to flush the file before we try to write any details, just in case there are any left overs.
+                    Task.Delay(100).Wait();
+
+                    // now write any details that may have come in while we were writing the summary,
+                    // this way we can be sure to get all details without having to worry about memory usage during the match.
+                    WriteDetailsToFile(auditName, true);
+                }
+                catch (Exception ex)
+                {
+                    File.AppendAllText(auditName, $"Failed to acquire queue lock to get details, skipping details for this audit.{Environment.NewLine}Exception:{Environment.NewLine}\t{ex}");
+                }
+                finally
+                {
+                    _actionAudit.Clear();
+                    // force to false just in case, but should be false already if we got here.
+                    _queueProcessing.SetFalse();
+                    // reset detail
+                    _detailAudit.Clear();
+                }
+            }
+            else
+                File.AppendAllText(auditName, $"Failed to acquire queue lock to get details, skipping details for this audit.{Environment.NewLine}");
+        }
+        private static void WriteDetailsToFile(string fileName, bool waitForIt = false)
+        {
+            var maxWait = 50;   // 5sec = (50 * 100ms)
+            while (!_detailProcessing.TrySetTrue() && --maxWait > 0)
+            {
+                if (!waitForIt)
+                    return;
+                Task.Delay(100).Wait();
             }
 
-            // reset detail
-            _detailAudit.Clear();
+            if (maxWait == 0)
+                return;
 
-            // Save the audit info to a file
-            File.WriteAllText(auditName, sb.ToString());
+            StringBuilder sb = new StringBuilder();
+
+            try
+            {
+                if (!File.Exists(fileName))
+                    File.WriteAllText(fileName, "");
+
+                // because detail information can get quite large in memory, we will just process it and write it to
+                // the tmp file when the match is over. This way we can keep the memory usage down and on match end, save
+                // will have it all copied over to the details at the end of the audit file...
+
+                while (_detailAudit.TryDequeue(out var detail))
+                {
+                    var (dt, note) = detail;
+                    sb.AppendLine($"{dt:hh:mm:ss.ffff tt}: {note}");
+                }
+
+                // Save the audit info to a file
+                File.AppendAllLines(fileName, sb.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+            }
+            finally
+            {
+                _detailProcessing.SetFalse();
+            }
         }
-
-        internal static async Task ProcessQueuesAsync()
+        private static async Task ProcessQueuesAsync()
         {
             if (!_queueProcessing.TrySetTrue())
                 return;
@@ -141,12 +223,27 @@ namespace SpaceBattleSim
                                 _shipAudits[name].AddNote(note);
                         }
                     }
+
+                    CheckForNewStartDate();
+                    WriteDetailsToFile(_tempDetailsFile, false);
                 }
                 finally
                 {
                     _queueProcessing.SetFalse();
                 }
             });
+        }
+
+        private static bool CheckForNewStartDate()
+        {
+            if (_startDate == ADateTime.MinValue)
+            {
+                _startDate = ADateTime.Now;
+                _tempDetailsFile = string.Format(_orgTempDetailsFile, _startDate.ToString("yyMMdd_HHmmss"));
+                return true;
+            }
+
+            return false;
         }
     }
 

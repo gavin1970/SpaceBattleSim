@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Gavin W. Landon (chizl.com)
 // Licensed under the MIT License. See LICENSE file http://www.chizl.com/LICENSE.txt for full license information.
 // SPDX-License-Identifier: MIT
+using System.Runtime.CompilerServices;
+
 namespace Chizl.ThreadSupport
 {
     /// <summary>
@@ -351,7 +353,30 @@ namespace Chizl.ThreadSupport
         /// Returns a string that represents the current object.
         /// </summary>
         /// <returns>A string that represents the current object.</returns>
-        public override string ToString() => Value.ToString();
+        public override string ToString() => this.Value.ToString();
+        /// <summary>
+        /// Returns a string representation of the value using the specified format.
+        /// </summary>
+        /// <param name="format">A standard or custom format string that defines the format of the returned value. If null or empty, the
+        /// default format is used.</param>
+        /// <returns>A string representation of the value, formatted as specified by the format parameter.</returns>
+        public string ToString(string? format) => this.Value.ToString(format);
+        /// <summary>
+        /// Returns a string representation of the value using the specified format and culture-specific format
+        /// information.
+        /// </summary>
+        /// <param name="format">A standard or custom format string that defines the format of the returned value. If null or empty, the
+        /// default format is used.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information. If null, the current culture is used.</param>
+        /// <returns>A string representation of the value, formatted as specified by the format and provider parameters.</returns>
+        public string ToString(string? format, IFormatProvider? provider) => this.Value.ToString(format, provider);
+        /// <summary>
+        /// Returns a string representation of the value using the specified format provider.
+        /// </summary>
+        /// <param name="provider">An object that supplies culture-specific formatting information, or null to use the current culture.</param>
+        /// <returns>A string representation of the value, formatted according to the specified provider.</returns>
+        public string ToString(IFormatProvider? provider) => this.Value.ToString(provider);
+
         #endregion
 
         #region IEquatable<ADateTime> Implementation
