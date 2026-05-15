@@ -8,6 +8,9 @@ namespace SpaceBattleSim
 {
     public partial class BgPlatform : Form
     {
+        private BufferedGraphicsContext _bufferedContext = BufferedGraphicsManager.Current;
+        private BufferedGraphics? _bufferedGraphics;
+
         // Set to true to make the background transparent
         // while keeping the grid lines visible.
         static bool _transparentBG = false;
@@ -30,7 +33,9 @@ namespace SpaceBattleSim
 
         readonly static (int min, int max) _totalBattleShipsLimits = (10, 150);         // set limits for total number of Fighters and Raiders combined.
         readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
-        readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 1.0f);   // set limits for planet spin speed.
+        readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 0.5f);   // set limits for planet spin speed.
+        private static string _planetTextureFile = ".\\skins\\fungal_planet.png"; // pulled from app config, path to the planet texture image file.
+        private Bitmap _planetTexture = new Bitmap(_planetTextureFile); // Load your map here
         private SimScreenView _screenViewType = 
                 SimScreenView.FullScreenCurrent;    // pulled from app config, Total number of Fighters and Raiders combined.
         private bool _showMatrixGrid = false;       // pulled from app config.
@@ -47,15 +52,14 @@ namespace SpaceBattleSim
         private bool _naturalStarfield = true;      // pulled from app config
         private bool _disableAutoLock = false;      // pulled from app config
         private bool _topmostWindow = false;        // pulled from app config
-        // private bool _mouseOverShips = true;     // Not used at the moment.
+        private bool _auditLogEnabled = false;      // pulled from app config
+        private bool _useUnicodeShips = true;       // pulled from app config
 
         // const bool _showAsteroids = false;
         private ABool _showCloseButton = ABool.True;// If form is Windowed, we don't need a close button, but if it's full screen, we do.
         private int _capShipCount = 0;              // calculated later, _totalBattleShips / 10, do not modify this here.
         private int _repairRigCount = 0;            // calculated later, _totalBattleShips / 10, do not modify this here.
         private int _planetWrapWidth = 0;           // calculated later, _planetSize * 2, do not modify this here.
-
-        private readonly Bitmap _planetTexture = new Bitmap(".\\skins\\fungal_planet.png"); // Load your map here
         private float _xOffset = 0;
         Rectangle _redPlanetRect = Rectangle.Empty;
 
@@ -63,25 +67,6 @@ namespace SpaceBattleSim
         const uint _borderWidth = 2;
         // Size of the matrix grid (50pxx50px)
         const int _matrixCellSize = 40;
-
-        // Character to use for the first set of _battleShips shapes. If you use things like '⣮ ⣭ ⣪', remember,
-        // you must make the size wider and lower the height to see them side by side. If you want them
-        // stacked, then make the size taller and narrower. You can use any Unicode character for the ship
-        // shapes, so feel free to experiment with different symbols to find ones that you like and that fit
-        // well with the overall design of the ships look.
-        // I found the font Arial shows these characters well, but you may want to experiment with other fonts
-        // to find the best look for your ships. Some good resources for finding interesting Unicode characters
-        // include websites like UnicodeTable.com.
-        // I wrote a EmojiLive library found on https://github.com/gavin1970/Chizl.EmojiLive, where it will
-        // provide 4098 different Unicode characters and allow you to save as an image. You can use some of
-        // these for your ships, including a wide variety of symbols, shapes, and icons that can add visual
-        // interest and variety to your animation. You can browse through the available characters in the
-        // library and experiment with different combinations
-        // (e.g., "X", "❿", "⬤", "⧉", "⭄", "❖", "⬙", "░", "▒", "▓", "▢", "▣", "⣮ ⣭ ⣪", etc.) 
-        //readonly string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
-        //readonly string _raiderShip = char.ConvertFromUtf32(10618);     // 10618 - ⥺ = \u293a
-        //readonly string _capitalShip = char.ConvertFromUtf32(11159);    // 11159 - ⮗ = \u2b97
-        //readonly string _repairRigShip = char.ConvertFromUtf32(10070);     // 10070 - ❖ = \u2756
 
         // Moves X position of HomeBase and _capitalShip anchor points if changed.
         private static float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
@@ -109,17 +94,17 @@ namespace SpaceBattleSim
         private static ItemReq MatrixArray = ItemReq.Empty;
         private static ItemReq TitleText = ItemReq.Empty;
         private static ItemReq HomeBase = ItemReq.Empty;
-        //private static ItemReq SpaceAndTime = ItemReq.Empty;
-        //private static DShapes _spaceShapes = new DShapes();
         private static DShapes _cometShapes = new DShapes();
         // Add this field alongside _spaceShapes / _cometShapes
         private static Bitmap? _spaceCache = null;
-        private static DShapes _testingShapes = new DShapes();
         private static DRectangleF _formBounds = DRectangleF.Default;
         private static float _xCounter = 0.0f;
         private static float _yCounter = 0.0f;
         private static Point _lastStartPoint = Point.Empty;
         private static PointF _versionLoc = PointF.Empty;
+        private static List<float[]> _baseCords = new();
+        private static PointF _baseCenter = PointF.Empty;
+        private readonly Pen _planetBorderPen = new Pen(Color.FromArgb(32, Color.Black), 10);
 
         internal static List<ItemReq> _battleShips = new List<ItemReq>();
         private static string[] _fKeyDisplay = { };
@@ -127,6 +112,12 @@ namespace SpaceBattleSim
         public BgPlatform()
         {
             InitializeComponent();
+
+            // Enable double buffering and custom painting
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint |
+                          ControlStyles.UserPaint |
+                          ControlStyles.Opaque, true);
+            this.UpdateStyles();
 
             // Set the form's padding based on config.
             this.Padding = FormStyle.Padding;
@@ -229,6 +220,9 @@ namespace SpaceBattleSim
                     Console.WriteLine($"Error deleting logs directory: {ex.Message}");
                 }
             }
+            
+            this.DoubleBuffered = true;
+
             // Delay the creations to ensure the form is fully initialized
             await Task.Delay(startDelay).ContinueWith(_ =>
             {
@@ -295,7 +289,7 @@ namespace SpaceBattleSim
                     // Correct location if the planet would be off the screen based on the configured offsets.
                     if (center.X + xOffset + _planetSize > bounds.Width)
                         xOffset = center.X - (((int)bounds.Width - _planetSize) + (this.Padding.Bottom * 2));
-
+                    
                     if (center.Y + yOffset + _planetSize > bounds.Height)
                         yOffset = center.Y - (((int)bounds.Height - _planetSize) + (this.Padding.Left * 2));
 
@@ -355,23 +349,23 @@ namespace SpaceBattleSim
                                 radius: 80, Color.FromArgb(50, 0, 140, 130), density: 6400, rng);
                         }
 
-                        List<float[]> cords = DDefaults.GetHomeBase();
-                        List<PointF> allPoints = new List<PointF>();
-
                         using (GraphicsPath path = new GraphicsPath())
                         {
                             List<PointF> newPoints = new List<PointF>();
-                            for (int i = 0; i < cords.Count; i++)
+                            for (int i = 0; i < _baseCords.Count; i++)
                             {
                                 using GraphicsPath path2 = new GraphicsPath();
-                                var lst = cords[i];
+                                var lst = _baseCords[i];
+
                                 for (int j = 0; j < lst.Length; j += 2)
                                     newPoints.Add(new PointF(lst[j] + _moveX, lst[j + 1] + _moveY));
+
                                 path2.AddPolygon(newPoints.ToArray());
                                 path.AddPath(path2, true);
+
                                 using (SolidBrush brush = new SolidBrush(Color.FromArgb(150, Color.Blue)))
                                     bg.FillPath(brush, path);
-                                allPoints.AddRange(newPoints);
+
                                 newPoints.Clear();
                                 path.Reset();
                             }
@@ -575,7 +569,7 @@ namespace SpaceBattleSim
 
             // Size of the flier button
             var flierSize = new Size(20, 20);
-            var capSize = new Size(100, 100);
+            var capSize = new Size(50, 50);
             var repairSize = new Size(20, 20);
 
             // Calculate the X/Y Location of the close button that will be in the top-right corner
@@ -668,8 +662,8 @@ namespace SpaceBattleSim
                 // from the center of the form when triggered.
                 for (int cnt = 0; cnt < _repairRigCount; cnt++)
                 {
-                    x = Random.Shared.Next((int)(_anchorX - 100.0f), (int)(_anchorX + 100.0f));
-                    y = Random.Shared.Next((int)(_anchorY - 100.0f), (int)(_anchorY + 100.0f));
+                    x = Random.Shared.Next((int)(_baseCenter.X - 100.0f), (int)(_baseCenter.X + 100.0f));
+                    y = Random.Shared.Next((int)(_baseCenter.Y - 100.0f), (int)(_baseCenter.Y + 100.0f));
 
                     var fly = new ItemReq(this, $"RepairRig_{cnt:000}")
                     {
@@ -699,7 +693,7 @@ namespace SpaceBattleSim
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
                     //fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
-                    fly.DLine.Add(new PointF(_anchorX, _anchorY), new PointF(fly.Right, fly.Bottom));
+                    fly.DLine.Add(_baseCenter, new PointF(fly.Right, fly.Bottom));
                     fly.SetShiptType(ShipType.RepairRig);
                     _battleShips.Add(fly);
                 }
@@ -727,22 +721,32 @@ namespace SpaceBattleSim
                     },
                 };
 
-                List<float[]> coordsList = DDefaults.GetHomeBase();
-                // Move ship based on window sizes and if multiple monitors are involved or not.
+                _baseCords = DDefaults.GetHomeBase();
+
+                // Move HomeBase based on window sizes and if multiple monitors are involved or not.
                 var anchorX = _formBounds.Center.X - _homeSize.Width;
                 var anchorY = _formBounds.Center.Y - _homeSize.Height;
+                // Calculate the movement needed to position the HomeBase at the center of the form, accounting
+                // for the original anchor point and any existing movement offsets. This ensures that the HomeBase
+                // will be correctly centered on the form regardless of its initial position or any previous movements.
                 _moveX += anchorX > _anchorX ? anchorX - _anchorX : anchorX - _anchorX;
                 _moveY += anchorY - _anchorY;
-
+                // update original anchors with the new movement values so that the HomeBase will be drawn in the
+                // correct location on the first paint and the lines will be anchored to the correct location as well.
                 _anchorX += _moveX;
                 _anchorY += _moveY;
+                // Set the base center point to the new anchor location after applying movement adjustments.
+                // This ensures that the HomeBase will be positioned correctly on the form, and all lines anchored
+                // to this point will also be drawn in the correct location.
+                _baseCenter = new PointF(_anchorX, _anchorY);
+                // don't really use this, but setting the HomeBase.Location to the base center point for clarity and
+                // potential future use. The HomeBase is primarily drawn using the _baseCords and movement offsets,
+                // so the Location property is not critical in this implementation, but it can be useful for reference
+                // or if additional features are added later that rely on the HomeBase's location.
+                HomeBase.Location = _baseCenter;
 
-                //HomeBase.Location = new PointF(coordsList[0][0] + _moveX, coordsList[0][1] + _moveY);
-                HomeBase.Location = new PointF(coordsList[0][0] + _moveX, coordsList[0][1] + _moveY);
-
-                _testingShapes.FillPolygonalShapes(coordsList, Brushes.Yellow, true, new Pen(Color.FromArgb(128, Color.White), 2));
-                // lines from center point for all corners of the inner HomeBase shape
-                foreach (var cords in coordsList)
+                // Draw lines from center point for all corners of the inner and outer HomeBase shape
+                foreach (var cords in _baseCords)
                 {
                     // Create the points for the lines based on the
                     // coordinates and optional movement offsets
@@ -877,6 +881,8 @@ namespace SpaceBattleSim
             SetConfigValue("ShowVersion", ref _showVersion);
             SetConfigValue("DisableAutoLock", ref _disableAutoLock);
             SetConfigValue("TopmostWindow", ref _topmostWindow);
+            SetConfigValue("AuditLogEnabled", ref _auditLogEnabled);
+            SetConfigValue("UseUnicodeShips", ref _useUnicodeShips);
 
             // Battle and ship configuration settings
             SetConfigValue("TotalBattleShips", ref _totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);
@@ -894,13 +900,56 @@ namespace SpaceBattleSim
             // have no effect without planets and would just take up space in the config
             if (_showPlanets) 
             {
-                SetConfigValue("PlanetSize", ref _planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
-                SetConfigValue("PlanetSpinSpeed", ref _planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max);
+                // setup default, then load the planet skin from the config, and if it's valid, load
+                // the texture for the planet. If the config value is invalid, disable planets to
+                // prevent errors and resource issues from trying to load an invalid texture.
+                var planetSkin = _planetTextureFile;
+                // pull from config
+                SetConfigValue("PlanetTextureFile", ref planetSkin);
+                planetSkin = planetSkin.ToLower().Trim();
+
+                // verification steps for the planet skin:
+                if (!string.IsNullOrEmpty(planetSkin) &&
+                    (planetSkin.EndsWith(".png") ||
+                        planetSkin.EndsWith(".jpg") ||
+                        planetSkin.EndsWith(".bmp")) &&
+                        planetSkin.StartsWith(".\\skins\\") &&
+                        File.Exists(planetSkin))
+                {
+                    // if the planet skin has changed from the currently loaded
+                    // texture, dispose of the old texture and load the new one
+                    if (planetSkin != _planetTextureFile.ToLower())
+                    {
+                        _planetTexture.Dispose();   // Dispose of the old texture to free up resources before loading the new one
+                        _planetTexture = new Bitmap(planetSkin); // Load your map here
+                        _planetTextureFile = planetSkin;
+                    }
+                    // Get planet size to display
+                    SetConfigValue("PlanetSize", ref _planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
+                    // Get rotation speed for the planet to determine how fast the texture scrolls horizontally.
+                    // The faster the speed, the faster the texture will scroll, creating the illusion of a
+                    // rotating planet. Clamping the value ensures that it stays within reasonable limits to
+                    // maintain a visually appealing animation without causing performance issues or making the
+                    // rotation too fast to appreciate.
+                    SetConfigValue("PlanetSpinSpeed", ref _planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max);
+                }
+                else
+                    _showPlanets = false;
             }
+
             // only show the natural starfield option if stars are enabled, since it
             // has no effect without stars and would just take up space in the config
             if (_showStars)
                 SetConfigValue("NaturalStarfield", ref _naturalStarfield);
+
+            // default is false, but doesn't hurt to set it explicitly based on the config value.
+            // This ensures that the BattleStats.Enabled property is always in sync with the
+            // configuration setting, allowing for consistent behavior of the audit logging
+            // feature throughout the application. By setting this property here, we can control
+            // whether battle statistics are collected and logged based on the user's configuration
+            // preferences.
+            BattleStats.Enabled = _auditLogEnabled;
+            ItemReq.UnicodeShips = _useUnicodeShips;
 
             /*
             // Interactive configuration settings (not implemented yet)
@@ -979,39 +1028,36 @@ namespace SpaceBattleSim
             if (_disableAutoLock)
                 Externs.PreventAutoLock();
 
-            // Clamp the total number of battle ships to create based on the defined limits to prevent
-            // excessive numbers that could cause performance issues or visual clutter. This ensures
-            // that the animation remains visually appealing and runs smoothly without overwhelming the
-            // viewer with too many ships on the screen at once. By clamping the value, we can maintain
-            // a balance between having enough ships to create an engaging animation and avoiding a
-            // scenario where too many ships could lead to lag or an unrecognizable scene.
-            _totalBattleShips = Math.Clamp(_totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);
-
             // Create count for Capital ships based on percentage of total battleships
             _capShipCount = (int)((float)_totalBattleShips * _percentCapitalShips);
             // Create count for RepairRig ships based on percentage of total battleships
             _repairRigCount = (int)((float)_totalBattleShips * _percentRepairRigs);
-
-            // Clamp the planet size and spin speed to their defined limits to prevent invalid configuration
-            // values that could cause rendering issues or performance problems. This ensures that the planet
-            // will always be rendered within a reasonable size range and will not spin too fast or too slow,
-            // which could affect the visual quality of the animation.
-            _planetSize = Math.Clamp(_planetSize, _planetSizeLimits.min, _planetSizeLimits.max);
-
-            // The planet spin speed is clamped to a range of 0.1 to 5.0 degrees per frame to ensure that the
-            // animation remains visually appealing and does not become too fast or too slow. A speed of 0.1
-            // degrees per frame will create a slow, subtle rotation effect, while a speed of 5.0 degrees per
-            // frame will create a much faster rotation that may be more suitable for larger planets or more
-            // dynamic scenes. Clamping the spin speed helps maintain a balance between visual interest and
-            // performance, preventing extreme values that could lead to rendering issues or an overwhelming
-            // animation.
-            _planetSpinSpeed = Math.Clamp(_planetSpinSpeed, _planetSpinSpeedLimits.min, _planetSpinSpeedLimits.max);
 
             // Calculate the wrap width for the planet texture based on the planet size. The wrap width
             // is set to twice the planet size to allow for seamless horizontal scrolling of the texture
             // across the planet's surface. This ensures that as the texture scrolls, it will repeat
             // without visible seams, creating a continuous animation effect on the planet.
             _planetWrapWidth = _planetSize * 2;
+
+            // Must be done after the form size has been determined. This is because the buffered graphics
+            // context needs to know the size of the area it will be drawing to in order to allocate the
+            // appropriate amount of memory for the back buffer. Allocating the buffered graphics context
+            // before the form size is set could lead to issues where the back buffer is too small or too
+            // large, resulting in rendering problems or inefficient memory usage. By initializing the
+            // buffered graphics context after setting the form size, we ensure that it is properly configured
+            // to handle the drawing operations for our animation.
+            this.Load += (s, e) =>
+            {
+                _bufferedGraphics = _bufferedContext.Allocate(
+                    this.CreateGraphics(),
+                    this.ClientRectangle
+                );
+
+                RefreshTimer.Interval = 30;
+                RefreshTimer.Enabled = true;
+                AutoResetTimer.Interval = 15000;
+                AutoResetTimer.Enabled = true;
+            };
         }
         /// <summary>
         /// Retrieves a configuration value associated with the specified key, or sets the configuration to the provided
@@ -1059,16 +1105,25 @@ namespace SpaceBattleSim
         #endregion
 
         #region Form Events
-        private void BgPlatform_Paint(object sender, PaintEventArgs e)
+        /// <summary>
+        /// Handles the timer tick event to trigger a repaint of the control.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the timer that raised the event.</param>
+        /// <param name="e">An EventArgs object that contains the event data.</param>
+        private void RefreshTimer_Tick(object sender, EventArgs e)
         {
-            var g = e.Graphics;
+            if (_bufferedGraphics == null) return;
 
-            // Set global quality once for the whole frame
+            // Get the buffer's Graphics object - NO Invalidate() needed!
+            var g = _bufferedGraphics.Graphics;
+
+            // Clear and draw directly to buffer
+            g.Clear(this.BackColor);
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
             //// Draw the grid background
-            if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(e.Graphics);
+            if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(g);
 
             // Replace the existing foreach over _spaceShapes.DrawList with this:
             if (_spaceCache != null)
@@ -1111,26 +1166,27 @@ namespace SpaceBattleSim
                 using (GraphicsPath path = new GraphicsPath())
                 {
                     path.AddEllipse(_redPlanetRect);
-                    g.SetClip(path);    //animation
+                    g.SetClip(path);
                 }
+
+                _xOffset += _planetSpinSpeed;
+                if (_xOffset >= _planetSize * 2) _xOffset = 0;
 
                 // Draw moving texture (scaled dynamically)
                 // We draw it at wrapWidth so the image stretches/shrinks to fit the planet
                 g.DrawImage(_planetTexture, _redPlanetRect.X - _xOffset, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
                 g.DrawImage(_planetTexture, (_redPlanetRect.X - _xOffset) + _planetWrapWidth, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
 
-                // Clean up
-                g.ResetClip();  //animation
+                // reset clipping region to prevent it from affecting other drawing operations
+                g.ResetClip();  
 
                 // Optional: Draw a border so the edges look sharp
-                g.DrawEllipse(Pens.Black, _redPlanetRect);
+                g.DrawEllipse(_planetBorderPen, _redPlanetRect);
             }
 
             // Draw the Space Battle (Fighters & Raiders)
             foreach (var ship in _battleShips)
-                if (ship.Visible) ship.DrawItem(e.Graphics);
-
-            if (TitleText.Visible) TitleText.DrawItem(e.Graphics);
+                if (ship.Visible) ship.DrawItem(g);
 
             if (_fKeyDisplay.Length > 0)
             {
@@ -1145,23 +1201,13 @@ namespace SpaceBattleSim
                     g.DrawString(_fKeyDisplay[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, yStart + ((i * 20))));
             }
 
-            if (CloseButton.Visible) CloseButton.DrawItem(e.Graphics);
-        }
-        /// <summary>
-        /// Handles the timer tick event to trigger a repaint of the control.
-        /// </summary>
-        /// <param name="sender">The source of the event, typically the timer that raised the event.</param>
-        /// <param name="e">An EventArgs object that contains the event data.</param>
-        private void RefreshTimer_Tick(object sender, EventArgs e)
-        {
-            if (_showPlanets)
-            {
-                _xOffset += _planetSpinSpeed;
-                if (_xOffset >= _planetSize * 2) _xOffset = 0; // Dynamic reset point
-            }
+            if (TitleText.Visible) TitleText.DrawItem(g);
+            if (CloseButton.Visible) CloseButton.DrawItem(g);
 
-            this.Invalidate();
+            // Render buffer to screen (THIS is the only drawing that hits the screen)
+            _bufferedGraphics.Render();
         }
+
         /// <summary>
         /// Runs ever 30sec to see if a reset is needed.
         /// </summary>
@@ -1178,12 +1224,26 @@ namespace SpaceBattleSim
         /// <param name="e">A FormClosedEventArgs that contains the event data.</param>
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            // Stop timers first
+            RefreshTimer?.Stop();
+            AutoResetTimer?.Stop();
+
+            // Dispose buffer
+            _bufferedGraphics?.Dispose();
+            _bufferedGraphics = null;
+
+            // Dispose all ships
+            foreach (var ship in _battleShips)
+                ship?.Dispose();
+
+            _battleShips.Clear();
+
             _spaceCache?.Dispose();
             _spaceCache = null;
 
             if (_disableAutoLock)
                 Externs.RestoreAutoLock();
-           
+
             base.OnFormClosed(e);
         }
         #endregion

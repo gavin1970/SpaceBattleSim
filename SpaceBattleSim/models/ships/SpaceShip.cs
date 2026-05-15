@@ -123,7 +123,6 @@ namespace SpaceBattleSim
                 _isRepairRig = type == ShipType.RepairRig;
                 _isRaider = type == ShipType.Raider;
                 _recovery = (int)shipStats.Recovery;
-
                 _shipsView = shipStats.ShipView;
                 _shipsViewOrig = _shipsView;
                 _rotate = shipStats.Rotate;
@@ -205,7 +204,12 @@ namespace SpaceBattleSim
         {
             get { return new RectangleF(this.Center.X - _hitBox, this.Center.Y - _hitBox, _hitBox * 2, _hitBox * 2); }
         }
-        public Pen HitboxCircle { get { return _hitboxCircle; } }
+
+        /// <summary>
+        /// Gets the pen used to draw the hitbox circle.
+        /// </summary>
+        public Pen HitboxCircle 
+            { get { return _hitboxCircle; } }
         /// <summary>
         /// Gets the color of the ship. The ship's color is used to visually represent the ship in various contexts,
         /// such as user interfaces or visual effects in a game or simulation. The color can be used to differentiate
@@ -218,6 +222,11 @@ namespace SpaceBattleSim
         /// such as gameplay mechanics or visual representations in a game or simulation.
         /// </summary>
         public ShipType ShipType => _shipType;
+
+        /// <summary>
+        /// Gets the image representing the ship.
+        /// </summary>
+        public Image ShipImage { get { return ShipSkins.SkinImage(_shipType); } }
         /// <summary>
         /// RepairRig is a special case. 
         /// Gets a value indicating whether the vehicle is configured as a RepairRig.

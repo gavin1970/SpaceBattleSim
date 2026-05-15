@@ -45,9 +45,9 @@
     /// </summary>
     public static readonly Pen DEF_REPAIR_LASER_LINE = new Pen(Color.FromArgb(255, Color.Blue), 2);
 
-    public static List<float[]> GetHomeBase()
+    public static List<float[]> GetHomeBase()   //out PointF center 
     {
-        // Size of HomeBase: 125 x 144
+        // Size of HomeBase: 125 x 144 
         List<float[]> coordsList = new List<float[]>();
         // ---===[ Outer, Top, Left ]===---
         coordsList.Add(new float[] { 697, 506, 723, 491, 723, 520, 697, 536 });
@@ -67,7 +67,7 @@
         coordsList.Add(new float[] { 793, 561, 819, 546, 819, 575, 793, 591 });
         // ---===[ Inner, Bottom ]===---
         coordsList.Add(new float[] { 727.5f, 560, 757.5f, 543, 788, 560, 788, 593, 757.5f, 575, 727.5f, 593 });
-        
+
         return coordsList;
     }
 }

@@ -37,27 +37,20 @@ namespace SpaceBattleSim
             // 
             // RefreshTimer
             // 
-            RefreshTimer.Enabled = true;
-            RefreshTimer.Interval = 30;
+            RefreshTimer.Interval = 30000;
             RefreshTimer.Tick += RefreshTimer_Tick;
             // 
             // AutoResetTimer
             // 
-            AutoResetTimer.Enabled = true;
-            AutoResetTimer.Interval = 15000;
+            AutoResetTimer.Interval = 30000;
             AutoResetTimer.Tick += AutoResetTimer_Tick;
             // 
             // BgPlatform
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(5, 5, 5);
-            ClientSize = new Size(1471, 795);
-            Cursor = Cursors.Cross;
-            DoubleBuffered = true;
-            FormBorderStyle = FormBorderStyle.None;
+            ClientSize = new Size(1113, 611);
+            FormBorderStyle = FormBorderStyle.Fixed3D;
             Name = "BgPlatform";
-            Paint += BgPlatform_Paint;
             ResumeLayout(false);
         }
         #endregion

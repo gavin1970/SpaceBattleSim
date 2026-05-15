@@ -1,6 +1,41 @@
 ﻿namespace SpaceBattleSim
 {
     /// <summary>
+    /// These values are only used for BattleStats.<br/>
+    /// Specifies the type of action or event that can occur within the battle per ship.
+    /// </summary>
+    /// <remarks>Use this enumeration to represent distinct actions such as kills, deaths, critical transfers,
+    /// healing, near-death situations, or being under attack. The specific meaning of each value depends on the context
+    /// in which it is used.</remarks>
+    public enum ActionType
+    {
+        /// <summary>
+        /// This ship killed another ship.
+        /// </summary>
+        Kill,
+        /// <summary>
+        /// This ship died by another ship.
+        /// </summary>
+        Death,
+        /// <summary>
+        /// This ship used a special ability to sacrifice power to transfer into health.
+        /// </summary>
+        CriticalTransfer,
+        /// <summary>
+        /// This ship healed another ship or itself.
+        /// </summary>
+        Heal,
+        /// <summary>
+        /// This ship is almost dead and requires immediate attention.
+        /// </summary>
+        AlmostDead,
+        /// <summary>
+        /// This ship is currently under attack.
+        /// </summary>
+        UnderAttack
+    }
+
+    /// <summary>
     /// Specifies the relative priority or severity for recovery operations.
     /// </summary>
     /// <remarks>Use this enumeration to indicate the order in which recovery actions should be performed,

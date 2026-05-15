@@ -79,6 +79,10 @@ namespace SpaceBattleSim
         // combat scans when many ships are active. At 1px/frame, it allows for up to ~7px of
         // steering lag, which is acceptable for this type of simulation.
         private static readonly TimeSpan _scanInterval = TimeSpan.FromMilliseconds(150);
+        /// <summary>
+        /// Flag to determine whether to use Unicode characters for ship representation.
+        /// </summary>
+        private static bool _unicodeShips = true;
         // This SpaceShip instance represents the current ship associated with this ItemReq.
         // It is initialized with default values (empty name, RepairRig type, and white color)
         // and will be updated when the ship type is set using the SetShiptType method. This allows
@@ -431,6 +435,14 @@ namespace SpaceBattleSim
         /// Gets the current spaceship information.
         /// </summary>
         public SpaceShip ShipInfo => _spaceShip;
+        /// <summary>
+        /// Gets or sets a value indicating whether Unicode characters are used instead of image representations.<br/>
+        /// If set to false, Ship images are loaded from .\skins\ folder only once and shared for all other ships of the same type. If image doesn't exist, a question mark will be displayed.<br/>
+        /// Default: true
+        /// </summary>
+        /// <remarks>Set this property to <see langword="true"/> to display Unicode symbols in place of
+        /// images. This may improve compatibility with text-based environments or accessibility tools.</remarks>
+        public static bool UnicodeShips { get { return _unicodeShips; } set { _unicodeShips = value; } }
         /// <summary>
         /// Determines whether all raider ships or all repair rigs are in the dead state, indicating that a dead reset
         /// is required.
@@ -951,14 +963,20 @@ namespace SpaceBattleSim
                 // content that can be toggled on or off without affecting the underlying properties.
                 if (this._dText.IsEnabled)
                 {
-                    if (this._dText.HasShadowing && !_spaceShip.IsRaider)
+                    if ((_unicodeShips || !_isSpaceBattle) && this._dText.HasShadowing)
                     {
                         clsBtnShdwRect = new RectangleF(clsBtnRect.X + (int)this.ShadowDepth, clsBtnRect.Y + (int)this.ShadowDepth, clsBtnRect.Width, clsBtnRect.Height);
                         g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
                     }
 
                     if (_isSpaceBattle)
-                        g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
+                    {
+                        if(_unicodeShips)
+                            g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
+                        else
+                            g.DrawImage(_spaceShip.ShipImage, clsBtnRect);
+
+                    }
                     else
                         g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
 
