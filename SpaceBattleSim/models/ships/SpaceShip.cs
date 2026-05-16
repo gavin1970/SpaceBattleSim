@@ -84,7 +84,7 @@ namespace SpaceBattleSim
         private ABool _inUseColorBrush = ABool.False;
         private ShipType _shipType = ShipType.Transport;
         private ShipStatus _shipStatus = ShipStatus.Operational;
-        private Color _damageColor = Color.Transparent;
+        private Color _damageColor = Color.Empty;
         private Color _orgShipColor = SHIP_COLOR_DEFAULT;
         private Color _shipsColor = SHIP_COLOR_DEFAULT;
         private Color _shipsImgColor = SHIP_IMG_CLR_DEFAULT;
@@ -543,7 +543,7 @@ namespace SpaceBattleSim
         /// </summary>
         private void UpdateStatus()
         {
-            // var alpha = 128;
+            var alpha = 128;
             var dmgLevel = DamageLevel;     
             var prevDamageColor = _damageColor;
             var hitboxList = _hitboxHighCircleList;
@@ -563,44 +563,54 @@ namespace SpaceBattleSim
             {
                 _hitboxCircle = hitboxList[0];
                 _shipStatus = ShipStatus.Dead;
-                _damageColor = Color.FromArgb(200, Color.Red);
+                if (!ItemReq.UnicodeShips)
+                    alpha = 200;
+                _damageColor = Color.FromArgb(alpha, Color.Black);
             }
             else if (dmgLevel >= 90.0)
             {
                 _hitboxCircle = hitboxList[1];
-                _damageColor = Color.FromArgb(200, Color.BlueViolet);
+                if (!ItemReq.UnicodeShips)
+                    alpha = 200;
+                _damageColor = Color.FromArgb(alpha, Color.BlueViolet);
             }
             else if (dmgLevel >= 75.0)
             {
                 _hitboxCircle = hitboxList[2];
                 _shipStatus = ShipStatus.Critical;
-                _damageColor = Color.FromArgb(194, Color.OrangeRed);
+                if (!ItemReq.UnicodeShips)
+                    alpha = 194;
+                _damageColor = Color.FromArgb(alpha, Color.OrangeRed);
             }
             else if (dmgLevel >= 50.0)
             {
                 _hitboxCircle = hitboxList[3];
                 _shipStatus = ShipStatus.Damaged;
-                _damageColor = Color.FromArgb(164, Color.Orange);
+                if (!ItemReq.UnicodeShips)
+                    alpha = 164;
+                _damageColor = Color.FromArgb(alpha, Color.Orange);
             }
             else if (dmgLevel >= 25.0)
             {
                 _hitboxCircle = hitboxList[4];
                 _shipStatus = ShipStatus.Scratched;
-                _damageColor = Color.FromArgb(128, Color.Yellow);
+                if (!ItemReq.UnicodeShips)
+                    alpha = 128;
+                _damageColor = Color.FromArgb(alpha, Color.Yellow);
             }
             else 
             {
                 _hitboxCircle = hitboxList[5];
                 _shipStatus = ShipStatus.Operational;
-                // for image overlays to work properly, we can't use
-                // Color.Transparent directly because of SolidBrush.
-                // It shows up as a glow around Capital Ships.
-                // By adding 1 alpha resolves this issue.
-                _damageColor = Color.FromArgb(1, Color.Transparent);  
+                if (!ItemReq.UnicodeShips)
+                    _damageColor = Color.FromArgb(1, Color.Transparent);
+                else
+                    _damageColor = Color.Empty;
+
                 _shipsView = _shipsViewOrig;
             }
 
-            if (_damageColor != prevDamageColor)
+            if (!_damageColor.IsEmpty && _damageColor != prevDamageColor)
             {
                 GetUpdatedShipsColorBrushAsync(_damageColor).ContinueWith(task =>
                 {
