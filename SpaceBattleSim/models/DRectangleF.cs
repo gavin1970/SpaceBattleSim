@@ -1,5 +1,8 @@
 ﻿namespace SpaceBattleSim
 {
+    // Copyright (c) 2026 Gavin W. Landon (chizl.com)
+    // Licensed under the MIT License. See LICENSE file http://www.chizl.com/LICENSE.txt for full license information.
+    // SPDX-License-Identifier: MIT
     public class DRectangleF
     {
         private RectangleF _rect;

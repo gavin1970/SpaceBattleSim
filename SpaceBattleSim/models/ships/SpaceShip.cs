@@ -11,6 +11,7 @@ namespace SpaceBattleSim
     public class SpaceShip : DRectangleF
     {
         private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
+        private static readonly Color SHIP_IMG_CLR_DEFAULT = Color.FromArgb(0, Color.Black);
         private static readonly List<Pen> _hitboxLowestCircleList = new List<Pen>() {
             new Pen(Color.FromArgb(10, Color.Red), 1),
             new Pen(Color.FromArgb(100, Color.Red), 1),
@@ -44,7 +45,12 @@ namespace SpaceBattleSim
             new Pen(Color.FromArgb(100, Color.Green), 1)
         };
 
-        const string SHIP_COLR_BRUSH_KEY = "shipsColorBrush";
+        private enum SHIP_BRUSH_TYPE
+        {
+            TEXT,
+            IMAGE
+        }
+
         // The hitbox is represented as a char, which can be used to store a single
         // character representation of the ship's radar distance to pick up ships,
         // based on ShipType. This drops as they take damage.
@@ -81,7 +87,9 @@ namespace SpaceBattleSim
         private Color _damageColor = Color.Transparent;
         private Color _orgShipColor = SHIP_COLOR_DEFAULT;
         private Color _shipsColor = SHIP_COLOR_DEFAULT;
-        private SolidBrush _shipsColorBrush = new SolidBrush(SHIP_COLOR_DEFAULT);   // default
+        private Color _shipsImgColor = SHIP_IMG_CLR_DEFAULT;
+        private SolidBrush _shipsColorBrush = new SolidBrush(SHIP_COLOR_DEFAULT);       // default
+        private SolidBrush _shipsImageBrush = new SolidBrush(SHIP_IMG_CLR_DEFAULT);     // default
         private ShipMission _shipsMission = ShipMission.Idle;
 
         private string _shipName = string.Empty;
@@ -90,7 +98,8 @@ namespace SpaceBattleSim
         private bool _isRepairRig = false;
         private bool _isRaider = false;
 
-        private ConcurrentDictionary<string, SolidBrush> _customData = new ConcurrentDictionary<string, SolidBrush>();
+        private ConcurrentDictionary<SHIP_BRUSH_TYPE, SolidBrush> 
+            _customData = new ConcurrentDictionary<SHIP_BRUSH_TYPE, SolidBrush>();
 
         #region Public Properties
         /// <summary>
@@ -129,13 +138,18 @@ namespace SpaceBattleSim
 
                 _orgShipColor = shipStats.ShipColor;
                 _shipsColor = shipStats.ShipColor;
+                _shipsImgColor = Color.FromArgb(64, shipStats.ShipColor);
                 // Provides a pre-built dynamic visual representations of the ship's shield status.
+                _shipsColorBrush.Dispose();
                 _shipsColorBrush = new SolidBrush(_shipsColor);
+                _shipsImageBrush.Dispose();
+                _shipsImageBrush = new SolidBrush(_shipsImgColor);
                 // Store the ship's color brush in the custom data dictionary. Used later for
                 // an async thread-safe color overlay merge processing which tends to be
                 // slower that required for real-time updates, so we want to avoid doing it on
                 // the main thread and just swap the brush when ready.
-                _customData.TryAdd(SHIP_COLR_BRUSH_KEY, _shipsColorBrush);
+                _customData.TryAdd(SHIP_BRUSH_TYPE.TEXT, _shipsColorBrush);
+                _customData.TryAdd(SHIP_BRUSH_TYPE.IMAGE, _shipsImageBrush);
 
                 // Initialize the ship's stats based on its type, setting
                 // the shields, hitbox, power, and status accordingly.
@@ -216,6 +230,10 @@ namespace SpaceBattleSim
         /// between different types of ships or to indicate the ship's status.
         /// </summary>
         public Color ShipsColor => _shipsColor;
+        /// <summary>
+        /// Gets the color used to overlay onto ship images.
+        /// </summary>
+        public Color ShipsImgColor => _shipsImgColor;
         /// <summary>
         /// Gets the type of the ship. The ship type is used to categorize and differentiate between different
         /// types of ships, which can affect their behavior, capabilities, and interactions in various contexts,
@@ -349,12 +367,29 @@ namespace SpaceBattleSim
         /// </summary>
         public SolidBrush ShipsColorBrush
         {
-            get 
+            get
             {
-                if (_customData.TryGetValue(SHIP_COLR_BRUSH_KEY, out var brush))
+                if (_customData.TryGetValue(SHIP_BRUSH_TYPE.TEXT, out var brush))
                     return brush;
 
                 return _shipsColorBrush;
+            }
+        }
+        /// <summary>
+        /// Gets the brush used to overlay the ship image with a color representing the ship's current damage state. 
+        /// The overlay color can be customized through the ship's custom data, allowing for dynamic visual representations 
+        /// based on the ship's status or other factors.
+        /// </summary>
+        /// <remarks>The returned brush may be customized based on internal data. If no custom brush is
+        /// set, a default brush is provided. The caller is responsible for not disposing the returned brush.</remarks>
+        public SolidBrush ShipsImgOverlayBrush
+        {
+            get
+            {
+                if (_customData.TryGetValue(SHIP_BRUSH_TYPE.IMAGE, out var brush))
+                    return brush;
+
+                return _shipsImageBrush;
             }
         }
         #endregion
@@ -508,7 +543,7 @@ namespace SpaceBattleSim
         /// </summary>
         private void UpdateStatus()
         {
-            var alpha = 128;
+            // var alpha = 128;
             var dmgLevel = DamageLevel;     
             var prevDamageColor = _damageColor;
             var hitboxList = _hitboxHighCircleList;
@@ -528,36 +563,40 @@ namespace SpaceBattleSim
             {
                 _hitboxCircle = hitboxList[0];
                 _shipStatus = ShipStatus.Dead;
-                _damageColor = Color.FromArgb(alpha, Color.Black);
+                _damageColor = Color.FromArgb(200, Color.Red);
             }
             else if (dmgLevel >= 90.0)
             {
                 _hitboxCircle = hitboxList[1];
-                _damageColor = Color.FromArgb(alpha, Color.BlueViolet);
+                _damageColor = Color.FromArgb(200, Color.BlueViolet);
             }
             else if (dmgLevel >= 75.0)
             {
                 _hitboxCircle = hitboxList[2];
                 _shipStatus = ShipStatus.Critical;
-                _damageColor = Color.FromArgb(alpha, Color.OrangeRed);
+                _damageColor = Color.FromArgb(194, Color.OrangeRed);
             }
             else if (dmgLevel >= 50.0)
             {
                 _hitboxCircle = hitboxList[3];
                 _shipStatus = ShipStatus.Damaged;
-                _damageColor = Color.FromArgb(alpha, Color.Orange);
+                _damageColor = Color.FromArgb(164, Color.Orange);
             }
             else if (dmgLevel >= 25.0)
             {
                 _hitboxCircle = hitboxList[4];
                 _shipStatus = ShipStatus.Scratched;
-                _damageColor = Color.FromArgb(alpha, Color.Yellow);
+                _damageColor = Color.FromArgb(128, Color.Yellow);
             }
             else 
             {
                 _hitboxCircle = hitboxList[5];
                 _shipStatus = ShipStatus.Operational;
-                _damageColor = Color.Transparent;
+                // for image overlays to work properly, we can't use
+                // Color.Transparent directly because of SolidBrush.
+                // It shows up as a glow around Capital Ships.
+                // By adding 1 alpha resolves this issue.
+                _damageColor = Color.FromArgb(1, Color.Transparent);  
                 _shipsView = _shipsViewOrig;
             }
 
@@ -567,9 +606,13 @@ namespace SpaceBattleSim
                 {
                     if (task.IsCompletedSuccessfully)
                     {
-                        var newBrush = task.Result;
-                        _customData.TryUpdate(SHIP_COLR_BRUSH_KEY, newBrush, _shipsColorBrush);
-                        _shipsColorBrush = newBrush;
+                        (var textBrush, var imageBrush) = task.Result;
+
+                        _customData.TryUpdate(SHIP_BRUSH_TYPE.TEXT, textBrush, _shipsColorBrush);
+                        _customData.TryUpdate(SHIP_BRUSH_TYPE.IMAGE, imageBrush, _shipsImageBrush);
+
+                        _shipsColorBrush = textBrush;
+                        _shipsImageBrush = imageBrush;
                     }
                 });
             }
@@ -582,7 +625,7 @@ namespace SpaceBattleSim
         /// <param name="damageColor">The color representing the current damage state to be applied as an overlay to the ship's original color.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a SolidBrush reflecting the
         /// updated ship color.</returns>
-        private Task<SolidBrush> GetUpdatedShipsColorBrushAsync(Color damageColor)
+        private Task<(SolidBrush textBrush, SolidBrush imageBrush)> GetUpdatedShipsColorBrushAsync(Color damageColor)
         {
             return Task.Run(() =>
             {
@@ -591,14 +634,21 @@ namespace SpaceBattleSim
                 // we return the current brush without making changes. This ensures thread safety while
                 // allowing for asynchronous updates to the ship's color based on damage levels.
                 if (!_inUseColorBrush.TrySetTrue())
-                    return _shipsColorBrush;
+                    return (_shipsColorBrush, _shipsImageBrush);
                 try
                 {
-                    _shipsColor = ColorConvert.GetOverlayColor(damageColor, _orgShipColor);
+                    _shipsColor = ColorConvert.GetOverlayColor(Color.FromArgb(128,damageColor), _orgShipColor);
                     var newBrush = new SolidBrush(_shipsColor);
-                    _customData.TryUpdate(SHIP_COLR_BRUSH_KEY, newBrush, _shipsColorBrush);
+                    var color = damageColor == Color.Transparent ? Color.Transparent : Color.FromArgb(damageColor.A, Color.Black);
+                    var newImgBrush = new SolidBrush(color);
 
-                    return newBrush;
+                    //_customData.TryUpdate(SHIP_BRUSH_TYPE.TEXT, newBrush, _shipsColorBrush);
+                    //_customData.TryUpdate(SHIP_BRUSH_TYPE.IMAGE, newImgBrush, _shipsImageBrush);
+
+                    //_shipsColorBrush = newBrush;
+                    //_shipsImageBrush = newImgBrush;
+
+                    return (newBrush, newImgBrush);
                 } 
                 finally
                 {

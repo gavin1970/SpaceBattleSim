@@ -3,6 +3,7 @@ using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using static DDefaults;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SpaceBattleSim
 {
@@ -971,11 +972,13 @@ namespace SpaceBattleSim
 
                     if (_isSpaceBattle)
                     {
-                        if(_unicodeShips)
+                        if (_unicodeShips)
                             g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
                         else
+                        {
                             g.DrawImage(_spaceShip.ShipImage, clsBtnRect);
-
+                            g.FillEllipse(_spaceShip.ShipsImgOverlayBrush, clsBtnRect);
+                        }
                     }
                     else
                         g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColor.Brush, clsBtnRect, _centerText);

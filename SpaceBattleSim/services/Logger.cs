@@ -15,7 +15,7 @@ namespace Chizl.StandAloneLogging
         Error = 4,
         Information = 8,
         Debug = 16,
-        All = 32,
+        All = Application | Critical | Error | Information | Debug,
     }
 
     /// <summary>
@@ -32,15 +32,16 @@ namespace Chizl.StandAloneLogging
     internal class Logger
     {
         const string DEFAULT_LOG_PATH = ".\\logs";
-        // Can be adjusted, but if an exception occurs consecutively MAX_IO_FAILURES, logging will be stopped to prevent further issues.
-        // This helps to avoid potential data corruption or other issues that could arise from trying to log when the logger is not
-        // properly configured, while still allowing for some retries in case of transient issues.  If a successful write occurs before
-        // MAX_IO_FAILURES is reached, _ioFailureCount will be reset back to 0.  
+        // Can be adjusted, but if an exception occurs consecutively MAX_IO_FAILURES, logging will be stopped to
+        // prevent further issues. This helps to avoid potential data corruption or other issues that could arise
+        // from trying to log when the logger is not properly configured, while still allowing for some retries
+        // in case of transient issues.  If a successful write occurs before MAX_IO_FAILURES is reached, _ioFailureCount
+        // will be reset back to 0.  
         const int MAX_IO_FAILURES = 50;
         private int _ioFailureCount = 0;
         private static Logger _logger = Logger.Empty;
 
-        private List<FileInfo> _fileInfo = new();
+        private ConcurrentDictionary<LogLevel, FileInfo> _fileInfo = new();
         private ConcurrentQueue<(LogLevel Level, string Msg)> _msgQueue = new();
         private ABool _startWriting = ABool.False;
         private ABool _stopLogging = ABool.False;
@@ -49,7 +50,13 @@ namespace Chizl.StandAloneLogging
         private string _logPath = DEFAULT_LOG_PATH;
         private DirectoryInfo _logDirectoryInfo = new DirectoryInfo(DEFAULT_LOG_PATH);
 
-        public static Logger Static { get { return _logger; } set { _logger = value; }  }
+        /// <summary>
+        /// Gets or sets the static instance of the logger used for application-wide logging operations.
+        /// </summary>
+        /// <remarks>Use this property to access or replace the global logger instance. Changing this
+        /// property affects all components that rely on the static logger for logging. This property is thread-safe
+        /// only if the underlying logger implementation is thread-safe.</remarks>
+        public static Logger Static { get { return _logger; } set { _logger = value; } }
 
         #region Public Static Readonly Properties
         /// <summary>
@@ -89,6 +96,9 @@ namespace Chizl.StandAloneLogging
         #endregion
 
         #region Public Properties
+        /// <summary>
+        /// Gets a value indicating whether the logger is currently stopped and not processing any log messages.
+        /// </summary>
         public bool IsEmpty { get { return _stopLogging; } }
         /// <summary>
         /// Gets or sets the file system path where log files are stored.
@@ -101,6 +111,11 @@ namespace Chizl.StandAloneLogging
         #endregion
 
         #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the Logger class with the specified log levels enabled.
+        /// </summary>
+        /// <param name="logLevels">The log levels to enable for this logger instance. Only messages 
+        /// at these levels will be processed.</param>
         private Logger(LogLevel logLevels) => _stopLogging.SetTrue();
         /// <summary>
         /// Initializes a new instance of the Logger class with the specified log levels and log file path.
@@ -132,21 +147,33 @@ namespace Chizl.StandAloneLogging
         /// <summary>
         /// Enqueues a log message with the specified log level for asynchronous processing and output.
         /// </summary>
-        /// <remarks>This method trims trailing whitespace characters from the message before enqueuing
-        /// it. The message is timestamped and added to an internal queue for asynchronous processing. This method does
-        /// not block the calling thread.</remarks>
+        /// <remarks>
+        /// This method trims trailing whitespace characters from the message before enqueuing it. 
+        /// The message is timestamped and added to an internal queue for asynchronous processing. 
+        /// This method does not block the calling thread.
+        /// </remarks>
         /// <param name="lLevel">
         /// The severity level of the log message. Determines how the message is categorized, filtered, and can use multiple types.<br/>
         /// e.g. LogLevel.Application | LogLevel.Error<br/>
         ///      LogLevel.All
         /// </param>
-        /// <param name="msg">The message to log. Trailing carriage returns, line feeds, and tab characters are removed, and NewLine added before logging.</param>
+        /// <param name="msg">
+        /// The message to log. Trailing carriage returns, line feeds, and tab characters are removed, 
+        /// and NewLine added before logging.
+        /// </param>
         public void WriteLine(LogLevel lLevel, string msg)
         {
-            if (_stopLogging)
+            // If logging is stopped or the log level is None, we can skip processing
+            // the message since it will not be logged.  This helps to reduce overhead
+            // and improve performance by avoiding unnecessary processing for messages
+            // that will not be logged.
+            if (_stopLogging ||
+                lLevel == LogLevel.None ||
+                (_enabledLogLevels & lLevel) != lLevel)
                 return;
 
-            // clean up end of text, since we are adding a newline in the log entry, to avoid double newlines.
+            // clean up end of text, since we are adding a newline in the log entry,
+            // to avoid double newlines.
             while (msg.EndsWith('\r') || msg.EndsWith('\n') || msg.EndsWith('\t'))
                 msg = msg.Substring(0, msg.Length - 1);
 
@@ -163,12 +190,13 @@ namespace Chizl.StandAloneLogging
         /// Processes queued log messages asynchronously, writing them to the appropriate log files based on their log
         /// levels.
         /// </summary>
-        /// <remarks>This method manages the lifecycle of log file writers and ensures that all messages
+        /// <remarks>
+        /// This method manages the lifecycle of log file writers and ensures that all messages
         /// in the queue are written to disk efficiently. It handles log level filtering, file I/O failures, and ensures
         /// that only one write operation occurs at a time. If additional messages are enqueued during processing, the
         /// method will recursively process them until the queue is empty. Exceptions during logging are handled
-        /// internally to avoid disrupting the calling thread.</remarks>
-        /// <returns></returns>
+        /// internally to avoid disrupting the calling thread.
+        /// </remarks>
         private async Task ProcessQueueAsync()
         {
             if (_stopLogging || !_startWriting.TrySetTrue())
@@ -178,7 +206,14 @@ namespace Chizl.StandAloneLogging
             {
                 await Task.Run(() =>
                 {
-                    StreamWriter[] writer = new StreamWriter[Enum.GetValues(typeof(LogLevel)).Length];
+                    // Create a dictionary to hold StreamWriter instances for each log level.  We do this to
+                    // allow for efficient writing to multiple log files based on log levels, while still
+                    // ensuring that we are properly managing file resources and minimizing the overhead
+                    // of opening and closing files repeatedly during the writing loop.  We will open the
+                    // writers once before the loop and close them all after we are done writing, which
+                    // helps to improve performance by reducing file I/O operations and allows us to write
+                    // messages to multiple log files in a single pass through the queue.
+                    var writer = new Dictionary<LogLevel, StreamWriter>();
 
                     try
                     {
@@ -199,61 +234,52 @@ namespace Chizl.StandAloneLogging
                         // and _fileInfo refreshed, before we start writing.
                         LogSetup();
 
-                        // Open a StreamWriter for each log level to write messages to the appropriate log file.
-                        // We do this in a loop to handle all log levels and to ensure that we have a writer ready
-                        // for each level that we need to write to, without having to check the log level of each
-                        // message during the writing loop, which helps to reduce overhead and improve performance.
-                        foreach (LogLevel logLevel in Enum.GetValues(typeof(LogLevel)))
+                        // Open all writers
+                        foreach (LogLevel logLevel2 in Enum.GetValues<LogLevel>())
                         {
-                            if (logLevel == LogLevel.All || logLevel == LogLevel.None)
-                                continue; // Skip the "All" and "None" log levels since they are not actual
-                                            // log levels to write to, but rather combinations of
-                                            // all levels for configuration purposes.
-
-                            // Check if the current log level is enabled for logging.  If it
-                            // is not, we can skip and check next level.  We do this to avoid
-                            // opening writers for log levels that are not enabled, which helps
-                            // to reduce overhead and improve performance, especially if there
-                            // are many log levels and only a few are enabled.
-                            // NOTE: & is faster than HasFlag() and works with [Flags] enums,
-                            // but it requires a bitwise check to ensure the exact flag is set.
-                            if ((_enabledLogLevels & logLevel) != logLevel)
+                            // Only open writers for log levels that are enabled and have a corresponding FileInfo.
+                            // We do this to avoid unnecessary file I/O and to ensure that we are only opening files
+                            // for log levels that we will actually be writing to, which helps to improve performance
+                            // and reduce resource usage.
+                            if (!_fileInfo.Keys.Contains(logLevel2))
                                 continue;
 
-                            // loading all levels, just in case log levels are added to the
-                            // queue while we are writing, so we don't have to worry about loading
-                            int logLevelVal = (int)Math.Log((int)logLevel, 2);
-                            // We can also skip opening a writer for any log level that is
-                            // not enabled for logging, since we won't be writing any messages
-                            // for those levels.
-                            writer[logLevelVal] = _fileInfo[logLevelVal].AppendText();
+                            // Open the StreamWriter for the log level and add it to the dictionary.  We do this to
+                            // ensure that we have a StreamWriter ready for each log level that we need to write to,
+                            // which allows us to write messages to the appropriate log files efficiently during the
+                            // writing loop.
+                            writer.TryAdd(logLevel2, _fileInfo[logLevel2].AppendText());
+                        }
 
-                            // The "Drain Loop": Keep going as long as there is work.
-                            // This prevents the race condition where a message is 
-                            // enqueued just as we are finishing the previous batch.
-                            while (!_msgQueue.IsEmpty && !_stopLogging)
+                        // The "Drain Loop": Keep going as long as there is work.
+                        // This prevents the race condition where a message is 
+                        // enqueued just as we are finishing the previous batch.
+                        while (!_msgQueue.IsEmpty && !_stopLogging)
+                        {
+                            // Try to dequeue a message.  If successful, write it to the appropriate log file based on its log level.
+                            while (!_stopLogging && _msgQueue.TryDequeue(out (LogLevel logLvl, string Msg) logEntry))
                             {
-                                // Try to dequeue a message.  If successful, write it to the appropriate log file based on its log level.
-                                while (_msgQueue.TryDequeue(out (LogLevel logLvl, string Msg) logEntry) && !_stopLogging)
+                                // Loop through all log levels to check which levels are included in the log entry's log level.  We do
+                                // this to ensure that messages with multiple log levels (e.g. LogLevel.Application | LogLevel.Error)
+                                // are written to all appropriate log files, while still allowing for efficient writing by avoiding
+                                // unnecessary checks during the writing loop.
+                                foreach (LogLevel lvl in Enum.GetValues<LogLevel>().Where(l => (l is not LogLevel.None and not LogLevel.All) &&
+                                                                                          (logEntry.logLvl & l) == l))
                                 {
-                                    // Loop through all log levels to check which levels are included in the log entry's log level.  We do
-                                    // this to ensure that messages with multiple log levels (e.g. LogLevel.Application | LogLevel.Error)
-                                    // are written to all appropriate log files, while still allowing for efficient writing by avoiding
-                                    // unnecessary checks during the writing loop.
-                                    foreach (var lvl in Enum.GetValues<LogLevel>().Where(l => l != LogLevel.All && (logEntry.logLvl & l) == l))
-                                    {
-                                        int writeLevelVal = (int)Math.Log((int)logEntry.logLvl, 2);
-                                        // Check if the log level of the message is enabled for logging.  If it is,
-                                        // write the message to the appropriate log file using the corresponding
-                                        // StreamWriter.  We do this to ensure that messages are only written to log
-                                        // files for levels that are enabled, which helps to reduce overhead and
-                                        // improve performance, especially if there are many log levels and only a
-                                        // few are enabled.
-                                        writer[writeLevelVal].WriteLine(logEntry.Msg);
-                                    }
+                                    if ((_enabledLogLevels & lvl) != lvl)
+                                        continue;
+
+                                    // Check if the log level of the message is enabled for logging.  If it is,
+                                    // write the message to the appropriate log file using the corresponding
+                                    // StreamWriter.  We do this to ensure that messages are only written to log
+                                    // files for levels that are enabled, which helps to reduce overhead and
+                                    // improve performance, especially if there are many log levels and only a
+                                    // few are enabled.
+                                    writer[lvl].WriteLine(logEntry.Msg);
                                 }
                             }
                         }
+
                         // No need to Interlocked since we are already in a single-threaded context
                         // within the Task.Run, and this is only accessed here after successfully
                         // setting _isWriting to true, which ensures that only one thread can be
@@ -261,7 +287,8 @@ namespace Chizl.StandAloneLogging
                         // successful write operation to allow for retries if future write operations
                         // encounter issues, while still providing a mechanism to track and handle
                         // repeated failures without prematurely giving up on logging.
-                        _ioFailureCount = 0; // Reset IO failure count after a successful write operation
+                        // Reset IO failure count after a successful write operation
+                        _ioFailureCount = 0; 
                     }
                     catch
                     {
@@ -276,7 +303,9 @@ namespace Chizl.StandAloneLogging
                             Task.Delay(100).Wait();
                             // Reset queue to save memory
                             _msgQueue.Clear();
-                            throw; // Re-throw the exception to allow it to be handled by the caller or to crash the application if not handled
+                            // Re-throw the exception to allow it to be handled by
+                            // the caller or to crash the application if not handled
+                            throw;
                         }
                         else
                         {
@@ -288,7 +317,7 @@ namespace Chizl.StandAloneLogging
                     {
                         // Ensure all writers are properly closed to
                         // release file handles and flush buffers.
-                        foreach (var w in writer)
+                        foreach (var w in writer.Values)
                             w?.Close();
                     }
                 });
@@ -354,22 +383,21 @@ namespace Chizl.StandAloneLogging
                 foreach (var f in oldFileInfo)
                     f.Delete();
 
-                // Loop through all log levels to create a log file for each level.
+                // Get the log levels that are enabled for logging and create a list of them.  We do this to avoid having
+                // to check the enabled log levels repeatedly during the writing loop, which helps to improve performance
+                // by reducing the number of checks and allowing us to focus on writing messages to the appropriate log
+                // files based on the pre-determined list of enabled log levels.
+                var logLevels = Enum.GetValues(typeof(LogLevel)).Cast<LogLevel>()
+                                .Where(l => l is not LogLevel.None and not LogLevel.All && (_enabledLogLevels & l) == l)
+                                .ToList();
+
+                // Loop through all enabled log levels to create a log file for each level.
                 // This allows us to separate logs by level and makes it easier to
                 // find specific types of log messages.  We do this in the LogSetup()
                 // method to ensure that it is done automatically when the date
                 // changes, without requiring manual intervention. 
-                foreach (LogLevel logLevel in Enum.GetValues(typeof(LogLevel)))
+                foreach (LogLevel logLevel in logLevels)
                 {
-                    if (logLevel == LogLevel.All || logLevel == LogLevel.None)
-                        continue; // Skip the "All" and "None" log levels since they are not actual
-                                  // log levels to write to, but rather combinations of
-                                  // all levels for configuration purposes.
-
-                    // Get the integer value of the log level to use as an index for the FileInfo list.
-                    // NOTE: this int is based on LogLevels turned on, not the identifier in LogLevel enum.
-                    int logLevelVal = (int)Math.Log((int)logLevel, 2);
-
                     // Use a date-based log file name to create a new log file each day.
                     // This helps to keep log files manageable and makes it easier to find logs for specific dates.
                     var logFile = $"{_activeFileDate.Year:00}-{_activeFileDate.Month:00}-{_activeFileDate.Day:00}_{logLevel}.log";
@@ -377,37 +405,28 @@ namespace Chizl.StandAloneLogging
                     // Combine the log path and file name to get the full path to the log file.
                     var fullFile = Path.Combine(LogPath, logFile);
 
-                    // Update the FileInfo for the new log file.  We do this before creating
-                    // the file to ensure that the FileInfo is always up to date and reflects
-                    // the current log file, even if it doesn't exist yet.
-                    _fileInfo.Add(new FileInfo(fullFile));
-
-                    // Check if the current log level is enabled for logging.  If it
-                    // is not, we can skip and check next level.  We do this to avoid
-                    // opening writers for log levels that are not enabled, which helps
-                    // to reduce overhead and improve performance, especially if there
-                    // are many log levels and only a few are enabled.
-                    // NOTE: & is faster than HasFlag() and works with [Flags] enums,
-                    // but it requires a bitwise check to ensure the exact flag is set.
-                    if ((_enabledLogLevels & logLevel) != logLevel)
-                        continue;
+                    // Add the FileInfo for the log file to the dictionary for later use when writing messages.
+                    // We do this to ensure that we have quick access to the FileInfo for each log level when
+                    // we need to write messages, which helps to improve performance by avoiding the overhead
+                    // of repeatedly creating FileInfo objects during the writing loop.
+                    _fileInfo.TryAdd(logLevel, new FileInfo(fullFile));
 
                     // Refresh the FileInfo to ensure it has the latest information about
                     // the file, especially if it was created or modified by another process.
-                    _fileInfo[logLevelVal].Refresh();
+                    _fileInfo[logLevel].Refresh();
 
                     // if the log file doesn't exist, create it.  If it does exist, add a
                     // blank line to separate logs from different runs on the same day.
-                    if (!_fileInfo[logLevelVal].Exists)
+                    if (!_fileInfo[logLevel].Exists)
                     {
                         // Create the file and immediately close it to release
                         // the handle.  We do this to ensure that the file is
                         // created and ready for writing before we start logging messages.
-                        _fileInfo[logLevelVal].Create().Close();
+                        _fileInfo[logLevel].Create().Close();
                         // Refresh to update the file info after creation
-                        _fileInfo[logLevelVal].Refresh();
+                        _fileInfo[logLevel].Refresh();
                     }
-                    else if (logLevel == LogLevel.Application && _fileInfo[logLevelVal].Exists)
+                    else if (logLevel == LogLevel.Application && _fileInfo[logLevel].Exists)
                     {
                         // If the file already exists, we can add a blank line to
                         // separate logs from different runs on the same day.
@@ -425,11 +444,11 @@ namespace Chizl.StandAloneLogging
                 // initialized or configured.
 
                 // Set exit write now to true to signal any ongoing write operations to stop immediately
-                _stopLogging.SetTrue(); 
+                _stopLogging.SetTrue();
                 // Wait for a short period to allow any ongoing write operations to stop before proceeding
-                Task.Delay(100).Wait(); 
+                Task.Delay(100).Wait();
                 // Clear the message queue to prevent any further logging attempts and to free up memory
-                _msgQueue.Clear();  
+                _msgQueue.Clear();
                 throw; // Re-throw the exception to allow it to be handled by the caller or to crash the application if not handled
             }
         }

@@ -2,6 +2,9 @@
 using System.Collections.Concurrent;
 using System.Text;
 
+// Copyright (c) 2026 Gavin W. Landon (chizl.com)
+// Licensed under the MIT License. See LICENSE file http://www.chizl.com/LICENSE.txt for full license information.
+// SPDX-License-Identifier: MIT
 namespace SpaceBattleSim
 {
     /// <summary>
