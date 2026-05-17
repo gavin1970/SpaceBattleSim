@@ -17,14 +17,13 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 - [Controls (Keyboard)](#controls-keyboard)
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
-- [Dependencies](#dependencies)
 - [Contributing](#contributing)
 
 ---
 
 ## What It Is
 
-**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, rotating planet, and Raiders fighting against Friendly autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.<br/>
+**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, rotating planet, and Raiders fighting against Friendly autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.  The simulation is designed to be visually engaging and strategically dynamic, with the ebb and flow of battle creating emergent moments of triumph and defeat.  The default configuration creates a fast-paced, intense battle where the home team is under constant pressure from the Raiders, and the RepairRigs must work tirelessly to keep them alive.  The visual effects and dynamic color changes add to the immersive experience, making it more than just a technical demo but a captivating space battle simulation.
 
 **Single Monitor - Full Screen**
 ![Single Monitor full-screen view](imgs/full_screen_view.png)
@@ -33,9 +32,9 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid: `True`, ShowStars: `True`, NaturalStarfield: `True`, ShowComet: `False`, ShowNebulae: `true`, ShowPlanets: `False`, ShowVersion: `False`
 ![All Monitor full-screen view](imgs/full_all_screens_view.png)
 
-> Can run by itself or with project in Visual Studio.  Press (F5) at any time to revive all the dead.  This will happen automatically within 30 seconds of all healers or all raiders being destroyed, but you can also trigger it manually with F5. The F1 and F2 keys show different levels of ship info overlays.
+> Can run by itself or with project in Visual Studio.  Press (F5) at any time to revive all the dead.  This will happen automatically within 15 seconds of all Ally or all Raiders being destroyed, but you can also trigger it manually with F5. The F1 and F2 keys show different levels of ship info overlays.
 
-> AI keeps telling me to do things differently in some places, but any time it's done, it destroys the simulation and rendering doesn't work anymore.  So I have to keep it the way it is, even if it's not how I would do it if I were writing it from scratch.  It's a bit of a mess as there are things I need to break up into other classes/methods, but it works, it's fast, and that's the point of the project — to show how to build a real-time simulation with pure `System.Drawing` without any game engine or rendering framework.
+> AI keeps telling me to do things differently in some places, but any time it's done, it destroys the simulation and rendering doesn't work anymore.  So I have to keep it the way it is, even if it's not how I would do it if I were writing it from scratch.  It's a bit of a mess as there are things I need to break up into other classes/methods, but it works, has no memory leaks, it's fast, and that's the point of the project. — Show how to build a real-time simulation with pure `System.Drawing` without any game engine or rendering framework.
 
 ---
 
@@ -53,7 +52,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 - **Conflict-free repair assignments** — a second thread-safe dictionary ensures only one RepairRig claims a dead ally at a time.
 - **Dynamic color health indicator** — ship color shifts as shields drops as hitbox diameter changes base on power transfer if enabled.
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
-- **F-key HUD overlays** — press F1/F2 to view live ship stats; press F5 to instantly revive all dead ships.
+- **F-key HUD overlays** — press F1 for help, F2 or F3 to view live ship stats; press F5 to instantly revive all dead ships.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
 - **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
 - **Audit Logging** — All ship actions (Kills, Deaths, Heals, CriticalTransfers, Damage taken at those last moments.) are logged to a file with timestamps for post-simulation analysis.  
@@ -86,6 +85,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
 > **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, Fighters once, and Capital Ships can use this twice within one battle.
+
 > **Shield Transfer Color**: When a ship performs a critical transfer, the hitbox displayed around the ship changes color.  Based on the amount of times the ship has performed a critical transfer, the color changes to reflect the increasing risk and desperation of the move.  During each of as a shipt takes damage, the color will get dim until it's unable to transfer on the last 25%.  Original power, hitbox is green/25%-red.  Half power, Cyan/25%-DarkOrchid.  Quarter power, Orange/25%-BlueViolet.  Eighth power, Silver/25%-HotPink.
 
 ---
@@ -153,7 +153,7 @@ private int _planetSize = 150;              // pulled from app config, diameter 
 private int _planetWrapWidth = 0;           // calculated later, _planetSize * 2, do not modify this here.
 ```
 
-The `_totalBattleShips` is split so that **Raiders outnumber Fighters** by roughly 2:1**, creating strong enemy pressure that if 100 total fighters, the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where neither side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight with 100 fighters, with CriticalTransferRaiders set to true, can last around 10-12 minutes before one side is completely wiped out, at which point the (30sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
+The `_totalBattleShips` is split so that **Raiders outnumber Fighters** by roughly 2:1**, creating strong enemy pressure that if 100 total fighters, the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where either side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight with 100 fighters, with CriticalTransferRaiders set to true, can last around 10-12 minutes before one side is completely wiped out, at which point the (15sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
 
 | Group | Default Count |
 |-------|---------------|
@@ -184,16 +184,27 @@ RepairRigs are revived first so the recovery pipeline never collapses. Capital S
 
 ### Thread-Safe State
 
-Each `SpaceShip` instance runs its AI on an independent background thread. A shared `ConcurrentDictionary<string, SpaceShip>` (keyed by ship name) allows every thread to read the current position and health of any other ship without locking. This is the foundation of hit-detection and targeting.
+Each `SpaceShip` instance runs its own state on an independent background thread. A shared `ConcurrentDictionary<string, SpaceShip>` (keyed by ship name) allows every thread to read the current position and health of any other ship without locking. This is the foundation of hit-detection and targeting.
 
 ```
 BgPlatform (UI Thread)
-  └── Timer ──► Invalidate() ──► OnPaint()
-                    └── Iterates ConcurrentDictionary ──► draws each ship
+  └── RefreshTimer ──► RefreshTimer_Tick()
+                           └── BufferedGraphics.Graphics ──► draws each ship
+                                └── Iterates _battleShips list ──► ship.DrawItem(g)
+                                └── BufferedGraphics.Render() ──► flips to screen
 
 SpaceShip Thread (× N)
   └── Move ──► scan hitbox ──► attack / repair ──► update shared dictionary entry
 ```
+
+-	Timer → RefreshTimer
+-	Invalidate() removed
+-	OnPaint() removed — painting is done directly in the tick handler
+-	Added BufferedGraphics.Graphics as the drawing background surface (Stars, Nebulae, and Grid)
+-	Added BufferedGraphics.Render() as the final screen flip step
+-	ConcurrentDictionary → _battleShips list (that's what's iterated in DrawItem(Graphics))
+
+---
 
 ### RepairRig Assignment Dictionary
 
