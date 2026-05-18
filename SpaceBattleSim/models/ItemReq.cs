@@ -474,14 +474,17 @@ namespace SpaceBattleSim
             var utc = ADateTime.UtcNow;
             _battleTime = utc - _startBattle.Value;
 
-            var raiderWin = AnyRaiderAlive;
-            var allyWin = AnyAllyAlive;
-
-            var aliveRepairRigs = _allSpaceShips.Where(w => w.Value.IsRepairRig && w.Value.Status != ShipStatus.Dead).Any();
-            var winMessage = raiderWin && allyWin ? "Manual Reset" : raiderWin ? "Raiders win" : "Ally win";
+            var anyRaiderAlive = AnyRaiderAlive;
+            var anyAllyAlive = AnyAllyAlive;
+            var winMessage = anyRaiderAlive && anyAllyAlive ? "Manual Reset" : anyRaiderAlive ? "Raiders win" : "Ally win";
 
             BattleStats.SaveAudit(_startBattle.Value, utc, winMessage);
 
+            // reset everyone, so we can start fresh without worrying about the state of any ship. This is simpler
+            // and more reliable than trying to selectively reset only dead ships, which could lead to edge cases
+            // where some ships are not properly reset or where the logic becomes too complex to maintain. By
+            // resetting all ships, we ensure a consistent starting point for each battle and avoid potential
+            // bugs related to ship status.
             foreach (var ship in _allSpaceShips)
                 _allSpaceShips[ship.Key].ResetStats();
 
@@ -510,9 +513,6 @@ namespace SpaceBattleSim
                              $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} | " +
                              $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} ";
 
-                retVal.Add($"This Battle Time: {ADateTime.UtcNow - _startBattle.Value}");
-                retVal.Add($"Last Total Battle Time: {_battleTime}");
-
                 retVal.Add(new string('-', header.Length));
                 retVal.Add(header);
                 retVal.Add(new string('-', header.Length));
@@ -538,6 +538,11 @@ namespace SpaceBattleSim
             {
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Total", 5)} | " +
                              $"{CreatePaddedString("Alive", 6)} | {CreatePaddedString("Dead", 4)} ";
+
+                retVal.Add($"This Battle Time: {(ADateTime.UtcNow.Value - _startBattle.Value).ToString(@"hh\:mm\:ss")}");
+                retVal.Add($"Last Total Battle Time: {_battleTime}");
+
+                retVal.Add(new string('-', header.Length));
 
                 retVal.Add(new string('-', header.Length));
                 retVal.Add(header);

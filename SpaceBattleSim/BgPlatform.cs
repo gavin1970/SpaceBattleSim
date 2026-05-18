@@ -211,6 +211,7 @@ namespace SpaceBattleSim
                     _fKeyDisplay = ItemReq.GetShipStatus(false);
                 else if (isF5)
                 {
+                    ItemReq.ResetDeadShips();
                     _pauseScreen.TrySetTrue();
                     this.AutoResetTimer.Enabled = false;
                     this.RefreshTimer.Enabled = false;
@@ -227,7 +228,6 @@ namespace SpaceBattleSim
                     _fKeyDisplay = new string[] { };
                 else if (isF5)
                 {
-                    ItemReq.ResetDeadShips();
                     this.AutoResetTimer.Enabled = true;
                     this.RefreshTimer.Enabled = true;
                     _pauseScreen.TrySetFalse();
