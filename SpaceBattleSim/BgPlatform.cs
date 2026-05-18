@@ -549,7 +549,7 @@ namespace SpaceBattleSim
                 else
                 {
                     CloseButton.DText.Text = "X";
-                    CloseButton.DText.Font = _closeBtnFont;
+                    CloseButton.DText.DFont = _closeBtnFont;
                     CloseButton.DText.TextColor = Color.White;
                 }
             }));
@@ -610,7 +610,7 @@ namespace SpaceBattleSim
                         Size = flierSize,
                         ShadowDepth = _shadowStyle.depth,
                         DText = {
-                            Font = _smallFlierFont,
+                            DFont = _smallFlierFont,
                             Text = shipImg,
                             ShadowDepth = _shadowStyle.depth,
                             ShadowColor = Color.FromArgb(32, shipColor),
@@ -640,7 +640,7 @@ namespace SpaceBattleSim
                         Size = capSize,
                         ShadowDepth = _shadowStyle.depth,
                         DText = {
-                            Font = _largeFlierFont,
+                            DFont = _largeFlierFont,
                             Text = cap.ShipView,
                             ShadowDepth = _shadowStyle.depth,
                             ShadowColor = Color.FromArgb(64, cap.ShipColor),
@@ -671,7 +671,7 @@ namespace SpaceBattleSim
                         Size = repairSize,
                         ShadowDepth = _shadowStyle.depth,
                         DText = {
-                            Font = _smallFlierFont,
+                            DFont = _smallFlierFont,
                             Text = repairRig.ShipView,
                             ShadowDepth = _shadowStyle.depth,
                             ShadowColor = Color.FromArgb(64, repairRig.ShipColor),
@@ -788,7 +788,7 @@ namespace SpaceBattleSim
                             TextColor = Color.White,
                             ShadowDepth = _shadowStyle.depth,
                             ShadowColor = Color.FromArgb(64, Color.White),
-                            Font = _titleFont,
+                            DFont = _titleFont,
                         },
                     BorderWidth = _borderWidth,
                     BorderColor = Color.White,

@@ -1,4 +1,5 @@
 ﻿using Chizl.DrawGraphics;
+using System.Collections.Concurrent;
 
 namespace SpaceBattleSim
 {
@@ -10,13 +11,18 @@ namespace SpaceBattleSim
     /// application startup and are available for lookup throughout the application's lifetime.</remarks>
     internal static class ShipSkins
     {
+        // Constants for skin image management
+        public const string SKINS_DIRECTORY = ".\\skins\\";
+        // Default font for generating placeholder images when skin files are missing
+        public static readonly Font DEFAULT_FONT = new Font("Verdana", 12, FontStyle.Regular, GraphicsUnit.Pixel);
+
         /// <summary>
         /// Stores the mapping between ship types and their associated images used for rendering ship skins.
         /// </summary>
         /// <remarks>Each entry associates a specific ShipType with its corresponding Image. This
         /// dictionary enables efficient retrieval of the correct image for a given ship type when rendering or updating
         /// ship appearances.</remarks>
-        private static Dictionary<ShipType, Image> _skins = new Dictionary<ShipType, Image>();
+        private static ConcurrentDictionary<ShipType, Image> _skins = new ConcurrentDictionary<ShipType, Image>();
         /// <summary>
         /// Initializes the static data for the ShipSkins class by loading predefined ship skin images for each ship
         /// type.
@@ -26,13 +32,19 @@ namespace SpaceBattleSim
         /// when accessing skin images for those types.</remarks>
         static ShipSkins() 
         {
-            // Load skins from a configuration file or directory for hardcoded skins
-            _skins.Add(ShipType.Fighter, new ShipSkin(ShipType.Fighter, ".\\skins\\fighter_skin.png").Image);
-            _skins.Add(ShipType.Capital, new ShipSkin(ShipType.Capital, ".\\skins\\capital_skin.png").Image);
-            _skins.Add(ShipType.Raider, new ShipSkin(ShipType.Raider, ".\\skins\\raider_skin.png").Image);
-            _skins.Add(ShipType.RepairRig, new ShipSkin(ShipType.RepairRig, ".\\skins\\repairrig_skin.png").Image);
-            _skins.Add(ShipType.Bomber, new ShipSkin(ShipType.Bomber, ".\\skins\\bomber_skin.png").Image);              // not used, but need the entry to prevent failure with SkinImage call.
-            _skins.Add(ShipType.Transport, new ShipSkin(ShipType.Transport, ".\\skins\\transport_skin.png").Image);     // not used, but need the entry to prevent failure with SkinImage call.
+            foreach(var sType in Enum.GetValues<ShipType>())
+            {
+                try
+                {
+                    var shipStats = new ShipStats(sType);
+                    CreateAsImage(sType, DEFAULT_FONT, shipStats.ShipView, shipStats.ShipColor);
+                }
+                catch (Exception ex)
+                {
+                    // Log the error and continue loading other skins
+                    Console.WriteLine($"Error loading skin for {sType}: {ex.Message}");
+                }
+            }
         }
         /// <summary>
         /// Retrieves the skin image associated with the specified ship type.
@@ -40,6 +52,34 @@ namespace SpaceBattleSim
         /// <param name="sType">The type of ship for which to retrieve the corresponding skin image.</param>
         /// <returns>An image representing the skin for the specified ship type.</returns>
         public static Image SkinImage(ShipType sType) => _skins[sType];
+        /// <summary>
+        /// Creates and stores an image representation of the specified Unicode string for the given ship type using the
+        /// provided font and foreground color.
+        /// </summary>
+        /// <remarks>No image is created for ShipType.Transport or ShipType.Bomber. If an image already
+        /// exists for the specified ship type and updateIfExists is true, the existing image is replaced.</remarks>
+        /// <param name="sType">The ship type for which the image will be created. Must not be ShipType.Transport or ShipType.Bomber.</param>
+        /// <param name="font">The font to use when rendering the Unicode string as an image.</param>
+        /// <param name="unicodeString">The Unicode string to render as an image.</param>
+        /// <param name="fgColor">The foreground color to use for the rendered text.</param>
+        /// <param name="updateIfExists">true to update the image if one already exists for the specified ship type; otherwise, false.</param>
+        public static void CreateAsImage(ShipType sType, Font font, string unicodeString, Color fgColor, bool updateIfExists = false)
+        {
+            if (sType is ShipType.Transport or ShipType.Bomber)
+                return;
+
+            if (_skins.Keys.Contains(sType) && !updateIfExists)
+                return;
+
+            // ARGB has to be 1, because we are generating a BMP from here.
+            // Maybe it's a quirk of the image rendering library that treats fully transparent images differently.
+            var img = ModImg.TxtToImg(unicodeString, font, fgColor, Color.Transparent);
+
+            if (_skins.Keys.Contains(sType))
+                _skins[sType] = img;
+            else
+                _skins.TryAdd(sType, img);
+        }
 
         /// <summary>
         /// Represents the visual appearance and associated image for a specific ship type.
@@ -49,12 +89,8 @@ namespace SpaceBattleSim
         /// is intended for internal use to manage ship skin resources.</remarks>
         private class ShipSkin
         {
-            // Constants for skin image management
-            const string SKINS_DIRECTORY = ".\\skins\\";
             // Default image path for missing skins
-            const string DEFAULT_IMAGE_PATH = $"{SKINS_DIRECTORY}unknown.png";
-            // Default font for generating placeholder images when skin files are missing
-            private static readonly Font DEFAULT_FONT = new Font("Verdana", 12, FontStyle.Regular, GraphicsUnit.Pixel);
+            const string DEFAULT_IMAGE_PATH = $"{ShipSkins.SKINS_DIRECTORY}unknown.png";
             /// <summary>
             /// Gets the type of ship associated with this instance.
             /// </summary>
@@ -67,6 +103,14 @@ namespace SpaceBattleSim
             /// Gets the image associated with this instance.
             /// </summary>
             public Image Image { get; }
+            public ShipSkin(ShipType sType, Image image)
+            {
+                // Validate input parameters and initialize properties
+                this.ShipType = sType;
+                // add image to the skins dictionary for the specified ship type
+                this.Image = image;
+                this.ImagePath = string.Empty;
+            }
             /// <summary>
             /// Initializes a new instance of the ShipSkin class using the specified ship type and image path.
             /// </summary>
@@ -105,7 +149,7 @@ namespace SpaceBattleSim
                     else
                     {
                         // otherwise, generate a placeholder image with a "?" symbol
-                        this.Image = ModImg.TxtToImg("?", DEFAULT_FONT, Color.Yellow, Color.Black);
+                        this.Image = ModImg.TxtToImg("?", ShipSkins.DEFAULT_FONT, Color.Yellow, Color.Black);
                         // save it to the default path for future use.
                         this.Image.Save(imagePath);
                     }

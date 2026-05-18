@@ -967,13 +967,13 @@ namespace SpaceBattleSim
                     if ((_unicodeShips || !_isSpaceBattle) && this._dText.HasShadowing)
                     {
                         clsBtnShdwRect = new RectangleF(clsBtnRect.X + (int)this.ShadowDepth, clsBtnRect.Y + (int)this.ShadowDepth, clsBtnRect.Width, clsBtnRect.Height);
-                        g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
+                        g.DrawString(this._dText.Text, this._dText.DFont, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
                     }
 
                     if (_isSpaceBattle)
                     {
                         if (_unicodeShips)
-                            g.DrawString(this._dText.Text, this._dText.Font, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
+                            g.DrawString(this._dText.Text, this._dText.DFont, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
                         else
                         {
                             g.DrawImage(_spaceShip.ShipImage, clsBtnRect);
@@ -981,7 +981,7 @@ namespace SpaceBattleSim
                         }
                     }
                     else
-                        g.DrawString(this._dText.Text, this._dText.Font, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
+                        g.DrawString(this._dText.Text, this._dText.DFont, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
 
                     if (_isSpaceBattle && _spaceShip.Status != ShipStatus.Dead)
                     {

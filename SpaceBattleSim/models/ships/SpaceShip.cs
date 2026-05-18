@@ -564,14 +564,14 @@ namespace SpaceBattleSim
                 _hitboxCircle = hitboxList[0];
                 _shipStatus = ShipStatus.Dead;
                 if (!ItemReq.UnicodeShips)
-                    alpha = 200;
+                    alpha = 192;
                 _damageColor = Color.FromArgb(alpha, Color.Black);
             }
             else if (dmgLevel >= 90.0)
             {
                 _hitboxCircle = hitboxList[1];
                 if (!ItemReq.UnicodeShips)
-                    alpha = 200;
+                    alpha = 175;
                 _damageColor = Color.FromArgb(alpha, Color.BlueViolet);
             }
             else if (dmgLevel >= 75.0)
@@ -579,7 +579,7 @@ namespace SpaceBattleSim
                 _hitboxCircle = hitboxList[2];
                 _shipStatus = ShipStatus.Critical;
                 if (!ItemReq.UnicodeShips)
-                    alpha = 194;
+                    alpha = 150;
                 _damageColor = Color.FromArgb(alpha, Color.OrangeRed);
             }
             else if (dmgLevel >= 50.0)
@@ -587,7 +587,7 @@ namespace SpaceBattleSim
                 _hitboxCircle = hitboxList[3];
                 _shipStatus = ShipStatus.Damaged;
                 if (!ItemReq.UnicodeShips)
-                    alpha = 164;
+                    alpha = 140;
                 _damageColor = Color.FromArgb(alpha, Color.Orange);
             }
             else if (dmgLevel >= 25.0)
