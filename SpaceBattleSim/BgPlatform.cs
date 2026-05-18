@@ -19,6 +19,8 @@ namespace SpaceBattleSim
         const string _appTitle = "Space Battleground Simulation";
         static string _appInfo = "Version: {0} - F1 (Help)";
         static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
+            "Esc - Pause/Unpause screen\n " +
+            "F1 - This Help Message\n " +
             "F2 - Ship's class type information\n " +
             "F3 - Battle Stats\n " +
             "F5 - Revive the dead and refresh all ships to 100%\n " +
@@ -54,6 +56,11 @@ namespace SpaceBattleSim
         private bool _topmostWindow = false;        // pulled from app config
         private bool _auditLogEnabled = false;      // pulled from app config
         private bool _useUnicodeShips = true;       // pulled from app config
+
+        // set to true to pause the screen, which will stop all animations and interactions.
+        // Useful for closely examining the current state of the battle or for taking screenshots
+        // without any movement.
+        private ABool _pauseScreen = ABool.False;
 
         // const bool _showAsteroids = false;
         private ABool _showCloseButton = ABool.True;// If form is Windowed, we don't need a close button, but if it's full screen, we do.
@@ -157,16 +164,46 @@ namespace SpaceBattleSim
                     TitleText.Visible = true;
                 else
                     TitleText.Visible = false;
+
+                // since the screen is paused, I stil need to allow the user to interact with the close button
+                // and title text to unpause or close the form, and to prevent flicker for those controls specifically, I 
+                // set critical transfer to allow interaction even when paused. This property flag is unused as
+                // a button, so I'm using it for pausing.  If not paused, I reset critical transfer to false so
+                // they will hide again when not hovered over.
+                if (_pauseScreen && ((CloseButton.Visible && !CloseButton.CriticalTransfer) || (TitleText.Visible && !TitleText.CriticalTransfer)))
+                {
+                    if (CloseButton.Visible)
+                    {
+                        CloseButton.CriticalTransfer = true;
+                        this.Invalidate(new Region(CloseButton.Rectangle));
+                    }
+                    else if (TitleText.Visible)
+                    {
+                        TitleText.CriticalTransfer = true;
+                        this.Invalidate(new Region(TitleText.Rectangle));
+                    }
+                    
+                }
+                else if (!_pauseScreen)
+                {
+                    if (CloseButton.CriticalTransfer)
+                        CloseButton.CriticalTransfer = false;
+                    if (TitleText.CriticalTransfer)
+                        TitleText.CriticalTransfer = false;
+                }
             };
 
             this.KeyDown += (s, e) =>
             {
-                var isF1 = e.KeyCode == Keys.F1;    //details
-                var isF2 = e.KeyCode == Keys.F2;    //summary
+                var isEsc = e.KeyCode == Keys.Escape;   //pause/unpause
+                var isF1 = e.KeyCode == Keys.F1;        //details
+                var isF2 = e.KeyCode == Keys.F2;        //summary
                 var isF3 = e.KeyCode == Keys.F3;
                 var isF5 = e.KeyCode == Keys.F5;
 
-                if (isF1)
+                if(isEsc)
+                    _pauseScreen.TrySetValue(!_pauseScreen);
+                else if (isF1)
                     _fKeyDisplay = this.HelpDisplayText();
                 else if (isF2)
                     _fKeyDisplay = ItemReq.GetShipStatus(true);
@@ -174,6 +211,7 @@ namespace SpaceBattleSim
                     _fKeyDisplay = ItemReq.GetShipStatus(false);
                 else if (isF5)
                 {
+                    _pauseScreen.TrySetTrue();
                     this.AutoResetTimer.Enabled = false;
                     this.RefreshTimer.Enabled = false;
                 }
@@ -192,6 +230,7 @@ namespace SpaceBattleSim
                     ItemReq.ResetDeadShips();
                     this.AutoResetTimer.Enabled = true;
                     this.RefreshTimer.Enabled = true;
+                    _pauseScreen.TrySetFalse();
                 }
             };
 
@@ -1117,76 +1156,81 @@ namespace SpaceBattleSim
             // Get the buffer's Graphics object - NO Invalidate() needed!
             var g = _bufferedGraphics.Graphics;
 
-            // Clear and draw directly to buffer
-            g.Clear(this.BackColor);
+            if (!_pauseScreen)
+                // Clear and draw directly to buffer
+                g.Clear(this.BackColor);
+
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            //// Draw the grid background
-            if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(g);
-
-            // Replace the existing foreach over _spaceShapes.DrawList with this:
-            if (_spaceCache != null)
-                g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
-
-            if (_showVersion)
-                g.DrawString(_appInfo, _smallFlierFont, Brushes.White, _versionLoc);
-
-            if (_showComet)
+            if (!_pauseScreen)
             {
-                // if comet is off the screen, lets reset it.
-                if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
+                //// Draw the grid background
+                if (!MatrixArray.IsEmpty) MatrixArray.DrawItem(g);
+
+                // Replace the existing foreach over _spaceShapes.DrawList with this:
+                if (_spaceCache != null)
+                    g.DrawImage(_spaceCache, this.Padding.Left, this.Padding.Top);
+
+                if (_showVersion)
+                    g.DrawString(_appInfo, _smallFlierFont, Brushes.White, _versionLoc);
+
+                if (_showComet)
                 {
-                    _xCounter = -110.0f;
-                    _yCounter = 0.0f;
+                    // if comet is off the screen, lets reset it.
+                    if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
+                    {
+                        _xCounter = -110.0f;
+                        _yCounter = 0.0f;
+                    }
+                    else
+                    {
+                        _xCounter += 0.1f;
+                        _yCounter += 0.05f;
+                    }
+
+                    foreach (var (start, end, pen) in _cometShapes.DrawList)
+                    {
+                        var xStart = start.X + _xCounter;
+                        var yStart = start.Y + _yCounter;
+
+                        var sPf = new PointF(xStart, yStart);
+                        var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
+
+                        // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
+                        _lastStartPoint = new Point((int)xStart, (int)yStart);
+
+                        g.DrawLine(pen, sPf, ePf);
+                    }
                 }
-                else
+
+                if (_showPlanets)
                 {
-                    _xCounter += 0.1f;
-                    _yCounter += 0.05f;
+                    using (GraphicsPath path = new GraphicsPath())
+                    {
+                        path.AddEllipse(_redPlanetRect);
+                        g.SetClip(path);
+                    }
+
+                    _xOffset += _planetSpinSpeed;
+                    if (_xOffset >= _planetSize * 2) _xOffset = 0;
+
+                    // Draw moving texture (scaled dynamically)
+                    // We draw it at wrapWidth so the image stretches/shrinks to fit the planet
+                    g.DrawImage(_planetTexture, _redPlanetRect.X - _xOffset, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
+                    g.DrawImage(_planetTexture, (_redPlanetRect.X - _xOffset) + _planetWrapWidth, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
+
+                    // reset clipping region to prevent it from affecting other drawing operations
+                    g.ResetClip();
+
+                    // Optional: Draw a border so the edges look sharp
+                    g.DrawEllipse(_planetBorderPen, _redPlanetRect);
                 }
 
-                foreach (var (start, end, pen) in _cometShapes.DrawList)
-                {
-                    var xStart = start.X + _xCounter;
-                    var yStart = start.Y + _yCounter;
-
-                    var sPf = new PointF(xStart, yStart);
-                    var ePf = new PointF(end.X + _xCounter, end.Y + _yCounter);
-
-                    // use for ClientRectangle.Contains later to ensure the comet isn't off the screen and it requires an int.
-                    _lastStartPoint = new Point((int)xStart, (int)yStart);
-
-                    g.DrawLine(pen, sPf, ePf);
-                }
+                // Draw the Space Battle (Fighters & Raiders)
+                foreach (var ship in _battleShips)
+                    if (ship.Visible) ship.DrawItem(g);
             }
-
-            if (_showPlanets)
-            {
-                using (GraphicsPath path = new GraphicsPath())
-                {
-                    path.AddEllipse(_redPlanetRect);
-                    g.SetClip(path);
-                }
-
-                _xOffset += _planetSpinSpeed;
-                if (_xOffset >= _planetSize * 2) _xOffset = 0;
-
-                // Draw moving texture (scaled dynamically)
-                // We draw it at wrapWidth so the image stretches/shrinks to fit the planet
-                g.DrawImage(_planetTexture, _redPlanetRect.X - _xOffset, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
-                g.DrawImage(_planetTexture, (_redPlanetRect.X - _xOffset) + _planetWrapWidth, _redPlanetRect.Y, _planetWrapWidth, _planetSize);
-
-                // reset clipping region to prevent it from affecting other drawing operations
-                g.ResetClip();  
-
-                // Optional: Draw a border so the edges look sharp
-                g.DrawEllipse(_planetBorderPen, _redPlanetRect);
-            }
-
-            // Draw the Space Battle (Fighters & Raiders)
-            foreach (var ship in _battleShips)
-                if (ship.Visible) ship.DrawItem(g);
 
             if (_fKeyDisplay.Length > 0)
             {

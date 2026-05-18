@@ -52,8 +52,9 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 - **Conflict-free repair assignments** — a second thread-safe dictionary ensures only one RepairRig claims a dead ally at a time.
 - **Dynamic color health indicator** — ship color shifts as shields drops as hitbox diameter changes base on power transfer if enabled.
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
-- **F-key HUD overlays** — press F1 for help, F2 or F3 to view live ship stats; press F5 to instantly revive all dead ships.
+- **F-key HUD overlays** — press Esc to Pause/Unpause, F1 for help, F2 for ship stats, F3 to view live battle stats, or F5 to instantly reset all ships back to full health.  Audit logging, if enable will show manual reset instead of Ally or Raider win.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
+- **Image ship symbols** — when app.config->`UseUnicodeShips` is set to false, each ShipType as Unicode glyph is rendered as an image on the fly in memory and used for the ships rendering.  Since Unicode uses color blending to show damage, the image rendering is static, but will have an overlay of black and get darker as the ship takes damage instead.
 - **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
 - **Audit Logging** — All ship actions (Kills, Deaths, Heals, CriticalTransfers, Damage taken at those last moments.) are logged to a file with timestamps for post-simulation analysis.  
   - Audit files are stored in the `.\\audit\\` directory with filenames like `260509_1504.log` (YearMonthDay_HourMin.log).  You can see 3 examples of these audit files found here: [SpaceBattleSim\auditLogs](SpaceBattleSim\auditLogs)
