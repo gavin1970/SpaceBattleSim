@@ -1207,7 +1207,6 @@ namespace SpaceBattleSim
             // Render buffer to screen (THIS is the only drawing that hits the screen)
             _bufferedGraphics.Render();
         }
-
         /// <summary>
         /// Runs ever 30sec to see if a reset is needed.
         /// </summary>
