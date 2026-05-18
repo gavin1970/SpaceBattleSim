@@ -64,7 +64,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 | ConfigName | Value Type | Default Value | Description |
 |---|---|---|---|
-| `UseUnicodeShips` | bool | true | Toggle between Unicode glyphs or images found in the [SpaceBattleSim\skins\](SpaceBattleSim\skins\) for ship rendering |
+| `UseUnicodeShips` | bool | true | Toggle between Unicode glyphs or auto converts Unicode glyphs to images for ship rendering |
 | `AuditLogEnabled` | bool | false | Toggle audit logging of ship actions |
 | `PlanetTextureFile` | string | `.\skins\fungal_planet.png` | File path for the planet texture image |
 | `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
