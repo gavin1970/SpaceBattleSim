@@ -11,38 +11,38 @@ namespace SpaceBattleSim
     public class SpaceShip : DRectangleF
     {
         private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
-        private static readonly Color SHIP_IMG_CLR_DEFAULT = Color.FromArgb(0, Color.Black);
+        private static readonly Color SHIP_IMG_CLR_DEFAULT = Color.FromArgb(1, Color.Black);
         private static readonly List<Pen> _hitboxLowestCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(10, Color.Red), 1),
-            new Pen(Color.FromArgb(100, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Purple), 2),
+            new Pen(Color.FromArgb(100, Color.Red), 2),
             new Pen(Color.FromArgb(25, Color.Silver), 1),
-            new Pen(Color.FromArgb(50, Color.Silver), 1),
-            new Pen(Color.FromArgb(75, Color.Silver), 1),
-            new Pen(Color.FromArgb(100, Color.Silver), 1)
+            new Pen(Color.FromArgb(50, Color.Silver), 2),
+            new Pen(Color.FromArgb(75, Color.Silver), 3),
+            new Pen(Color.FromArgb(100, Color.Silver), 4)
         };
         private static readonly List<Pen> _hitboxLowCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(10, Color.Red), 1),
-            new Pen(Color.FromArgb(100, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Purple), 2),
+            new Pen(Color.FromArgb(100, Color.Red), 2),
             new Pen(Color.FromArgb(25, Color.Orange), 1),
-            new Pen(Color.FromArgb(50, Color.Orange), 1),
-            new Pen(Color.FromArgb(75, Color.Orange), 1),
-            new Pen(Color.FromArgb(100, Color.Orange), 1)
+            new Pen(Color.FromArgb(50, Color.Orange), 2),
+            new Pen(Color.FromArgb(75, Color.Orange), 3),
+            new Pen(Color.FromArgb(100, Color.Orange), 4)
         };
         private static readonly List<Pen> _hitboxMidCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(10, Color.Red), 1),
-            new Pen(Color.FromArgb(100, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Purple), 2),
+            new Pen(Color.FromArgb(100, Color.Red), 2),
             new Pen(Color.FromArgb(25, Color.Cyan), 1),
-            new Pen(Color.FromArgb(50, Color.Cyan), 1),
-            new Pen(Color.FromArgb(75, Color.Cyan), 1),
-            new Pen(Color.FromArgb(100, Color.Cyan), 1)
+            new Pen(Color.FromArgb(50, Color.Cyan), 2),
+            new Pen(Color.FromArgb(75, Color.Cyan), 3),
+            new Pen(Color.FromArgb(100, Color.Cyan), 4)
         };
         private static readonly List<Pen> _hitboxHighCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(10, Color.Red), 1),
-            new Pen(Color.FromArgb(100, Color.Red), 1),
+            new Pen(Color.FromArgb(100, Color.Purple), 2),
+            new Pen(Color.FromArgb(100, Color.Red), 2),
             new Pen(Color.FromArgb(25, Color.Green), 1),
-            new Pen(Color.FromArgb(50, Color.Green), 1),
-            new Pen(Color.FromArgb(75, Color.Green), 1),
-            new Pen(Color.FromArgb(100, Color.Green), 1)
+            new Pen(Color.FromArgb(50, Color.Green), 2),
+            new Pen(Color.FromArgb(75, Color.Green), 3),
+            new Pen(Color.FromArgb(100, Color.Green), 4)
         };
 
         private enum SHIP_BRUSH_TYPE
@@ -64,7 +64,6 @@ namespace SpaceBattleSim
         private ADateTime _nextCriticalTransfer = ADateTime.UtcNow;
         private bool _criticalTransfer = false;
         private string _shipsView = string.Empty;
-        private string _shipsViewOrig = string.Empty;
         private float _rotate = 0.0f;
         private Pen _hitboxCircle = _hitboxHighCircleList[5];   //default, alpha will be changed based on damage level.
         // The last attack time is stored as an Atomic DateTime, which can be used
@@ -133,7 +132,6 @@ namespace SpaceBattleSim
                 _isRaider = type == ShipType.Raider;
                 _recovery = (int)shipStats.Recovery;
                 _shipsView = shipStats.ShipView;
-                _shipsViewOrig = _shipsView;
                 _rotate = shipStats.Rotate;
 
                 _orgShipColor = shipStats.ShipColor;
@@ -561,22 +559,19 @@ namespace SpaceBattleSim
 
             if (this.Shields == 0)
             {
-                _hitboxCircle = hitboxList[0];
                 _shipStatus = ShipStatus.Dead;
-                if (!ItemReq.UnicodeShips)
-                    alpha = 192;
                 _damageColor = Color.FromArgb(alpha, Color.Black);
             }
             else if (dmgLevel >= 90.0)
             {
-                _hitboxCircle = hitboxList[1];
+                _hitboxCircle = hitboxList[0];
                 if (!ItemReq.UnicodeShips)
                     alpha = 175;
                 _damageColor = Color.FromArgb(alpha, Color.BlueViolet);
             }
             else if (dmgLevel >= 75.0)
             {
-                _hitboxCircle = hitboxList[2];
+                _hitboxCircle = hitboxList[1];
                 _shipStatus = ShipStatus.Critical;
                 if (!ItemReq.UnicodeShips)
                     alpha = 150;
@@ -602,12 +597,10 @@ namespace SpaceBattleSim
             {
                 _hitboxCircle = hitboxList[5];
                 _shipStatus = ShipStatus.Operational;
-                if (!ItemReq.UnicodeShips)
-                    _damageColor = Color.FromArgb(1, Color.Transparent);
-                else
-                    _damageColor = Color.Empty;
-
-                _shipsView = _shipsViewOrig;
+                // effectively transparent, but allows us to keep the same brush and just update the
+                // color for performance reasons, since creating new brushes is expensive and we want
+                // to avoid doing it on the main thread if possible.
+                _damageColor = Color.FromArgb(1, Color.Transparent);    
             }
 
             if (!_damageColor.IsEmpty && _damageColor != prevDamageColor)
@@ -621,8 +614,20 @@ namespace SpaceBattleSim
                         _customData.TryUpdate(SHIP_BRUSH_TYPE.TEXT, textBrush, _shipsColorBrush);
                         _customData.TryUpdate(SHIP_BRUSH_TYPE.IMAGE, imageBrush, _shipsImageBrush);
 
-                        _shipsColorBrush = textBrush;
-                        _shipsImageBrush = imageBrush;
+                        if (_shipsColorBrush != textBrush)
+                            _shipsColorBrush = textBrush;
+                        if (_shipsImageBrush != imageBrush)
+                            _shipsImageBrush = imageBrush;
+                    }
+                    else
+                    {
+                        // resync since something went wrong with the async update, we don't
+                        // want to end up with a blank brush, so we put the old one back in
+                        // the custom data just in case.  Use what we have to update the dictionary.
+                        if (_customData.TryGetValue(SHIP_BRUSH_TYPE.TEXT, out var textBrush))
+                            _customData.TryUpdate(SHIP_BRUSH_TYPE.TEXT, _shipsColorBrush, textBrush);
+                        if (_customData.TryGetValue(SHIP_BRUSH_TYPE.IMAGE, out var imgBrush))
+                            _customData.TryUpdate(SHIP_BRUSH_TYPE.IMAGE, _shipsImageBrush, imgBrush);
                     }
                 });
             }
@@ -647,16 +652,11 @@ namespace SpaceBattleSim
                     return (_shipsColorBrush, _shipsImageBrush);
                 try
                 {
-                    _shipsColor = ColorConvert.GetOverlayColor(Color.FromArgb(128,damageColor), _orgShipColor);
+                    //_shipsColor = ColorConvert.GetOverlayColor(Color.FromArgb(128,damageColor), _orgShipColor);
+                    _shipsColor = ColorConvert.GetOverlayColor(damageColor, _orgShipColor);
                     var newBrush = new SolidBrush(_shipsColor);
-                    var color = damageColor == Color.Transparent ? Color.Transparent : Color.FromArgb(damageColor.A, Color.Black);
+                    var color = damageColor == Color.Transparent ? _orgShipColor : Color.FromArgb(damageColor.A, 5, 5, 5);
                     var newImgBrush = new SolidBrush(color);
-
-                    //_customData.TryUpdate(SHIP_BRUSH_TYPE.TEXT, newBrush, _shipsColorBrush);
-                    //_customData.TryUpdate(SHIP_BRUSH_TYPE.IMAGE, newImgBrush, _shipsImageBrush);
-
-                    //_shipsColorBrush = newBrush;
-                    //_shipsImageBrush = newImgBrush;
 
                     return (newBrush, newImgBrush);
                 } 

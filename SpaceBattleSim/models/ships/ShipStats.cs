@@ -27,7 +27,6 @@
         readonly static Color _repairRigShipColor = Color.FromArgb(255, 0, 255, 255);
         readonly static Color _bomberShipColor = _unuseDefault;
         readonly static Color _transportShipColor = _unuseDefault;
-        readonly static Color _deadShipColor = _unuseDefault;
 
         static private readonly Dictionary<ShipType, 
                 (int Shields, int Power, int HitBox, float Speed, 
@@ -63,6 +62,7 @@
         private Color _shipColor = Color.Empty;
         private float _rotate = 0;
         private RecoverOrder _recovery = RecoverOrder.None;
+        private static List<ShipType> _criticalList = new List<ShipType>();
 
         /// <summary>
         /// Initializes a new instance of the ShipStats class with the specified ship type.
@@ -90,7 +90,6 @@
                 _rotate = Math.Clamp(value.rotate, 0, 359);
             }
         }
-        private static List<ShipType> _criticalList = new List<ShipType>();
         /// <summary>
         /// List of ShipTypes that have critial transfers configured.
         /// </summary>

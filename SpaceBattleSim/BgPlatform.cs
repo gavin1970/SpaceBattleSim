@@ -1,6 +1,7 @@
 ﻿using Chizl.Applications;
 using Chizl.Configurations;
 using Chizl.ThreadSupport;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using static SpaceBattleSim.StaticConfig;
 
@@ -20,10 +21,11 @@ namespace SpaceBattleSim
         static string _appInfo = "Version: {0} - F1 (Help)";
         static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
             "Esc - Pause/Unpause screen\n " +
-            "F1 - This Help Message\n " +
-            "F2 - Ship's class type information\n " +
-            "F3 - Battle Stats\n " +
-            "F5 - Revive the dead and refresh all ships to 100%\n " +
+            "F1  - This Help Message\n " +
+            "F2  - Ship's class type information\n " +
+            "F3  - Battle Stats\n " +
+            "F5  - Revive the dead and refresh all ships to 100%\n " +
+            "F12 - Open Explorer to root of Sim\n " +
             "Mouse over the far top right for make close button.\n\t" +
             "* Only available when not in Windowed mode\n " +
             "Mouse over far left top and click banner that pops up for toggle background transparent.\n\t" +
@@ -195,13 +197,16 @@ namespace SpaceBattleSim
 
             this.KeyDown += (s, e) =>
             {
-                var isEsc = e.KeyCode == Keys.Escape;   //pause/unpause
-                var isF1 = e.KeyCode == Keys.F1;        //details
-                var isF2 = e.KeyCode == Keys.F2;        //summary
-                var isF3 = e.KeyCode == Keys.F3;
-                var isF5 = e.KeyCode == Keys.F5;
+                var isEsc = e.KeyCode == Keys.Escape;   //pause/unpause screen, which will stop all animations and interactions,
+                                                        //allowing for closely examining the current state of the battle or for
+                                                        //taking screenshots without any movement.
+                var isF1 = e.KeyCode == Keys.F1;        //summary and help display
+                var isF2 = e.KeyCode == Keys.F2;        //summary with ship status
+                var isF3 = e.KeyCode == Keys.F3;        //summary with battle stats
+                var isF5 = e.KeyCode == Keys.F5;        //revive and refresh ships
+                var isF12 = e.KeyCode == Keys.F12;      //open explorer to root of sim folder
 
-                if(isEsc)
+                if (isEsc)
                     _pauseScreen.TrySetValue(!_pauseScreen);
                 else if (isF1)
                     _fKeyDisplay = this.HelpDisplayText();
@@ -215,6 +220,15 @@ namespace SpaceBattleSim
                     _pauseScreen.TrySetTrue();
                     this.AutoResetTimer.Enabled = false;
                     this.RefreshTimer.Enabled = false;
+                }
+                else if(isF12)
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = About.AppRootDir,
+                        UseShellExecute = true,
+                        Verb = "open"
+                    });
                 }
             };
 
@@ -455,7 +469,7 @@ namespace SpaceBattleSim
             {
                 Location = new PointF(this.Padding.Left, this.Padding.Top),
                 Size = new Size(this.ViewSize.Width, this.ViewSize.Height),
-                BGColor = Color.FromArgb(255, this.BackColor),
+                BGColor = Color.Transparent, //Color.FromArgb(255, this.BackColor),
                 BorderColor = _shadowStyle.color,
                 BorderWidth = _borderWidth,
                 ShadowDepth = _shadowStyle.depth,
