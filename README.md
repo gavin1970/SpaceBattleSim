@@ -65,24 +65,35 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 | ConfigName | Value Type | Default Value | Description |
 |---|---|---|---|
-| `UseUnicodeShips` | bool | true | Toggle between Unicode glyphs or auto converts Unicode glyphs to images for ship rendering |
 | `AuditLogEnabled` | bool | false | Toggle audit logging of ship actions |
-| `PlanetTextureFile` | string | `.\skins\fungal_planet.png` | File path for the planet texture image |
-| `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
-| `ShowStars` | bool | true | Toggle visibility of random stars in the background |
+| `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power for 100% to their shields, when their shields drop below 25%. |
+| `CriticalTransferRaiders` | bool | false | If true, this allows a raider to transfer half their power for 100% to their shields, when their shields drop below 25%. |
+| `DisableAutoLock` | bool | false | If true, disables automatic locking of the Windows and stops screensavers. |
 | `NaturalStarfield` | bool | false | Toggle natural starfield background layer vs artificial starfield |
-| `ShowPlanet` | bool | false | Toggle visibility of the rotating planet in the background |
-| `ShowComet` | bool | false | Toggle visibility of the flying comet in the background |
 | `PlanetSize` | int | 150 | Diameter of the rotating planet in pixels |
 | `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
-| `TotalBattleShips` | int | 30 | (10-150) Total number of ships (Fighters + Raiders) to spawn in the simulation |
-| `ShowVersion` | bool | true | Show the app version near the bottom left of the screen. |
-| `CriticalTransferRaiders` | bool | false | If true, this allows a raider to transfer half their power for 100% to their shields, when their shields drop below 25%. |
-| `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power for 100% to their shields, when their shields drop below 25%. |
-| `ShowMatrixGrid` | bool | true | Toggle visibility of the background "Matrix"-style grid |
-| `DisableAutoLock` | bool | false | If true, disables automatic locking of the Windows and stops screensavers. |
-| `TopmostWindow` | bool | false | If true, keeps the window always on top of other windows, unless they are also set to topmost. |
+| `PlanetTextureFile` | string | `.\skins\fungal_planet.png` | File path for the planet texture image |
+| `RefreshRate` | float | 33 | Refresh Rate in milliseconds.  This is the time between each frame update, and it can be adjusted to  improve performance on older machines. |
 | `ScreenViewType` | string | `FullScreenCurrent` | Default: `FullScreenCurrent` - Full screen.  `FullScreenAll` - Set to FullScreen across all monitors.  `Windowed` - for a resizable window with title bar |
+| `ShowComet` | bool | false | Toggle visibility of the flying comet in the background |
+| `ShowMatrixGrid` | bool | true | Toggle visibility of the background "Matrix"-style grid |
+| `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
+| `ShowPlanet` | bool | false | Toggle visibility of the rotating planet in the background |
+| `ShowStars` | bool | true | Toggle visibility of random stars in the background |
+| `ShowVersion` | bool | true | Show the app version near the bottom left of the screen. |
+| `TopmostWindow` | bool | false | If true, keeps the window always on top of other windows, unless they are also set to topmost. |
+| `TotalBattleShips` | int | 30 | (10-150) Total number of ships (Fighters + Raiders) to spawn in the simulation |
+| `UseUnicodeShips` | bool | true | Toggle between Unicode glyphs or auto converts Unicode glyphs to images for ship rendering |
+
+
+**RefreshRate** Accepted Values:
+
+| Value | FPS | IsDefault |
+|---|---|---|
+| `16` | 60 FPS | No |
+| `33` | 30 FPS | Yes |
+| `50` | 20 FPS | No |
+| `100` | 10 FPS | No |
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
 > **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, Fighters once, and Capital Ships can use this twice within one battle.

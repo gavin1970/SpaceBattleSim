@@ -35,10 +35,15 @@
     /// </summary>
     public static readonly Pen DEF_LINE_SHADOW_SETUP = new Pen(Color.FromArgb(64, DEF_LINE_SETUP.Color), 0);
     /// <summary>
-    /// Represents the default pen used for drawing laser lines.  Default a solid red color 
-    /// and a width of 2 pixels.
+    /// Represents the default pen used for drawing red laser lines.  Default a solid red color 
+    /// and a width of 2 pixels for raiders.
     /// </summary>
-    public static readonly Pen DEF_LASER_LINE = new Pen(Color.FromArgb(255, Color.Red), 2);
+    public static readonly Pen DEF_RAIDER_LASER = new Pen(Color.FromArgb(255, Color.Red), 2);
+    /// <summary>
+    /// Represents the default pen used for drawing green laser lines.  Default a solid green color 
+    /// and a width of 2 pixels for allies.
+    /// </summary>
+    public static readonly Pen DEF_ALLY_LASER = new Pen(Color.FromArgb(255, Color.Green), 2);
     /// <summary>
     /// Represents the default pen used for drawing repair laser lines.  Default a solid blue color 
     /// and a width of 2 pixels.

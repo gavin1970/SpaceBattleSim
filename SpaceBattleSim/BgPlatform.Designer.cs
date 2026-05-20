@@ -37,11 +37,13 @@ namespace SpaceBattleSim
             // 
             // RefreshTimer
             // 
-            RefreshTimer.Interval = 30000;
-            RefreshTimer.Tick += RefreshTimer_Tick;
+            //RefreshTimer.Enabled = false;
+            //RefreshTimer.Interval = 30000;
+            //RefreshTimer.Tick += RefreshTimer_Tick;
             // 
             // AutoResetTimer
             // 
+            AutoResetTimer.Enabled = false;
             AutoResetTimer.Interval = 30000;
             AutoResetTimer.Tick += AutoResetTimer_Tick;
             // 

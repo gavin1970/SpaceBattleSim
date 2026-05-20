@@ -3,14 +3,13 @@ using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using static DDefaults;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SpaceBattleSim
 {
     /// <summary>
     /// Can be used as an abstract or standalone class request for boxing 
     /// operations, encapsulating properties for identification, z-order,
-    /// creation time, and rectangular bounds.
+    /// creation time, and rectangular bounds. 
     /// </summary>
     internal class ItemReq : IDisposable
     {
@@ -478,6 +477,10 @@ namespace SpaceBattleSim
             var anyAllyAlive = AnyAllyAlive;
             var winMessage = anyRaiderAlive && anyAllyAlive ? "Manual Reset" : anyRaiderAlive ? "Raiders win" : "Ally win";
 
+            // write audit before resetting ships, so we have a record of the final state of the battle and the duration
+            // before the reset occurs. This allows for accurate tracking and analysis of battles, including how long
+            // they lasted and who won, which can be useful for debugging, balancing, or simply keeping a history of
+            // battles in the simulation.
             BattleStats.SaveAudit(_startBattle.Value, utc, winMessage);
 
             // reset everyone, so we can start fresh without worrying about the state of any ship. This is simpler
@@ -486,11 +489,12 @@ namespace SpaceBattleSim
             // resetting all ships, we ensure a consistent starting point for each battle and avoid potential
             // bugs related to ship status.
             foreach (var ship in _allSpaceShips)
-                _allSpaceShips[ship.Key].ResetStats();
+                _allSpaceShips[ship.Key].ResetStats("AutoReset", true);
 
             _spaceShipsInRepair.Clear();
             _startBattle = ADateTime.UtcNow;
         }
+        private static string[] _shipStats = new string[] { };
         /// <summary>
         /// Retrieves the status information for all spaceships, either as detailed records or as grouped summaries.
         /// </summary>
@@ -508,11 +512,16 @@ namespace SpaceBattleSim
 
             if (stats)
             {
+                if (_shipStats.Length > 0)
+                    return _shipStats;
+
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Shields", 7)} | " +
                              $"{CreatePaddedString("Power", 10)} | {CreatePaddedString("HitBox", 6)} | " +
                              $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} | " +
                              $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} ";
 
+                retVal.Add(new string('-', header.Length));
+                retVal.Add($"| {CreatePaddedString($"Refresh Rate: {ShipStats.RefreshRateText}", header.Length - 4)} |");
                 retVal.Add(new string('-', header.Length));
                 retVal.Add(header);
                 retVal.Add(new string('-', header.Length));
@@ -533,6 +542,7 @@ namespace SpaceBattleSim
                                  $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
                                  $"{CreatePaddedString($"{shipStats.HasCritalTransfer}", 4)} |{CreatePaddedString($" {shipStats.ShipView}", 4)} ");
                 }
+                _shipStats = retVal.ToArray();
             }
             else
             {
@@ -540,9 +550,7 @@ namespace SpaceBattleSim
                              $"{CreatePaddedString("Alive", 6)} | {CreatePaddedString("Dead", 4)} ";
 
                 retVal.Add($"This Battle Time: {(ADateTime.UtcNow.Value - _startBattle.Value).ToString(@"hh\:mm\:ss")}");
-                retVal.Add($"Last Total Battle Time: {_battleTime}");
-
-                retVal.Add(new string('-', header.Length));
+                retVal.Add($"Last Total Battle Time: {_battleTime.ToString(@"hh\:mm\:ss")}");
 
                 retVal.Add(new string('-', header.Length));
                 retVal.Add(header);
@@ -578,6 +586,7 @@ namespace SpaceBattleSim
             _allSpaceShips.TryAdd(this.Name, _spaceShip);
             _isSpaceBattle.TrySetTrue();
         }
+        private Pen _laserPen = new Pen(Color.Transparent);
         /// <summary>
         /// Draws a Item with a shadow, background, border, and an 'X' symbol onto the specified graphics
         /// surface.
@@ -601,7 +610,7 @@ namespace SpaceBattleSim
                     // the animation treatment.
                     if (!this.Animation && !_spaceShip.IsDead && !_spaceShip.IsRepairRig)
                         this.Animation = true;
-               }
+                }
 
                 // Calculate the rectangle for the close button based on form size and padding
                 //var frmW = ParentSize.Width - _parentForm.Right;
@@ -621,6 +630,11 @@ namespace SpaceBattleSim
                     // per interval, which is imperceptible.
                     if (_isSpaceBattle)
                     {
+                        if (_laserPen.Color == Color.Transparent)
+                        {
+                            _laserPen.Dispose();
+                            _laserPen = _spaceShip.IsRepairRig ? DDefaults.DEF_REPAIR_LASER_LINE : _spaceShip.IsRaider ? DDefaults.DEF_RAIDER_LASER : DDefaults.DEF_ALLY_LASER;
+                        }
                         // Throttled async scan: steering + damage + new-target search at most once per _scanInterval.
                         var now = DateTime.UtcNow;
                         if (!_isInBattleCheck.Value && (now - _lastScanTime) >= _scanInterval)
@@ -658,11 +672,22 @@ namespace SpaceBattleSim
                                                 {
                                                     locked.TakeDamage(_spaceShip.Power, this.Name);
                                                     _allSpaceShips[_activeTargetName] = locked;
+                                                    // Hoping this provides a better balance between raiders and ally.  Raiders are glass cannons,
+                                                    // to CapitalShips and do not have any other repair ability.   However Raider power is more
+                                                    // than twice of any other ship type.
+                                                    // Raiders win about 10% of the time, because they get lucky and kill all the RepairRigs early, but if
+                                                    // they don't, they lose every time. This gives them a chance to repair themselves if they get low on
+                                                    // shields, but it is still a gamble since they are repairing with their own power, which means they
+                                                    // are doing less damage while repairing and they could end up in a situation where they are repairing
+                                                    // but still taking damage from the target, which could lead to a loss if they don't get the repair off
+                                                    // in time. This is intentional to keep Raiders as glass cannons, but it gives them a fighting chance
+                                                    // instead of being completely one-shot by RepairRigs every time.
+                                                    if (_spaceShip.IsRaider)
+                                                        _spaceShip.Repair(2, _activeTargetName); //_spaceShip.Power
                                                 }
                                                 else
                                                 {
                                                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
-                                                    //BattleStats.Audit(this.Name, ActionType.Heal, $"Healed: {_activeTargetName}");
                                                     _allSpaceShips[_activeTargetName].ResetStats(this.Name, true);
                                                     _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
                                                     _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
@@ -712,7 +737,8 @@ namespace SpaceBattleSim
                                         {
                                             this.Animation = false;
                                             _spaceShip.CurrentMission = ShipMission.Idle;
-                                            _spaceShip.ResetStats("HomeBase_Healer", false);
+                                            // do not reset power, unless killed.
+                                            _spaceShip.ResetStats("HomeBase_Recharge", false);
                                             _activeTargetName = string.Empty;
                                         }
 
@@ -877,7 +903,7 @@ namespace SpaceBattleSim
                         _pendingDestination = PointF.Empty;
                     }
                     else if ((this.Location.X == this.NextDestination.X ||
-                             this.Location.Y == this.NextDestination.Y) && !_spaceShip.IsRepairRig) 
+                             this.Location.Y == this.NextDestination.Y) && !_spaceShip.IsRepairRig)
                     {
                         x += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
                         y += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
@@ -1010,8 +1036,8 @@ namespace SpaceBattleSim
                             if (!_lastTargetLocation.IsEmpty &&
                                 (DateTime.UtcNow - _lastCombatTime).TotalMilliseconds < 300)
                             {
-                                var pen = _spaceShip.IsRepairRig ? DDefaults.DEF_REPAIR_LASER_LINE : DDefaults.DEF_LASER_LINE;
-                                g.DrawLine(pen, new PointF(shipCx, shipCy), _lastTargetLocation);
+                                //var pen = _spaceShip.IsRepairRig ? DDefaults.DEF_REPAIR_LASER_LINE : _spaceShip.IsRaider? DDefaults.DEF_RAIDER_LASER: DDefaults.DEF_ALLY_LASER;
+                                g.DrawLine(_laserPen, new PointF(shipCx, shipCy), _lastTargetLocation);
                             }
                             else if ((DateTime.UtcNow - _lastCombatTime).TotalMilliseconds >= 300)
                             {

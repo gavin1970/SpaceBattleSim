@@ -17,8 +17,8 @@
 				<ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
 				<PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
 				<AssemblyVersion>6.0.0.0</AssemblyVersion>
-				<FileVersion>6.5.19.0329</FileVersion>
-				<Version>6.5.19.0</Version>
+				<FileVersion>6.5.20.0238</FileVersion>
+				<Version>6.5.20.0</Version>
 		</PropertyGroup>
 
 		<ItemGroup>
@@ -29,17 +29,20 @@
 		</ItemGroup>
 
 		<ItemGroup>
-		  <None Remove="imgs\chrome_20260510T163038.6084.png" />
-		</ItemGroup>
-
-		<ItemGroup>
 				<None Include="Chizl_Atomic_Blue_512.png" Link="imgs\Chizl_Atomic_Blue_512.png">
 						<Pack>True</Pack>
 						<PackagePath>\</PackagePath>
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 				</None>
 		</ItemGroup>
 
 		<ItemGroup>
+		  <None Update="..\imgs\full_all_screens_view.png">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  </None>
+		  <None Update="..\imgs\full_screen_view.png">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  </None>
 		  <None Update="App.config">
 		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		  </None>

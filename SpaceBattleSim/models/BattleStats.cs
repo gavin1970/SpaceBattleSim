@@ -9,7 +9,7 @@ namespace SpaceBattleSim
 {
     /// <summary>
     /// Provides static methods and properties for collecting, auditing, and managing battle statistics and ship-related
-    /// events during a match.
+    /// events during a match. 
     /// </summary>
     /// <remarks>The BattleStats class is designed to track and audit ship actions, settings, and match
     /// outcomes in a concurrent, thread-safe manner. It supports enabling or disabling auditing, adding ship and
@@ -73,7 +73,8 @@ namespace SpaceBattleSim
             if (string.IsNullOrEmpty(name))
                 return;
 
-            _settingValues.TryAdd(name, $"{value}");
+            if(!_settingValues.TryAdd(name, $"{value}"))    // add new setting
+                _settingValues[name] = $"{value}";          // update if already exists
         }
         /// <summary>
         /// Adds a new ship audit entry with the specified name and ship type.

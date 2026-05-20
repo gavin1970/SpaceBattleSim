@@ -2,13 +2,17 @@
 {
     /// <summary>
     /// These values are only used for BattleStats.<br/>
-    /// Specifies the type of action or event that can occur within the battle per ship.
+    /// Specifies the type of action or event that can occur within the battle per ship. 
     /// </summary>
     /// <remarks>Use this enumeration to represent distinct actions such as kills, deaths, critical transfers,
     /// healing, near-death situations, or being under attack. The specific meaning of each value depends on the context
     /// in which it is used.</remarks>
     public enum ActionType
     {
+        /// <summary>
+        /// This ship stole health from another ship.
+        /// </summary>
+        StoleHealth,
         /// <summary>
         /// This ship killed another ship.
         /// </summary>

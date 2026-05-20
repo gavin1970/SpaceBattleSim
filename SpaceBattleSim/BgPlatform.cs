@@ -13,7 +13,7 @@ namespace SpaceBattleSim
         private BufferedGraphics? _bufferedGraphics;
 
         // Set to true to make the background transparent
-        // while keeping the grid lines visible.
+        // while keeping the grid lines visible. 
         static bool _transparentBG = false;
         static ABool _startup = ABool.True;
         static readonly SizeF _homeSize = new SizeF(125.0f, 144.0f);
@@ -36,6 +36,8 @@ namespace SpaceBattleSim
         const float _percentCapitalShips = 0.10f;            // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
 
         readonly static (int min, int max) _totalBattleShipsLimits = (10, 150);         // set limits for total number of Fighters and Raiders combined.
+        readonly static (int min, int max) _refreshRateLimits = (16, 100);              // set limits for refresh rate in milliseconds.
+        readonly static int[] _refreshRateValidValues = {16, 33, 50, 100};              // set accepted values for refresh rate.  16 (60 FPS), 33 (30 FPS), 50 (20 FPS), 100 (10 FPS)
         readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
         readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 0.5f);   // set limits for planet spin speed.
         private static string _planetTextureFile = ".\\skins\\fungal_planet.png"; // pulled from app config, path to the planet texture image file.
@@ -55,6 +57,10 @@ namespace SpaceBattleSim
         private float _planetSpinSpeed = 0.1f;      // pulled from app config
         private bool _naturalStarfield = true;      // pulled from app config
         private bool _disableAutoLock = false;      // pulled from app config
+        private int _refreshRate = 33;              // pulled from app config, this is the refresh rate for the form in milliseconds.
+                                                    // A lower value will result in smoother animations but higher CPU usage,
+                                                    // while a higher value will reduce CPU usage but may result in choppier animations.
+                                                    // 33ms is approximately 30 frames per second, which is a common refresh rate for smooth animations.
         private bool _topmostWindow = false;        // pulled from app config
         private bool _auditLogEnabled = false;      // pulled from app config
         private bool _useUnicodeShips = true;       // pulled from app config
@@ -115,6 +121,7 @@ namespace SpaceBattleSim
         private static PointF _baseCenter = PointF.Empty;
         private readonly Pen _planetBorderPen = new Pen(Color.FromArgb(32, Color.Black), 10);
 
+        private CancellationTokenSource _loopTokenSource;
         internal static List<ItemReq> _battleShips = new List<ItemReq>();
         private static string[] _fKeyDisplay = { };
 
@@ -147,6 +154,11 @@ namespace SpaceBattleSim
             //corner of the form. This provides users with version information about the application,
             //which can be useful for troubleshooting or ensuring they are using the latest version.
             _appInfo = string.Format(_appInfo, About.FileVersion);
+
+            // Initialize the cancellation token source for the animation loop. This will allow us to
+            // gracefully stop the animation loop when the form is closed, preventing any potential
+            // issues with background threads trying to access disposed resources.
+            _loopTokenSource = new CancellationTokenSource();
 
             // Attach a MouseMove event handler to the form to check for mouse interactions with
             // the controls. This allows for dynamic interaction with the controls, such as changing
@@ -216,10 +228,10 @@ namespace SpaceBattleSim
                     _fKeyDisplay = ItemReq.GetShipStatus(false);
                 else if (isF5)
                 {
-                    ItemReq.ResetDeadShips();
                     _pauseScreen.TrySetTrue();
-                    this.AutoResetTimer.Enabled = false;
-                    this.RefreshTimer.Enabled = false;
+                    AutoResetTimer?.Stop();
+                    StopLoop();
+                    ItemReq.ResetDeadShips();
                 }
                 else if(isF12)
                 {
@@ -242,8 +254,8 @@ namespace SpaceBattleSim
                     _fKeyDisplay = new string[] { };
                 else if (isF5)
                 {
-                    this.AutoResetTimer.Enabled = true;
-                    this.RefreshTimer.Enabled = true;
+                    AutoResetTimer?.Start();
+                    StartLoop();
                     _pauseScreen.TrySetFalse();
                 }
             };
@@ -936,6 +948,48 @@ namespace SpaceBattleSim
             SetConfigValue("TopmostWindow", ref _topmostWindow);
             SetConfigValue("AuditLogEnabled", ref _auditLogEnabled);
             SetConfigValue("UseUnicodeShips", ref _useUnicodeShips);
+            SetConfigValue("RefreshRate", ref _refreshRate, _refreshRateLimits.min, _refreshRateLimits.max);
+            // limit to specific valid values to allow for auto animation speed adjustments (AdjSpeed).
+            if (!_refreshRateValidValues.Contains(_refreshRate))
+            {
+                _refreshRate = _refreshRateValidValues.OrderBy(o => Math.Abs(o - _refreshRate)).First();
+                BattleStats.AddSetting("RefreshRate", _refreshRate);   // update for battle audit log.
+            }
+            // adjust ship speed based on the refresh rate to maintain consistent animation speeds across
+            // different refresh rates. This ensures that the animation will not appear too fast or too
+            // slow regardless of the configured refresh rate, providing a smoother and more visually
+            // appealing experience for the user.  Some of these may make it jumpy, but they will maintain
+            // the same overall speed for the ships, just with more or less frames per second depending
+            // on the refresh rate.
+            switch (_refreshRate)
+            {
+                case 16:
+                    ShipStats.RefreshRateText = "Ultra (60fps)";
+                    // slow down the ships slightly to compensate for the higher frame rate, preventing them
+                    // from moving too fast and creating a smoother animation.
+                    ShipStats.AdjSpeed = -0.2020f;// - 0.20f; 
+                    break;
+                case 50:
+                    ShipStats.RefreshRateText = "Medium (20fps)";
+                    // speed up the ships slightly to compensate for the lower frame rate, preventing them
+                    // from moving too slow and creating a smoother animation.
+                    ShipStats.AdjSpeed = 0.6060f;// 1.0f;
+                    break;
+                case 100:
+                    ShipStats.RefreshRateText = "Low (10fps)";
+                    // slow down the ships more significantly to compensate for the much lower frame rate, preventing them
+                    // from moving too fast and creating a smoother animation.
+                    ShipStats.AdjSpeed = 1.2012f;// 2.0f;
+                    break;
+                case 33:
+                default:
+                    ShipStats.RefreshRateText = "High (30fps)";
+                    // no adjustment needed for 30fps, as it is the default frame rate for the animation. This ensures
+                    // that the ships will move at their intended speed without any modifications, providing a smooth
+                    // and visually appealing experience for users who prefer the default refresh rate.
+                    ShipStats.AdjSpeed = 0.0f;
+                    break;
+            }
 
             // Battle and ship configuration settings
             SetConfigValue("TotalBattleShips", ref _totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);
@@ -1106,8 +1160,7 @@ namespace SpaceBattleSim
                     this.ClientRectangle
                 );
 
-                RefreshTimer.Interval = 30;
-                RefreshTimer.Enabled = true;
+                StartLoop();
                 AutoResetTimer.Interval = 15000;
                 AutoResetTimer.Enabled = true;
             };
@@ -1158,12 +1211,58 @@ namespace SpaceBattleSim
         #endregion
 
         #region Form Events
+        private static ABool _loopStarted = ABool.False;
+        private void StartLoop()
+        {
+            if(!_loopStarted.TrySetTrue())
+                return;
+            
+            //_loopTokenSource.Dispose();
+            _loopTokenSource = new CancellationTokenSource();
+            // Run the loop on a background thread pool thread
+            Task.Run(async () => await GameLoopAsync(_loopTokenSource.Token));
+        }
+        private void StopLoop()
+        {
+            _loopStarted.SetFalse();
+            _loopTokenSource.Cancel();
+        }
+        private async Task GameLoopAsync(CancellationToken token)
+        {
+            // Targeting ~33 FPS (approx 30ms)
+            var frameTarget = TimeSpan.FromMilliseconds(_refreshRate);
+            var stopwatch = new Stopwatch();
+
+            while (!token.IsCancellationRequested)
+            {
+                stopwatch.Restart();
+
+                // 1. UPDATE: Run your physics, positions, collisions here (Off-thread!)
+                //UpdateSpaceBattleSimulation();
+
+                // 2. RENDER: Safely invoke the UI thread to draw the updated state
+                if (this.IsHandleCreated && !this.IsDisposed)
+                {
+                    // BeginInvoke is asynchronous; it won't block your physics loop
+                    this.BeginInvoke(new Action(() => {
+                        //this.Invalidate();
+                        RefreshPaint();
+                    }));
+                }
+
+                // 3. FRAME THROTTLING: Smart delay to maintain a steady frame rate
+                stopwatch.Stop();
+                int msToWait = (int)(frameTarget.TotalMilliseconds - stopwatch.ElapsedMilliseconds);
+
+                if (msToWait > 0)
+                    await Task.Delay(msToWait, token);
+            }
+        }
+
         /// <summary>
         /// Handles the timer tick event to trigger a repaint of the control.
         /// </summary>
-        /// <param name="sender">The source of the event, typically the timer that raised the event.</param>
-        /// <param name="e">An EventArgs object that contains the event data.</param>
-        private void RefreshTimer_Tick(object sender, EventArgs e)
+        private void RefreshPaint()
         {
             if (_bufferedGraphics == null) return;
 
@@ -1265,6 +1364,7 @@ namespace SpaceBattleSim
             // Render buffer to screen (THIS is the only drawing that hits the screen)
             _bufferedGraphics.Render();
         }
+
         /// <summary>
         /// Runs ever 30sec to see if a reset is needed.
         /// </summary>
@@ -1282,7 +1382,7 @@ namespace SpaceBattleSim
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             // Stop timers first
-            RefreshTimer?.Stop();
+            StopLoop();
             AutoResetTimer?.Stop();
 
             // Dispose buffer

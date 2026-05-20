@@ -37,7 +37,7 @@
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.
-            { ShipType.RepairRig, (400, 1, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
+            { ShipType.RepairRig, (400, 4, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
             // The most durable and powerful ship as a whole, but also the slowest.
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.
@@ -50,8 +50,8 @@
             { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, _transportShipColor, 0.0f) },
             // Half the shield of a Captial ship and twice as much power.
             // The same hitbox and speed as a Fighter, but no recovery since
-            // they are not on the home team.  Rotation needs work, leave 0.0f for now.
-            { ShipType.Raider, (400, 16, 50, 1.0f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) }, // rotate 90.0f - not working as intended.
+            // they are not on the home team.  Rotation needs work, leave 0.0f for now. 
+            { ShipType.Raider, (400, 16, 50, 1.25f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) }, // rotate 90.0f - not working as intended.
         };
 
         private int _shields = 0;
@@ -63,6 +63,9 @@
         private float _rotate = 0;
         private RecoverOrder _recovery = RecoverOrder.None;
         private static List<ShipType> _criticalList = new List<ShipType>();
+
+        public static float AdjSpeed { get; set; }
+        public static string RefreshRateText { get; set; } = string.Empty;
 
         /// <summary>
         /// Initializes a new instance of the ShipStats class with the specified ship type.
@@ -79,7 +82,7 @@
                 this.Ship = type;
                 _shields = value.shields;
                 _power = value.power;
-                _speed = value.speed;
+                _speed = value.speed + AdjSpeed;
                 _hitbox = value.hitBox;
                 _recovery = value.recovery;
                 _shipView = value.shipView;

@@ -1,7 +1,7 @@
 ﻿using Chizl.ColorExtension;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
-// using System.Numerics; //Vector2 is not used in the current implementation, but it can be useful for future enhancements or alternative distance calculations.
+// using System.Numerics; //Vector2 is not used in the current implementation, but it can be useful for future enhancements or alternative distance calculations. 
 
 namespace SpaceBattleSim
 {
@@ -37,7 +37,7 @@ namespace SpaceBattleSim
             new Pen(Color.FromArgb(100, Color.Cyan), 4)
         };
         private static readonly List<Pen> _hitboxHighCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(100, Color.Purple), 2),
+            new(Color.FromArgb(100, Color.Purple), 2),
             new Pen(Color.FromArgb(100, Color.Red), 2),
             new Pen(Color.FromArgb(25, Color.Green), 1),
             new Pen(Color.FromArgb(50, Color.Green), 2),
@@ -151,7 +151,7 @@ namespace SpaceBattleSim
 
                 // Initialize the ship's stats based on its type, setting
                 // the shields, hitbox, power, and status accordingly.
-                ResetStats(string.Empty);
+                ResetStats("System", true);
             }
         }
         /// <summary>
@@ -181,11 +181,11 @@ namespace SpaceBattleSim
         /// </summary>
         public string ShipView => _shipsView;
         /// <summary>
-        /// Gets the current rotation value of the ship.   If the ship by default is facing up, then a rotation 
-        /// of 90 means the ship is rotated 90 degrees to the right, 180 means it is facing down, and 270 means 
-        /// it is facing left. The rotation value can be used to determine the ship's orientation in various 
-        /// contexts, such as visual representations in a game or simulation, or for calculating movement and 
-        /// interactions based on the ship's facing direction.<br/>
+        /// --==[ CURRENTLY NOT IN USE ]==--<br/>
+        /// This was intended to be used for a visual representation of the ship's orientation, allowing for 
+        /// dynamic visual representations based on the ship's facing direction. However, it is currently not 
+        /// implemented or utilized in the existing codebase, and its functionality may be subject to future 
+        /// development or changes.<br/>
         /// </summary>
         public float RotateShip 
         { 
@@ -508,10 +508,38 @@ namespace SpaceBattleSim
             // scratched, damaged, critical, or dead.
             UpdateStatus();
         }
+        public void Repair(int repairAmount, string fromWhom)
+        {
+            if (this.IsEmpty || _shipStatus == ShipStatus.Dead)
+                return;
+
+            // if already at or above original shields, no need to repair, and we can avoid the overhead
+            // of the interlocked operations and status update.
+            if (Shields >= _orgShields)
+                return;
+
+            // Volatile read before repair
+            var prevShields = this.Shields;
+
+            for (int i = 1; i < repairAmount; i++)
+            {
+                if (Shields + i > _orgShields)
+                    break;
+
+                Interlocked.Increment(ref _shields);
+            }
+
+            // this.Shields is a Volatile read, so we get the current value after we potentially
+            // update it with repairs. We then clamp the value to ensure it does not go below zero
+            // or above the original shield value.
+            //Interlocked.Exchange(ref _shields, Math.Clamp(this.Shields, 0, _orgShields));
+            BattleStats.Audit(this.Name, ActionType.StoleHealth, $"From: {fromWhom} ({repairAmount} repaired). Shields where: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
+            UpdateStatus();
+        }
         /// <summary>
         /// Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
         /// </summary>
-        public void ResetStats(string byWho = "System", bool includePower = true)
+        public void ResetStats(string byWho, bool includePower)
         {
             if (this.IsEmpty || !_reset.TrySetTrue())
                 return;
