@@ -521,7 +521,9 @@ namespace SpaceBattleSim
                              $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} ";
 
                 retVal.Add(new string('-', header.Length));
-                retVal.Add($"| {CreatePaddedString($"Refresh Rate: {ShipStats.RefreshRateText}", header.Length - 4)} |");
+
+                var adjSpeedText = ShipStats.AdjSpeed != 0.0f ? $", Speed auto adjusted by: {ShipStats.AdjSpeed}" : "";
+                retVal.Add($"| {CreatePaddedString($"Refresh Rate: {ShipStats.RefreshRateText}{adjSpeedText}", header.Length - 4)} |");
                 retVal.Add(new string('-', header.Length));
                 retVal.Add(header);
                 retVal.Add(new string('-', header.Length));
@@ -539,7 +541,7 @@ namespace SpaceBattleSim
                     var dps = sType == ShipType.RepairRig ? 0 : shipStats.Power * 3;
                     retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{shipStats.Shields}", 7)} | " +
                                  $"{CreatePaddedString($"{shipStats.Power:00} - {(dps)}dps", 10)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
-                                 $"{CreatePaddedString($"{shipStats.Speed}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
+                                 $"{CreatePaddedString($"{shipStats.Speed:0.000}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
                                  $"{CreatePaddedString($"{shipStats.HasCritalTransfer}", 4)} |{CreatePaddedString($" {shipStats.ShipView}", 4)} ");
                 }
                 _shipStats = retVal.ToArray();

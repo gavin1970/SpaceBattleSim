@@ -64,7 +64,7 @@
         private RecoverOrder _recovery = RecoverOrder.None;
         private static List<ShipType> _criticalList = new List<ShipType>();
 
-        public static float AdjSpeed { get; set; }
+        public static float AdjSpeed { get; set; } = 0.0f;
         public static string RefreshRateText { get; set; } = string.Empty;
 
         /// <summary>
