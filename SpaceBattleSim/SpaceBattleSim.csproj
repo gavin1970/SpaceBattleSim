@@ -17,8 +17,8 @@
 				<ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
 				<PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
 				<AssemblyVersion>6.0.0.0</AssemblyVersion>
-				<FileVersion>6.5.20.0238</FileVersion>
-				<Version>6.5.20.0</Version>
+				<FileVersion>6.5.22.0113</FileVersion>
+				<Version>6.5.22.0</Version>
 		</PropertyGroup>
 
 		<ItemGroup>
@@ -46,12 +46,6 @@
 		  <None Update="App.config">
 		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		  </None>
-		  <None Update="skins\capital_skin.png">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
-		  <None Update="skins\fighter_skin.png">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
 		  <None Update="skins\fungal_planet.png">
 		    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		  </None>
@@ -59,12 +53,6 @@
 		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		  </None>
 		  <None Update="skins\jupiter-surface.jpg">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
-		  <None Update="skins\raider_skin.png">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
-		  <None Update="skins\repairrig_skin.png">
 		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		  </None>
 		</ItemGroup>

@@ -523,8 +523,8 @@ namespace SpaceBattleSim
 
             for (int i = 1; i < repairAmount; i++)
             {
-                if (Shields + i > _orgShields)
-                    break;
+                if (Shields + 1 > _orgShields)
+                    break; 
 
                 Interlocked.Increment(ref _shields);
             }

@@ -94,6 +94,7 @@ namespace SpaceBattleSim
         // manage these states in a centralized way, allowing for easy checking and updating of
         // event-related flags without needing multiple separate variables for each event type.
         private readonly EventStatus _eventStatus = new();
+        private static string[] _shipStats = new string[] { };
 
         // default vars
         private char _shadowOpacity = DEF_SHDW_OPACITY;
@@ -104,6 +105,8 @@ namespace SpaceBattleSim
         private DLine _dLine = new();
         private DText _dText = new();
         private bool disposedValue;
+        // will be set once.
+        private Pen _laserPen = new Pen(Color.Transparent); 
 
         #region Constructors
         ~ItemReq()=> Dispose(disposing: false);
@@ -444,15 +447,21 @@ namespace SpaceBattleSim
         /// images. This may improve compatibility with text-based environments or accessibility tools.</remarks>
         public static bool UnicodeShips { get { return _unicodeShips; } set { _unicodeShips = value; } }
         /// <summary>
-        /// Determines whether all raider ships or all repair rigs are in the dead state, indicating that a dead reset
-        /// is required.
+        /// Gets a value indicating whether any raider spaceship is currently alive.
         /// </summary>
-        /// <remarks>Use this method to check if a reset condition is met based on the status of all
-        /// raider ships or all repair rigs. This can be useful for triggering game state changes or recovery logic when
-        /// all critical ship types are incapacitated.</remarks>
-        /// <returns>true if all raider ships or all repair rigs are dead; otherwise, false.</returns>
+        /// <remarks>A raider is considered alive if its status is not set to dead. This property can be
+        /// used to quickly determine if at least one raider remains active in the current context.</remarks>
         public static bool AnyRaiderAlive => _allSpaceShips.Where(w => w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Any();
+        /// <summary>
+        /// Gets a value indicating whether any allied spaceship is currently alive.
+        /// </summary>
+        /// <remarks>An allied spaceship is defined as a ship that is not a raider and whose status is not
+        /// dead. This property can be used to determine if there are any remaining allied ships in play.</remarks>
         public static bool AnyAllyAlive => _allSpaceShips.Where(w => !w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Any();
+        /// <summary>
+        /// Determines whether a dead reset is required based on the status of raiders and allies.
+        /// </summary>
+        /// <returns>true if no raider or no ally is alive; otherwise, false.</returns>
         public static bool NeedsDeadReset()
         {
             if (!AnyRaiderAlive || !AnyAllyAlive)
@@ -494,7 +503,6 @@ namespace SpaceBattleSim
             _spaceShipsInRepair.Clear();
             _startBattle = ADateTime.UtcNow;
         }
-        private static string[] _shipStats = new string[] { };
         /// <summary>
         /// Retrieves the status information for all spaceships, either as detailed records or as grouped summaries.
         /// </summary>
@@ -579,16 +587,468 @@ namespace SpaceBattleSim
         /// <param name="stype">The type of the spaceship.</param>
         public void SetShiptType(ShipType sType)
         {
-            if (sType == ShipType.Raider)
-                Debug.WriteLine("here");
-
             // When setting the ship type, we create a new SpaceShip
             // instance with the specified type and color,
             _spaceShip = new SpaceShip(Name, sType, CriticalTransfer);
             _allSpaceShips.TryAdd(this.Name, _spaceShip);
             _isSpaceBattle.TrySetTrue();
+            TryInitLaserPen();
         }
-        private Pen _laserPen = new Pen(Color.Transparent);
+        /// <summary>
+        /// Ensures the laser pen is initialized to the correct color for this ship type.
+        /// Called once per ship the first time it enters battle.
+        /// </summary>
+        private void TryInitLaserPen()
+        {
+            if (_laserPen.Color == Color.Transparent)
+            {
+                _laserPen.Dispose();
+                _laserPen = _spaceShip.IsRepairRig ? DDefaults.DEF_REPAIR_LASER_LINE
+                          : _spaceShip.IsRaider    ? DDefaults.DEF_RAIDER_LASER
+                                                   : DDefaults.DEF_ALLY_LASER;
+            }
+        }
+        /// <summary>
+        /// Handles engagement with an already-locked target: deals damage (or repairs),
+        /// updates destination, and clears the lock when the target is gone.
+        /// </summary>
+        private void ProcessLockedTarget(float hitBoxSq, PointF myLoc)
+        {
+            if (!_allSpaceShips.TryGetValue(_activeTargetName, out var locked) ||
+                (_spaceShip.IsRepairRig ? !locked.IsDead : locked.IsDead))
+            {
+                if (_spaceShip.IsRepairRig)
+                {
+                    _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
+                    _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList()
+                                       .ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
+                    _spaceShip.CurrentMission = ShipMission.Idle;
+                }
+
+                // Target is dead or gone — clear lock.
+                _activeTargetName = string.Empty;
+                return;
+            }
+
+            // Using distance squared (distSq) for comparison to avoid the overhead of
+            // calculating the square root when determining proximity to targets. Better
+            // use of memory and CPU than Math.sqrt() when we only need relative distances
+            // for comparison against hitBoxSq and closestDist.
+            float distSq = locked.DistanceFrom(myLoc);
+            if (distSq <= hitBoxSq)
+            {
+                _lastTargetLocation = locked.Location;
+                _lastCombatTime = DateTime.UtcNow;
+
+                if (!_spaceShip.IsRepairRig)
+                {
+                    locked.TakeDamage(_spaceShip.Power, this.Name);
+                    _allSpaceShips[_activeTargetName] = locked;
+                    // Hoping this provides a better balance between raiders and ally.  Raiders are glass cannons,
+                    // to CapitalShips and do not have any other repair ability.   However Raider power is more
+                    // than twice of any other ship type.
+                    // Raiders win about 10% of the time, because they get lucky and kill all the RepairRigs early, but if
+                    // they don't, they lose every time. This gives them a chance to repair themselves if they get low on
+                    // shields, but it is still a gamble since they are repairing with their own power, which means they
+                    // are doing less damage while repairing and they could end up in a situation where they are repairing
+                    // but still taking damage from the target, which could lead to a loss if they don't get the repair off
+                    // in time. This is intentional to keep Raiders as glass cannons, but it gives them a fighting chance
+                    // instead of being completely one-shot by RepairRigs every time.
+                    if (_spaceShip.IsRaider)
+                        _spaceShip.Repair(2, _activeTargetName); //_spaceShip.Power
+                }
+                else
+                {
+                    _spaceShip.CurrentMission = ShipMission.HeadingHome;
+                    _allSpaceShips[_activeTargetName].ResetStats(this.Name, true);
+                    _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
+                    _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList()
+                                       .ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
+
+                    _activeTargetName = string.Empty;
+                    this.NextDestination = this.HomeBaseLocation;
+                }
+            }
+            else if (_spaceShip.IsRepairRig)
+            {
+                // RepairRig can still pull from range, so update
+                // destination even if not in hit box.
+                this.NextDestination = locked.Location;
+            }
+            else
+            {
+                // Break lock if target is out of range, so the ship can
+                // search for a new one instead of chasing a lost cause.
+                _activeTargetName = string.Empty;
+            }
+        }
+        /// <summary>
+        /// Handles the RepairRig returning home: tracks stall count and resets
+        /// the rig when it reaches the home base (or gets stuck).
+        /// </summary>
+        private void ProcessRepairRigHeadingHome(float hitBoxSq, PointF myLoc)
+        {
+            if (!_lastTargetLocation.Equals(myLoc))
+            {
+                _lastTargetLocation = myLoc;
+                _lastTargetLocationCount = 1;
+            }
+            else
+                _lastTargetLocationCount++;
+
+            float distSq = _spaceShip.DistanceFrom(HomeBaseLocation);
+            if (distSq <= hitBoxSq || _lastTargetLocationCount > 100)
+            {
+                this.Animation = false;
+                _spaceShip.CurrentMission = ShipMission.Idle;
+                // do not reset power, unless killed.
+                _spaceShip.ResetStats("HomeBase_Recharge", false);
+                _activeTargetName = string.Empty;
+            }
+
+            this.NextDestination = this.HomeBaseLocation;
+        }
+        /// <summary>
+        /// Handles an idle RepairRig searching for dead ally ships and assigning
+        /// itself a repair mission when one is found.
+        /// </summary>
+        private void ProcessRepairRigIdle(PointF myLoc)
+        {
+            List<SpaceShip> deadShipsList = _allSpaceShips
+                .Where(w => !w.Value.IsEmpty && w.Value.Name != this.Name && w.Value.IsDead && w.Value.Recovery != 0)
+                .Select(s => s.Value).ToList();
+
+            if (deadShipsList.Count == 0)
+            {
+                this.Animation = false;
+                _activeTargetName = string.Empty;
+                if (this.NextDestination != this.HomeBaseLocation)
+                {
+                    _spaceShip.CurrentMission = ShipMission.Idle;
+                    _lastTargetLocation = this.NextDestination;
+                    this.NextDestination = this.HomeBaseLocation;
+                }
+                return;
+            }
+
+            var inOrderOfRecovery = deadShipsList.OrderByDescending(o => o.Recovery).ToArray();
+            foreach (var kvp in inOrderOfRecovery)
+            {
+                if (_spaceShipsInRepair.TryAdd(kvp.Name, _spaceShip))
+                {
+                    float distSq = _allSpaceShips[kvp.Name].DistanceFrom(myLoc);
+                    _allSpaceShips[kvp.Name].SetRepairRig(this.Name, distSq);
+                    this.NextDestination = kvp.Center;
+
+                    this.Animation = true;
+                    _spaceShip.CurrentMission = ShipMission.OnRepair;
+                    _activeTargetName = kvp.Name;
+                    _pendingDestination = kvp.Center;
+
+                    _lastCombatTime = DateTime.UtcNow;
+                    break;
+                }
+            }
+
+            if (_spaceShip.CurrentMission != ShipMission.OnRepair && _spaceShip.CurrentMission != ShipMission.HeadingHome)
+            {
+                _spaceShip.CurrentMission = ShipMission.Idle;
+                _pendingDestination = this.HomeBaseLocation;
+                this.NextDestination = this.HomeBaseLocation;
+            }
+        }
+        /// <summary>
+        /// Scans all live enemy ships and engages the closest one that is already inside
+        /// the hit-box. Sets <see cref="_pendingDestination"/> and <see cref="_activeTargetName"/>
+        /// when a target is acquired.
+        /// </summary>
+        private void ScanForNewTarget(float hitBoxSq, PointF myLoc)
+        {
+            SpaceShip? closest = null;
+            double closestDist = double.MaxValue;
+
+            var allShips = _allSpaceShips
+                .Where(w => !w.Value.IsEmpty && w.Value.Name != this.Name &&
+                            !w.Value.IsDead && w.Value.Location.X != 0 && w.Value.Location.Y != 0)
+                .Select(s => s.Value).ToList();
+
+            if (allShips.Count == 0)
+                return;
+
+            allShips = _spaceShip.IsRaider
+                ? allShips.Where(w => w.ShipType != ShipType.Raider).ToList()
+                : allShips.Where(w => w.ShipType == ShipType.Raider).ToList();
+
+            foreach (var kvp in allShips)
+            {
+                // Using distance squared (distSq) for comparison to avoid the overhead of
+                // calculating the square root when determining proximity to targets. Better
+                // use of memory and CPU than Math.sqrt() when we only need relative distances
+                // for comparison against hitBoxSq and closestDist.
+                float distSq = kvp.DistanceFrom(myLoc);
+                var inHitBox = distSq <= hitBoxSq;
+
+                // if this is a damaged raider and the target is a raider, no matter what, go to them.
+                // or if in the hitbox already, keep them as a target, even if they are not a raider, because
+                // we want to stay and fight until we die or they die, we don't want to run away from a
+                // fight if we are already in it.
+                if (inHitBox && distSq < closestDist)
+                {
+                    closestDist = distSq;
+                    closest = kvp;
+                }
+            }
+
+            if (closest != null)
+            {
+                _pendingDestination = closest.Location;
+                _lastTargetLocation = closest.Location;
+                _activeTargetName = closest.Name;
+                _lastCombatTime = DateTime.UtcNow;
+                _allSpaceShips[closest.Name].TakeDamage(_spaceShip.Power, Name);
+            }
+        }
+        /// <summary>
+        /// Throttled async combat scan: runs target lock-on, damage, repair-rig logic,
+        /// and enemy searching at most once per <see cref="_scanInterval"/>.
+        /// Updates <see cref="_pendingDestination"/> for the next frame's movement step.
+        /// </summary>
+        private void RunCombatScanAsync()
+        {
+            var now = DateTime.UtcNow;
+            if (_isInBattleCheck.Value || (now - _lastScanTime) < _scanInterval)
+                return;
+
+            _lastScanTime = now;
+
+            Task.Run(() =>
+            {
+                // TrySetTrue() is atomic — if it returns false, another task already
+                // owns the lock, so bail out immediately without touching SetFalse().
+                if (!_isInBattleCheck.TrySetTrue())
+                    return;
+
+                try
+                {
+                    var hitBox = (float)_spaceShip.HitBox;
+                    var hitBoxSq = hitBox * hitBox;
+                    var myLoc = _spaceShip.Location;    // _spaceShip.Location is the same as this.Center
+
+                    if (!string.IsNullOrEmpty(_activeTargetName))
+                        ProcessLockedTarget(hitBoxSq, myLoc);
+                    else if (_spaceShip.IsRepairRig && _spaceShip.CurrentMission == ShipMission.HeadingHome)
+                        ProcessRepairRigHeadingHome(hitBoxSq, myLoc);
+                    else if (_spaceShip.IsRepairRig && _spaceShip.CurrentMission == ShipMission.Idle)
+                        ProcessRepairRigIdle(myLoc);
+                    else
+                        ScanForNewTarget(hitBoxSq, myLoc);
+
+                    // keep it up to date for other threads, even if it didn't change here,
+                    // so the latest status is always visible to the UI and other tasks.
+                    _allSpaceShips[_spaceShip.Name] = _spaceShip;
+
+                    if (_spaceShip.IsDead)
+                    {
+                        this.Animation = false;
+                        this._dText.Text = $"{this._dText.DeadDisplay}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.WriteLine(LogLevel.Error, $"Error in combat scan for '{Name}': {ex.Message}");
+                    if (_spaceShip.IsRepairRig)
+                        this.NextDestination = this.HomeBaseLocation;
+                }
+                finally
+                {
+                    // Only reached if TrySetTrue() succeeded above, so SetFalse() is always safe here.
+                    _isInBattleCheck.SetFalse();
+                }
+            });
+        }
+        /// <summary>
+        /// Updates <see cref="Location"/> every frame: consumes any pending combat
+        /// destination, generates a new random wander destination when needed, then
+        /// steps the ship toward <see cref="NextDestination"/> at its current speed.
+        /// </summary>
+        private void UpdateMovement()
+        {
+            // by using X or Y instead of both, we can create a more dynamic movement
+            // pattern where the item can move in straight lines along the axes,
+            // creating a more varied and less predictable animation effect.
+            var x = this.Location.X;
+            var y = this.Location.Y;
+
+            // Consume any pending destination from the combat scan above every frame,
+            // so steering toward an enemy overrides the current path immediately.
+            if (!_pendingDestination.IsEmpty && !_spaceShip.IsRepairRig)
+            {
+                // Add a small random scatter so ships don't all pile onto the exact
+                // same pixel when targeting the same enemy, without distorting direction.
+                const int scatter = 12;
+                var rX = _pendingDestination.X + Random.Shared.Next(-scatter, scatter + 1);
+                var rY = _pendingDestination.Y + Random.Shared.Next(-scatter, scatter + 1);
+
+                this.NextDestination = new PointF(
+                    Math.Clamp(rX, 0, ParentSize.Width - this.ShipInfo.Width),
+                    Math.Clamp(rY, 0, ParentSize.Height - this.Height));
+
+                _pendingDestination = PointF.Empty;
+            }
+            else if ((this.Location.X == this.NextDestination.X ||
+                      this.Location.Y == this.NextDestination.Y) && !_spaceShip.IsRepairRig)
+            {
+                // Only update the destination — do NOT modify x/y here.
+                // The movement block below reads x/y as the current position; if we
+                // changed them here, dist would be ~0 and the ship would teleport.
+                var wanderX = Math.Clamp(x + Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1),
+                                         0, ParentSize.Width - _spaceShip.HitBoxRect.Width);
+                var wanderY = Math.Clamp(y + Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1),
+                                         0, ParentSize.Height - _spaceShip.HitBoxRect.Height);
+
+                this.LastDestination = this.Location;
+                this.NextDestination = new PointF(wanderX, wanderY);
+            }
+
+            if (_isSpaceBattle)
+            {
+                // Normalize the direction vector so the ship moves at a constant speed
+                // regardless of angle, preventing the 45-degree-only movement that occurs
+                // when X and Y are each stepped by the full Speed value independently. 
+                float dx = this.NextDestination.X - x;
+                float dy = this.NextDestination.Y - y;
+                float dist = MathF.Sqrt(dx * dx + dy * dy);
+                if (dist > _spaceShip.Speed)
+                {
+                    float scale = _spaceShip.Speed / dist;
+                    x += dx * scale;
+                    y += dy * scale;
+                }
+                else
+                {
+                    // Close enough — snap to destination to avoid micro-jitter.
+                    x = this.NextDestination.X;
+                    y = this.NextDestination.Y;
+                }
+            }
+
+            this.Location = new PointF(x, y);
+
+            if (_isSpaceBattle)
+            {
+                // Location based on the center of the ship instead of the top-left
+                // corner of the rectangle, so movement and hit detection are more
+                // intuitive and visually aligned with the ship's position.
+                _spaceShip.Location = this.Center;
+                // update the shared ship info with the latest position and
+                // status so other ships can see it during their async scans.
+                _allSpaceShips[Name] = _spaceShip;
+            }
+        }
+
+        /// <summary>
+        /// Draws the ship glyph/image, hitbox circle, and laser flash for a live
+        /// battle ship.  Must be called only when <see cref="_isSpaceBattle"/> is true
+        /// and text rendering is enabled.
+        /// </summary>
+        private void DrawShipVisuals(Graphics g, RectangleF clsBtnRect)
+        {
+            if ((_unicodeShips || !_isSpaceBattle) && this._dText.HasShadowing)
+            {
+                var shdwRect = new RectangleF(clsBtnRect.X + (int)this.ShadowDepth, clsBtnRect.Y + (int)this.ShadowDepth, clsBtnRect.Width, clsBtnRect.Height);
+                g.DrawString(this._dText.Text, this._dText.DFont, this._dText.ForeColorShadow.Brush, shdwRect, _centerText);
+            }
+
+            if (_unicodeShips)
+                g.DrawString(this._dText.Text, this._dText.DFont, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
+            else
+            {
+                g.DrawImage(_spaceShip.ShipImage, clsBtnRect);
+                g.FillEllipse(_spaceShip.ShipsImgOverlayBrush, clsBtnRect);
+            }
+
+            if (_spaceShip.Status == ShipStatus.Dead)
+                return;
+
+            // Draw the detection radius as a circle correctly centered on the ship
+            // and sized to match ShipInfo.HitBox (the actual combat range).
+            var hbR = (float)ShipInfo.HitBox;
+            var shipCx = clsBtnRect.X + clsBtnRect.Width / 2;
+            var shipCy = clsBtnRect.Y + clsBtnRect.Height / 2;
+
+            var hbRect = new RectangleF(shipCx - hbR, shipCy - hbR, hbR * 2, hbR * 2);
+            g.DrawEllipse(_spaceShip.HitboxCircle, hbRect);
+
+            // If the ship has recently fired (within the last 300ms), draw a laser line toward the last target
+            // location to visually indicate an attack, creating a dynamic combat effect that shows the direction
+            // of fire and adds visual feedback to the battle interactions. _showFire is true every other frame,
+            // causing a blink.
+            if (_showFire.TrySetTrue())
+            {
+                if (!_lastTargetLocation.IsEmpty && (DateTime.UtcNow - _lastCombatTime).TotalMilliseconds < 300)
+                    g.DrawLine(_laserPen, new PointF(shipCx, shipCy), _lastTargetLocation);
+                else if ((DateTime.UtcNow - _lastCombatTime).TotalMilliseconds >= 300)
+                    _lastTargetLocation = PointF.Empty;
+            }
+            else
+            {
+                _showFire.SetFalse();
+            }
+        }
+        /// <summary>
+        /// Draws the shadow, background fill, decorative lines, text/ship visuals,
+        /// and border onto <paramref name="g"/> for the given rectangles.
+        /// </summary>
+        private void DrawBackground(Graphics g, RectangleF clsBtnRect, RectangleF clsBtnShdwRect, float lineMoves)
+        {
+            if ((!_eventStatus.Get($"{Name}_MouseDown") || !this.AnimateClick) && this.BoxShadowing)
+                g.FillRectangle(this.Shadowing, clsBtnShdwRect);    // Shadow of button
+
+            // Background of button
+            if (!_eventStatus.Get($"{Name}_MouseDown") && _eventStatus.Get($"{Name}_MouseInRectangle"))
+                g.FillRectangle(this.MouseOverBackColor, clsBtnRect);
+            else
+                g.FillRectangle(this.BackColor, clsBtnRect);
+
+            // Extra lines for testing, can be used for debugging or additional visual elements.
+            // They will be drawn on top of the button background and shadow, but below the border
+            // to ensure they are visible without obscuring the Items edges.
+            // UNUSED AT THE MOMENT.
+            switch (this.DLine.ItemType)
+            {
+                case ItemType.Text:
+                case ItemType.Square:
+                case ItemType.Diamond:
+                case ItemType.Ellipse:
+                case ItemType.Lines:
+                case ItemType.Custom:
+                default:
+                    LineDraw(g, clsBtnRect, lineMoves);
+                    break;
+            }
+
+            // Text of ItemReq, only drawn when TextEnabled is true.  This allows us to have text
+            // content that can be toggled on or off without affecting the underlying properties.
+            if (this._dText.IsEnabled)
+            {
+                if (_isSpaceBattle)
+                    DrawShipVisuals(g, clsBtnRect);
+                else
+                {
+                    if (this._dText.HasShadowing)
+                    {
+                        var shdwRect = new RectangleF(clsBtnRect.X + (int)this.ShadowDepth, clsBtnRect.Y + (int)this.ShadowDepth, clsBtnRect.Width, clsBtnRect.Height);
+                        g.DrawString(this._dText.Text, this._dText.DFont, this._dText.ForeColorShadow.Brush, shdwRect, _centerText);
+                    }
+
+                    g.DrawString(this._dText.Text, this._dText.DFont, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
+                }
+            }
+
+            // Border of button
+            g.DrawRectangle(this.GetBorder, clsBtnRect);
+        }
+
         /// <summary>
         /// Draws a Item with a shadow, background, border, and an 'X' symbol onto the specified graphics
         /// surface.
@@ -602,8 +1062,8 @@ namespace SpaceBattleSim
                 int boxShadowDepth = this.BoxShadowing ? (this.ShadowDepth == 0 ? _alternateShadowDepth : (int)this.ShadowDepth) : 0;
                 if (DLine.DrawList.Count > 0 && DLine.HasAnchor && this.HomeBaseLocation.IsEmpty)
                     this.HomeBaseLocation = DLine.DrawList.First().Start;
-                
-                if(_allSpaceShips.TryGetValue(this.Name, out _))
+
+                if (_allSpaceShips.TryGetValue(this.Name, out _))
                 {
                     // if animation was off, that means it was dead, its not dead anymore,
                     // meaning this ship was repaired, but the _spaceShip doesn't have
@@ -614,8 +1074,6 @@ namespace SpaceBattleSim
                         this.Animation = true;
                 }
 
-                // Calculate the rectangle for the close button based on form size and padding
-                //var frmW = ParentSize.Width - _parentForm.Right;
                 RectangleF clsBtnRect = this.Rectangle;
                 if (this.Animation || (_spaceShip.IsRepairRig && !_spaceShip.IsDead))
                 {
@@ -631,318 +1089,9 @@ namespace SpaceBattleSim
                     // ships fight simultaneously. At 1px/frame the steering lag is at most ~7px
                     // per interval, which is imperceptible.
                     if (_isSpaceBattle)
-                    {
-                        if (_laserPen.Color == Color.Transparent)
-                        {
-                            _laserPen.Dispose();
-                            _laserPen = _spaceShip.IsRepairRig ? DDefaults.DEF_REPAIR_LASER_LINE : _spaceShip.IsRaider ? DDefaults.DEF_RAIDER_LASER : DDefaults.DEF_ALLY_LASER;
-                        }
-                        // Throttled async scan: steering + damage + new-target search at most once per _scanInterval.
-                        var now = DateTime.UtcNow;
-                        if (!_isInBattleCheck.Value && (now - _lastScanTime) >= _scanInterval)
-                        {
-                            _lastScanTime = now;
+                        RunCombatScanAsync();
 
-                            Task.Run(() =>
-                            {
-                                // TrySetTrue() is atomic — if it returns false, another task already
-                                // owns the lock, so bail out immediately without touching SetFalse().
-                                if (!_isInBattleCheck.TrySetTrue())
-                                    return;
-
-                                try
-                                {
-                                    var hitBox = (float)_spaceShip.HitBox;
-                                    var hitBoxSq = hitBox * hitBox;
-                                    var myLoc = _spaceShip.Location;        // _spaceShip.Location is the same as this.Center
-
-                                    if (!string.IsNullOrEmpty(_activeTargetName))
-                                    {
-                                        // Verify locked target is still alive; steer toward it and deal damage if in range.
-                                        if (_allSpaceShips.TryGetValue(_activeTargetName, out var locked) && (_spaceShip.IsRepairRig ? locked.IsDead : !locked.IsDead))
-                                        {
-                                            // Using distance squared (distSq) for comparison to avoid the overhead of
-                                            // calculating the square root when determining proximity to targets. Better
-                                            // use of memory and CPU than Math.sqrt() when we only need relative distances
-                                            // for comparison against hitBoxSq and closestDist.
-                                            float distSq = locked.DistanceFrom(myLoc);
-                                            if (distSq <= hitBoxSq)
-                                            {
-                                                _lastTargetLocation = locked.Location;
-                                                _lastCombatTime = DateTime.UtcNow;
-                                                if (!_spaceShip.IsRepairRig)
-                                                {
-                                                    locked.TakeDamage(_spaceShip.Power, this.Name);
-                                                    _allSpaceShips[_activeTargetName] = locked;
-                                                    // Hoping this provides a better balance between raiders and ally.  Raiders are glass cannons,
-                                                    // to CapitalShips and do not have any other repair ability.   However Raider power is more
-                                                    // than twice of any other ship type.
-                                                    // Raiders win about 10% of the time, because they get lucky and kill all the RepairRigs early, but if
-                                                    // they don't, they lose every time. This gives them a chance to repair themselves if they get low on
-                                                    // shields, but it is still a gamble since they are repairing with their own power, which means they
-                                                    // are doing less damage while repairing and they could end up in a situation where they are repairing
-                                                    // but still taking damage from the target, which could lead to a loss if they don't get the repair off
-                                                    // in time. This is intentional to keep Raiders as glass cannons, but it gives them a fighting chance
-                                                    // instead of being completely one-shot by RepairRigs every time.
-                                                    if (_spaceShip.IsRaider)
-                                                        _spaceShip.Repair(2, _activeTargetName); //_spaceShip.Power
-                                                }
-                                                else
-                                                {
-                                                    _spaceShip.CurrentMission = ShipMission.HeadingHome;
-                                                    _allSpaceShips[_activeTargetName].ResetStats(this.Name, true);
-                                                    _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
-                                                    _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
-
-                                                    _activeTargetName = string.Empty;
-                                                    this.NextDestination = this.HomeBaseLocation;
-                                                }
-                                            }
-                                            else if (_spaceShip.IsRepairRig)
-                                            {
-                                                // RepairRig can still pull from range, so update
-                                                // destination even if not in hit box.
-                                                this.NextDestination = locked.Location;
-                                            }
-                                            else
-                                            {
-                                                // Break lock if target is out of range, so the ship can
-                                                // search for a new one instead of chasing a lost cause.
-                                                _activeTargetName = string.Empty;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (_spaceShip.IsRepairRig)
-                                            {
-                                                _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
-                                                _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList().ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
-                                                _spaceShip.CurrentMission = ShipMission.Idle;
-                                            }
-
-                                            // Target is dead or gone — clear lock.
-                                            _activeTargetName = string.Empty;
-                                        }
-                                    }
-                                    else if (_spaceShip.IsRepairRig && _spaceShip.CurrentMission == ShipMission.HeadingHome)
-                                    {
-                                        if (!_lastTargetLocation.Equals(myLoc))
-                                        {
-                                            _lastTargetLocation = myLoc;
-                                            _lastTargetLocationCount = 1;
-                                        }
-                                        else
-                                            _lastTargetLocationCount++;
-
-                                        float distSq = _spaceShip.DistanceFrom(HomeBaseLocation);
-                                        if (distSq <= hitBoxSq || _lastTargetLocationCount > 100)
-                                        {
-                                            this.Animation = false;
-                                            _spaceShip.CurrentMission = ShipMission.Idle;
-                                            // do not reset power, unless killed.
-                                            _spaceShip.ResetStats("HomeBase_Recharge", false);
-                                            _activeTargetName = string.Empty;
-                                        }
-
-                                        this.NextDestination = this.HomeBaseLocation;
-                                    }
-                                    else if (_spaceShip.IsRepairRig && _spaceShip.CurrentMission == ShipMission.Idle)
-                                    {
-                                        List<SpaceShip> deadShipsList = _allSpaceShips.Where(w =>
-                                                                        !w.Value.IsEmpty && w.Value.Name != this.Name &&
-                                                                        w.Value.IsDead && w.Value.Recovery != 0)
-                                                                 .Select(s => s.Value).ToList();
-
-                                        if (deadShipsList.Count == 0)
-                                        {
-                                            this.Animation = false;
-                                            _activeTargetName = string.Empty;
-                                            if (this.NextDestination != this.HomeBaseLocation)
-                                            {
-                                                _spaceShip.CurrentMission = ShipMission.Idle;
-                                                _lastTargetLocation = this.NextDestination;
-                                                this.NextDestination = this.HomeBaseLocation;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            var inOrderOfRecovery= deadShipsList.OrderByDescending(o => o.Recovery).ToArray();
-                                            foreach (var kvp in inOrderOfRecovery)
-                                            {
-                                                if (_spaceShipsInRepair.TryAdd(kvp.Name, _spaceShip))
-                                                {
-                                                    float distSq = _allSpaceShips[kvp.Name].DistanceFrom(myLoc);
-                                                    _allSpaceShips[kvp.Name].SetRepairRig(this.Name, distSq);
-                                                    this.NextDestination = kvp.Center;
-
-                                                    this.Animation = true;
-                                                    _spaceShip.CurrentMission = ShipMission.OnRepair;
-                                                    _activeTargetName = kvp.Name;
-
-                                                    _lastTargetLocation = _pendingDestination;
-                                                    _pendingDestination = kvp.Center;
-
-                                                    _lastCombatTime = DateTime.UtcNow;
-                                                    break;
-                                                }
-                                            }
-
-                                            if(_spaceShip.CurrentMission != ShipMission.OnRepair && _spaceShip.CurrentMission != ShipMission.HeadingHome)
-                                            {
-                                                _spaceShip.CurrentMission = ShipMission.Idle;
-                                                _lastTargetLocation = _pendingDestination;
-                                                _pendingDestination = this.HomeBaseLocation;
-                                                this.NextDestination = this.HomeBaseLocation;
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // No locked target — scan for any enemy in detection range.
-                                        SpaceShip? closest = null;
-                                        List<SpaceShip> allShips = new List<SpaceShip>();
-                                        double closestDist = double.MaxValue;
-
-                                        allShips = _allSpaceShips.Where(w =>
-                                                                        !w.Value.IsEmpty && w.Value.Name != this.Name &&
-                                                                        !w.Value.IsDead && w.Value.Location.X != 0 &&
-                                                                        w.Value.Location.Y != 0).Select(s => s.Value).ToList();
-
-
-                                        if (allShips.Count > 0)
-                                        {
-                                            if (_spaceShip.IsRaider)
-                                                allShips = allShips.Where(w => w.ShipType != ShipType.Raider).ToList();
-                                            else
-                                                allShips = allShips.Where(w => w.ShipType == ShipType.Raider).ToList();
-
-
-                                            if (allShips.Count > 0)
-                                            {
-                                                foreach (var kvp in allShips) 
-                                                {
-                                                    // Using distance squared (distSq) for comparison to avoid the overhead of
-                                                    // calculating the square root when determining proximity to targets. Better
-                                                    // use of memory and CPU than Math.sqrt() when we only need relative distances
-                                                    // for comparison against hitBoxSq and closestDist.
-                                                    float distSq = kvp.DistanceFrom(myLoc);
-                                                    var inHitBox = distSq <= hitBoxSq;
-
-                                                    // if this is a damaged raider and the target is a raider, no matter what, go to them.
-                                                    // or if in the hitbox already, keep them as a target, even if they are not a raider, because
-                                                    // we want to stay and fight until we die or they die, we don't want to run away from a
-                                                    // fight if we are already in it.
-
-                                                    if (inHitBox && distSq < closestDist)
-                                                    {
-                                                        closestDist = distSq;
-                                                        closest = kvp;
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        if (closest != null)
-                                        {
-                                            _pendingDestination = closest.Location;
-                                            _lastTargetLocation = closest.Location;
-                                            _activeTargetName = closest.Name;
-                                            _lastCombatTime = DateTime.UtcNow;
-                                            _allSpaceShips[closest.Name].TakeDamage(_spaceShip.Power, Name);
-                                        }
-                                    }
-
-                                    // keep it up to date for other threads, even if it didn't change here,
-                                    // so the latest status is always visible to the UI and other tasks.
-                                    _allSpaceShips[_spaceShip.Name] = _spaceShip;
-
-                                    if (_spaceShip.IsDead)
-                                    {
-                                        this.Animation = false;
-                                        this._dText.Text = $"{this._dText.DeadDisplay}";
-                                    }
-                                }
-                                catch(Exception ex)
-                                {
-                                    _logger.WriteLine(LogLevel.Error, $"Error in combat scan for '{Name}': {ex.Message}");
-                                    if (_spaceShip.IsRepairRig)
-                                        this.NextDestination = this.HomeBaseLocation;
-                                }
-                                finally
-                                {
-                                    // Only reached if TrySetTrue() succeeded above, so SetFalse() is always safe here.
-                                    _isInBattleCheck.SetFalse();
-                                }
-                            });
-                        }
-                    }
-
-                    // by using X or Y instead of both, we can create a more dynamic movement
-                    // pattern where the item can move in straight lines along the axes,
-                    // creating a more varied and less predictable animation effect.
-                    var x = this.Location.X;
-                    var y = this.Location.Y;
-
-                    // Consume any pending destination from the combat scan above every frame,
-                    // so steering toward an enemy overrides the current path immediately.
-                    if (!_pendingDestination.IsEmpty && !_spaceShip.IsRepairRig)
-                    {
-                        // we don't want _spaceShip.IsRepairRig random walking around, they
-                        // should only move toward targets and home base.
-                        var lX = Math.Min(_pendingDestination.X, x);
-                        var hX = Math.Min(_pendingDestination.X, x);
-                        var lY = Math.Min(_pendingDestination.Y, y);
-                        var hY = Math.Min(_pendingDestination.Y, y);
-
-                        // this way theyare not on top of each other constantly.
-                        var rX = Random.Shared.Next((int)lX, (int)hX) + (lX - (int)lX);
-                        var rY = Random.Shared.Next((int)lY, (int)hY) + (lY - (int)lY);
-
-                        this.NextDestination = new PointF(
-                            Math.Clamp(rX, 0, ParentSize.Width - this.ShipInfo.Width),
-                            Math.Clamp(rY, 0, ParentSize.Height - this.Height));
-
-                        _pendingDestination = PointF.Empty;
-                    }
-                    else if ((this.Location.X == this.NextDestination.X ||
-                             this.Location.Y == this.NextDestination.Y) && !_spaceShip.IsRepairRig)
-                    {
-                        x += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
-                        y += Random.Shared.Next(-(int)this.DestinationRange, (int)this.DestinationRange + 1);
-
-                        this.NextDestination = new PointF(
-                            Math.Clamp(x, 0, ParentSize.Width - _spaceShip.HitBoxRect.Width),
-                            Math.Clamp(y, 0, ParentSize.Height - _spaceShip.HitBoxRect.Height)
-                        );
-
-                        this.LastDestination = this.Location;
-                    }
-
-                    if (_isSpaceBattle)
-                    {
-                        if (this.Location.X < this.NextDestination.X)
-                            x = Math.Min(this.Location.X + _spaceShip.Speed, this.NextDestination.X);
-                        else
-                            x = Math.Max(this.Location.X - _spaceShip.Speed, this.NextDestination.X);
-                        if (this.Location.Y < this.NextDestination.Y)
-                            y = Math.Min(this.Location.Y + _spaceShip.Speed, this.NextDestination.Y);
-                        else
-                            y = Math.Max(this.Location.Y - _spaceShip.Speed, this.NextDestination.Y);
-                    }
-
-                    this.Location = new PointF(x, y);
-
-                    if (_isSpaceBattle)
-                    {
-                        // Location based on the center of the ship instead of the top-left
-                        // corner of the rectangle, so movement and hit detection are more
-                        // intuitive and visually aligned with the ship's position.
-                        _spaceShip.Location = this.Center;
-                        // update the shared ship info with the latest position and
-                        // status so other ships can see it during their async scans.
-                        _allSpaceShips[Name] = _spaceShip;
-                    }
-
+                    UpdateMovement();
                     clsBtnRect = this.Rectangle;
                 }
 
@@ -954,11 +1103,9 @@ namespace SpaceBattleSim
                 var lineMoves = (clsBtnRect.X + (clsBtnRect.Width / 2));
 
                 // If the close button is active (mouse over + left click), use
-                // the shadow rectangle for drawing to create a "pressed" effect
+                // the shadow rectangle for drawing to create a "pressed" effect 
                 if (_eventStatus.Get($"{Name}_MouseDown") && this.AnimateClick && this.BoxShadowing)
                 {
-                    // If the button is in the pressed state, we can use the
-                    // shadow rectangle for drawing to create a "pressed" effect.
                     clsBtnRect = new RectangleF(clsBtnShdwRect.Location, clsBtnShdwRect.Size);
                     // Adjust line to be based on the shadow rectangle's position
                     // to keep the lines centered within the pressed Item.
@@ -967,94 +1114,7 @@ namespace SpaceBattleSim
                 else
                     lineMoves = 0;
 
-                if ((!_eventStatus.Get($"{Name}_MouseDown") || !this.AnimateClick) && this.BoxShadowing)
-                    g.FillRectangle(this.Shadowing, clsBtnShdwRect);     // Shadow of button
-
-                // Background of button
-                if (!_eventStatus.Get($"{Name}_MouseDown") && _eventStatus.Get($"{Name}_MouseInRectangle"))
-                    g.FillRectangle(this.MouseOverBackColor, clsBtnRect);
-                else
-                    g.FillRectangle(this.BackColor, clsBtnRect);
-
-                // Extra lines for testing, can be used for debugging or additional visual elements.
-                // They will be drawn on top of the button background and shadow, but below the border
-                // to ensure they are visible without obscuring the Items edges.
-                // UNUSED AT THE MOMENT.
-                switch(this.DLine.ItemType)
-                {
-                    case ItemType.Text:
-                    case ItemType.Square:
-                    case ItemType.Diamond:
-                    case ItemType.Ellipse:
-                    case ItemType.Lines:
-                    case ItemType.Custom:
-                    default:
-                        LineDraw(g, clsBtnRect, lineMoves);
-                        break;
-                }
-
-                // Text of ItemReq, only drawn when TextEnabled is true.  This allows us to have text
-                // content that can be toggled on or off without affecting the underlying properties.
-                if (this._dText.IsEnabled)
-                {
-                    if ((_unicodeShips || !_isSpaceBattle) && this._dText.HasShadowing)
-                    {
-                        clsBtnShdwRect = new RectangleF(clsBtnRect.X + (int)this.ShadowDepth, clsBtnRect.Y + (int)this.ShadowDepth, clsBtnRect.Width, clsBtnRect.Height);
-                        g.DrawString(this._dText.Text, this._dText.DFont, this._dText.ForeColorShadow.Brush, clsBtnShdwRect, _centerText);
-                    }
-
-                    if (_isSpaceBattle)
-                    {
-                        if (_unicodeShips)
-                            g.DrawString(this._dText.Text, this._dText.DFont, _spaceShip.ShipsColorBrush, clsBtnRect, _centerText);
-                        else
-                        {
-                            g.DrawImage(_spaceShip.ShipImage, clsBtnRect);
-                            g.FillEllipse(_spaceShip.ShipsImgOverlayBrush, clsBtnRect);
-                        }
-                    }
-                    else
-                        g.DrawString(this._dText.Text, this._dText.DFont, this._dText.ForeColor.Brush, clsBtnRect, _centerText);
-
-                    if (_isSpaceBattle && _spaceShip.Status != ShipStatus.Dead)
-                    {
-                        // Draw the detection radius as a circle correctly centered on the ship
-                        // and sized to match ShipInfo.HitBox (the actual combat range).
-                        var hbR = (float)ShipInfo.HitBox;
-                        //var dmg = (float)ShipInfo.DamageLevel;
-                        var shipCx = clsBtnRect.X + clsBtnRect.Width / 2;
-                        var shipCy = clsBtnRect.Y + clsBtnRect.Height / 2;
-
-                        var hbRect = new RectangleF(shipCx - hbR, shipCy - hbR, hbR * 2, hbR * 2);
-                        g.DrawEllipse(_spaceShip.HitboxCircle, hbRect);
-
-                        // If the ship has recently fired (within the last 300ms), draw a laser line toward the last target
-                        // location to visually indicate an attack, creating a dynamic combat effect that shows the direction
-                        // of fire and adds visual feedback to the battle interactions. _showFire is true every other frame,
-                        // causing a blink.
-                        if (_showFire.TrySetTrue())
-                        {
-                            // Draw a brief laser flash line toward the last engaged target.
-                            if (!_lastTargetLocation.IsEmpty &&
-                                (DateTime.UtcNow - _lastCombatTime).TotalMilliseconds < 300)
-                            {
-                                //var pen = _spaceShip.IsRepairRig ? DDefaults.DEF_REPAIR_LASER_LINE : _spaceShip.IsRaider? DDefaults.DEF_RAIDER_LASER: DDefaults.DEF_ALLY_LASER;
-                                g.DrawLine(_laserPen, new PointF(shipCx, shipCy), _lastTargetLocation);
-                            }
-                            else if ((DateTime.UtcNow - _lastCombatTime).TotalMilliseconds >= 300)
-                            {
-                                _lastTargetLocation = PointF.Empty;
-                            }
-                        }
-                        else
-                        {
-                            _showFire.SetFalse();
-                        }
-                    }
-                }
-
-                // Border of button
-                g.DrawRectangle(this.GetBorder, clsBtnRect);
+                DrawBackground(g, clsBtnRect, clsBtnShdwRect, lineMoves);
             }
             catch (Exception ex)
             {
@@ -1066,6 +1126,7 @@ namespace SpaceBattleSim
 
             return true;
         }
+
         /// <summary>
         /// Determines whether the specified mouse position is within the rectangle, optionally including the shadow
         /// area and an expanded hit area.

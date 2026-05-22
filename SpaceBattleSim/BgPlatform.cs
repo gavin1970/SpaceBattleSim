@@ -36,14 +36,20 @@ namespace SpaceBattleSim
         const float _percentCapitalShips = 0.10f;            // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
 
         readonly static (int min, int max) _totalBattleShipsLimits = (10, 150);         // set limits for total number of Fighters and Raiders combined.
-        readonly static (int min, int max) _refreshRateLimits = (16, 100);              // set limits for refresh rate in milliseconds.
-        readonly static int[] _refreshRateValidValues = {16, 33, 50, 100};              // set accepted values for refresh rate.  16 (60 FPS), 33 (30 FPS), 50 (20 FPS), 100 (10 FPS)
-        readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
-        readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 0.5f);   // set limits for planet spin speed.
+        readonly static (int min, int max) _refreshRateLimits = (10, 100);              // set limits for refresh rate in milliseconds.
+        // set accepted values for refresh rate. I'm allowing either value as a match the same results.
+        //      (10 or 100  = 10fps or 100ms)
+        //      (16 or 60   = 16fps or 60ms)
+        //      (20 or 50   = 20fps or 50ms)
+        //      (30 or 33   = 30fps or 33ms)
+        private readonly static int[] _refreshRateValidValues   = { 16, 33, 50, 100 };  // interval for timer in milliseconds.
+        private readonly static int[] _fpsRateValidValues       = { 60, 30, 20, 10 };   // FPS in same order of _refreshRateValidValues to bind fps to closes interval.
+        private readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
+        private readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 0.5f);   // set limits for planet spin speed.
         private static string _planetTextureFile = ".\\skins\\fungal_planet.png"; // pulled from app config, path to the planet texture image file.
         private Bitmap _planetTexture = new Bitmap(_planetTextureFile); // Load your map here
-        private SimScreenView _screenViewType = 
-                SimScreenView.FullScreenCurrent;    // pulled from app config, Total number of Fighters and Raiders combined.
+        // pulled from app config, Total number of Fighters and Raiders combined.
+        private SimScreenView _screenViewType = SimScreenView.FullScreenCurrent;
         private bool _showMatrixGrid = false;       // pulled from app config.
         private bool _showPlanets = true;           // pulled from app config
         private bool _showNebulae = true;           // pulled from app config
@@ -949,12 +955,39 @@ namespace SpaceBattleSim
             SetConfigValue("AuditLogEnabled", ref _auditLogEnabled);
             SetConfigValue("UseUnicodeShips", ref _useUnicodeShips);
             SetConfigValue("RefreshRate", ref _refreshRate, _refreshRateLimits.min, _refreshRateLimits.max);
-            // limit to specific valid values to allow for auto animation speed adjustments (AdjSpeed).
+
             if (!_refreshRateValidValues.Contains(_refreshRate))
             {
-                _refreshRate = _refreshRateValidValues.OrderBy(o => Math.Abs(o - _refreshRate)).First();
-                BattleStats.AddSetting("RefreshRate", _refreshRate);   // update for battle audit log.
+                // If FPS was used instead of RefreshRate, convert it to the corresponding refresh rate value.
+                // This allows users to specify their desired frame rate directly, and the application will
+                // adjust the refresh rate accordingly to achieve that frame rate. If the provided value is
+                // not valid, it defaults to 30fps (the second value in the _refreshRateValidValues array). 
+                switch(_refreshRate)
+                {
+                    case 60:
+                        _refreshRate = _refreshRateValidValues[0];
+                        break;
+                    case 20:
+                        _refreshRate = _refreshRateValidValues[2];
+                        break;
+                    case 10:
+                        _refreshRate = _refreshRateValidValues[3];
+                        break;
+                    case 30:
+                    default:
+                        _refreshRate = _refreshRateValidValues[1];  // default
+                        break;
+                }
+
+                // Update the BattleStats for logging. This ensures that the refresh rate
+                // setting is included in the audit logs, allowing for better analysis and
+                // debugging of the animation performance based on different refresh rates.
+                // By logging this setting, we can correlate it with any performance issues
+                // or visual anomalies that may arise during testing or usage, providing valuable
+                // insights into how the refresh rate impacts the overall experience.
+                BattleStats.AddSetting("RefreshRate", _refreshRate);
             }
+
             // adjust ship speed based on the refresh rate to maintain consistent animation speeds across
             // different refresh rates. This ensures that the animation will not appear too fast or too
             // slow regardless of the configured refresh rate, providing a smoother and more visually
@@ -967,19 +1000,19 @@ namespace SpaceBattleSim
                     ShipStats.RefreshRateText = "Ultra (60fps)";
                     // slow down the ships slightly to compensate for the higher frame rate, preventing them
                     // from moving too fast and creating a smoother animation.
-                    ShipStats.AdjSpeed = -0.2020f;// - 0.20f; 
+                    ShipStats.AdjSpeed = 0.0f;
                     break;
                 case 50:
                     ShipStats.RefreshRateText = "Medium (20fps)";
                     // speed up the ships slightly to compensate for the lower frame rate, preventing them
                     // from moving too slow and creating a smoother animation.
-                    ShipStats.AdjSpeed = 0.6060f;// 1.0f;
+                    ShipStats.AdjSpeed = 1.5f;// 1.0f;
                     break;
                 case 100:
                     ShipStats.RefreshRateText = "Low (10fps)";
                     // slow down the ships more significantly to compensate for the much lower frame rate, preventing them
                     // from moving too fast and creating a smoother animation.
-                    ShipStats.AdjSpeed = 1.2012f;// 2.0f;
+                    ShipStats.AdjSpeed = 3.0f;// 2.0f;
                     break;
                 case 33:
                 default:
@@ -987,7 +1020,7 @@ namespace SpaceBattleSim
                     // no adjustment needed for 30fps, as it is the default frame rate for the animation. This ensures
                     // that the ships will move at their intended speed without any modifications, providing a smooth
                     // and visually appealing experience for users who prefer the default refresh rate.
-                    ShipStats.AdjSpeed = 0.0f;
+                    ShipStats.AdjSpeed = .5f;
                     break;
             }
 

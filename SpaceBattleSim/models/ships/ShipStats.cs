@@ -42,16 +42,16 @@
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.
             { ShipType.Capital, (800, 8, 75, 0.3f, RecoverOrder.High, _capitalShip, _capitalShipColor, 0.0f) },
-            // Curent not used.
-            { ShipType.Bomber, (400, 6, 60, 0.5f, RecoverOrder.Medium, _bomberShip, _bomberShipColor, 0.0f) },
             // Small random ship to protect the home base.
             { ShipType.Fighter, (200, 4, 50, 1.0f, RecoverOrder.Low, _fighterShip, _fighterColor, 0.0f) },
-            // Current not used.
-            { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, _transportShipColor, 0.0f) },
             // Half the shield of a Captial ship and twice as much power.
             // The same hitbox and speed as a Fighter, but no recovery since
             // they are not on the home team.  Rotation needs work, leave 0.0f for now. 
-            { ShipType.Raider, (400, 16, 50, 1.25f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) }, // rotate 90.0f - not working as intended.
+            { ShipType.Raider, (400, 16, 50, 1.25f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) },
+            // #############[ Curent not used ]############# 
+            { ShipType.Bomber, (400, 6, 60, 0.75f, RecoverOrder.Medium, _bomberShip, _bomberShipColor, 0.0f) },
+            // #############[ Curent not used ]############# 
+            { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, _transportShipColor, 0.0f) },
         };
 
         private int _shields = 0;
