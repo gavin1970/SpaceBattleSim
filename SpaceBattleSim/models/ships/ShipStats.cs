@@ -10,9 +10,20 @@
     /// order.</remarks>
     public class ShipStats
     {
-        // 🚑 - 128657 - U+1F691 - Ambulance emoji, used for the Repair Rig ship.
-        readonly static string _repairRigShip = char.ConvertFromUtf32(10070);  // 10070 - ❖ = \u2756 -- 🚑 - 128657 - U+1F691 - Ambulance emoji, used for the Repair Rig ship.
-        readonly static string _capitalShip = char.ConvertFromUtf32(11790);    // 11790 - ⸎ = \u2e4e --  ⮗ - 11159  - \u2b97
+        // U+25C4 - 9668 - ◄ - Left-pointing black pointer
+        // U+25C6 - 9670 - ◆ - Black diamond
+        // U+2756 - 10070 - ❖ - Black diamond minus white X
+        // U+2E4E - 11790 - ⸎ - Left black tortoise shell
+        // U+2B97 - 11159 - ⮗ - Leftwards triangle-headed zigzag arrow
+        // U+2BFA - 11258 - ⯺ - Leftwards triangle-headed four o'clock arrow
+        // U+2B59 - 11033 - ⬙ - Black small diamond
+        // U+2B5D - 11213 - ⯍ - Leftwards triangle-headed right angle arrow
+        // U+2CD5 - 11501 - Ⳮ - Leftwards triangle-headed curved arrow
+        // U+2313 - 8987 - ⌓ - Watch -- HourGlass With Flowing Sand
+        // U+2316 - 8982 - ⌖ - Position Indicator
+
+        readonly static string _repairRigShip = char.ConvertFromUtf32(8982);   // 8982 - ⌖ = \u2316
+        readonly static string _capitalShip = char.ConvertFromUtf32(11159);    // 10070 - ❖ = \u2756
         readonly static string _bomberShip = char.ConvertFromUtf32(11258);     // 11258 - ⯺ = \u2bfa
         readonly static string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
         readonly static string _transportShip = char.ConvertFromUtf32(11213);  // 11213 - ⯍ = \u2b5d
@@ -37,7 +48,7 @@
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.
-            { ShipType.RepairRig, (400, 4, 20, 2.0f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
+            { ShipType.RepairRig, (400, 4, 20, 2.5f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
             // The most durable and powerful ship as a whole, but also the slowest.
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.
@@ -47,7 +58,7 @@
             // Half the shield of a Captial ship and twice as much power.
             // The same hitbox and speed as a Fighter, but no recovery since
             // they are not on the home team.  Rotation needs work, leave 0.0f for now. 
-            { ShipType.Raider, (400, 16, 50, 1.25f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) },
+            { ShipType.Raider, (400, 16, 50, 1.50f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) },
             // #############[ Curent not used ]############# 
             { ShipType.Bomber, (400, 6, 60, 0.75f, RecoverOrder.Medium, _bomberShip, _bomberShipColor, 0.0f) },
             // #############[ Curent not used ]############# 

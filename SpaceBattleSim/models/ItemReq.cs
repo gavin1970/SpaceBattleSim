@@ -1,7 +1,6 @@
 ﻿using Chizl.StandAloneLogging;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using static DDefaults;
 
 namespace SpaceBattleSim
@@ -106,7 +105,11 @@ namespace SpaceBattleSim
         private DText _dText = new();
         private bool disposedValue;
         // will be set once.
-        private Pen _laserPen = new Pen(Color.Transparent); 
+        private Pen _laserPen = new Pen(Color.Transparent);
+        private Brush? _mouseOverBackColor;
+        private Brush? _backColor;
+        private Brush? _shadowing;
+        private Pen? _getBorder;
 
         #region Constructors
         ~ItemReq()=> Dispose(disposing: false);
@@ -352,7 +355,14 @@ namespace SpaceBattleSim
         /// <summary>
         /// Gets a brush that is used to fill the background with the specified color.
         /// </summary>
-        public Brush BackColor { get { return new SolidBrush(BGColor); } }
+        public Brush BackColor 
+        { 
+            get 
+            {
+                _backColor ??= new SolidBrush(BGColor);
+                return _backColor;
+            }
+        }
         /// <summary>
         /// Gets or sets the fill color.<br/>
         /// Default: Red
@@ -372,7 +382,14 @@ namespace SpaceBattleSim
         /// <summary>
         /// Gets a brush used to paint the background when the mouse pointer is over the control.
         /// </summary>
-        public Brush MouseOverBackColor { get { return MouseOverColor.IsEmpty ? BackColor : new SolidBrush(MouseOverColor); } }
+        public Brush MouseOverBackColor 
+        { 
+            get 
+            {
+                _mouseOverBackColor ??= new SolidBrush(MouseOverColor);
+                return MouseOverColor.IsEmpty ? BackColor : _mouseOverBackColor; 
+            } 
+        }
         ///// <summary>
         ///// Gets or sets the width of the border, in pixels.  Zero '0' will represent no border.<br/>
         ///// Default: 3px, Max: 255px
@@ -381,7 +398,14 @@ namespace SpaceBattleSim
         /// <summary>
         /// Gets a new Pen with the specified border color and width.
         /// </summary>
-        public Pen GetBorder { get { return new Pen(BorderColor, BorderWidth); } }
+        public Pen GetBorder 
+        { 
+            get 
+            {
+                _getBorder ??= new Pen(BorderColor, BorderWidth);
+                return _getBorder; 
+            } 
+        }
         /// <summary>
         /// Gets or sets the mouse HitBox outside the ItemReq value in pixels.
         /// </summary>
@@ -392,7 +416,14 @@ namespace SpaceBattleSim
         /// <summary>
         /// Gets a brush representing the shadow color and opacity.
         /// </summary>
-        public Brush Shadowing { get { return new SolidBrush(Color.FromArgb(_shadowOpacity, _shadowColor)); } }
+        public Brush Shadowing 
+        { 
+            get 
+            {
+                _shadowing ??= new SolidBrush(Color.FromArgb(_shadowOpacity, _shadowColor));
+                return _shadowing;
+            }
+        }
         /// <summary>
         /// Gets or sets the color used for rendering shadows.<br/>
         /// If the alpha component of the color is greater than 0, it will 
@@ -406,6 +437,9 @@ namespace SpaceBattleSim
             {
                 _shadowOpacity = (char)value.A;
                 _shadowColor = value;
+                if (_shadowing != null)
+                    _shadowing.Dispose();
+                _shadowing = new SolidBrush(Color.FromArgb(_shadowOpacity, _shadowColor));
             }
         }
         /// <summary>
@@ -420,6 +454,9 @@ namespace SpaceBattleSim
             { 
                 _shadowOpacity = (char)value;
                 _shadowColor = Color.FromArgb(_shadowOpacity, _shadowColor.R, _shadowColor.G, _shadowColor.B);
+                if (_shadowing != null)
+                    _shadowing.Dispose();
+                _shadowing = new SolidBrush(Color.FromArgb(_shadowOpacity, _shadowColor));
             }
         }
         /// <summary>
@@ -655,7 +692,12 @@ namespace SpaceBattleSim
                     // in time. This is intentional to keep Raiders as glass cannons, but it gives them a fighting chance
                     // instead of being completely one-shot by RepairRigs every time.
                     if (_spaceShip.IsRaider)
-                        _spaceShip.Repair(2, _activeTargetName); //_spaceShip.Power
+                    {
+                        if(_allSpaceShips[_activeTargetName].IsDead)
+                            _spaceShip.Repair(_allSpaceShips[_activeTargetName].OrgPower, _activeTargetName); //_spaceShip.Power
+                        else
+                            _spaceShip.Repair(2, _activeTargetName); //_spaceShip.Power
+                    }
                 }
                 else
                 {

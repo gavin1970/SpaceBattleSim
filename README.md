@@ -52,7 +52,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 - **Conflict-free repair assignments** — a second thread-safe dictionary ensures only one RepairRig claims a dead ally at a time.
 - **Dynamic color health indicator** — ship color shifts as shields drops as hitbox diameter changes base on power transfer if enabled.
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
-- **F-key HUD overlays** — press Esc to Pause/Unpause, F1 for help, F2 for ship stats, F3 to view live battle stats, or F5 to instantly reset all ships back to full health.  Audit logging, if enable will show manual reset instead of Ally or Raider win.
+- **F-key HUD overlays** — press Esc to Pause/Unpause, F1 for help, F2 for ship stats, F3 to view live battle stats, F5 to instantly reset all ships back to full health, or F12 to open an Explorer window at the simulation root folder.  Audit logging, if enabled, will show manual reset instead of Ally or Raider win.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
 - **Image ship symbols** — when app.config->`UseUnicodeShips` is set to false, each ShipType as Unicode glyph is rendered as an image on the fly in memory and used for the ships rendering.  Since Unicode uses color blending to show damage, the image rendering is static, but will have an overlay of black and get darker as the ship takes damage instead.
 - **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
@@ -69,21 +69,22 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 | `CriticalTransferAlly` | bool | false | If true, this allows all allies to transfer half their power for 100% to their shields, when their shields drop below 25%. |
 | `CriticalTransferRaiders` | bool | false | If true, this allows a raider to transfer half their power for 100% to their shields, when their shields drop below 25%. |
 | `DisableAutoLock` | bool | false | If true, disables automatic locking of the Windows and stops screensavers. |
-| `NaturalStarfield` | bool | false | Toggle natural starfield background layer vs artificial starfield |
-| `PlanetSize` | int | 150 | Diameter of the rotating planet in pixels |
+| `NaturalStarfield` | bool | true | Toggle natural starfield background layer vs artificial starfield |
+| `PlanetSize` | int | 100 | Diameter of the rotating planet in pixels |
 | `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
-| `PlanetTextureFile` | string | `.\skins\fungal_planet.png` | File path for the planet texture image |
+| `PlanetTextureFile` | string | `.\skins\jupiter-surface.jpg` | File path for the planet texture image (png, jpg, or bmp under `.\skins\`) |
 | `RefreshRate` | float | 33 | Refresh Rate in milliseconds.  This is the time between each frame update, and it can be adjusted to  improve performance on older machines. |
 | `ScreenViewType` | string | `FullScreenCurrent` | Default: `FullScreenCurrent` - Full screen.  `FullScreenAll` - Set to FullScreen across all monitors.  `Windowed` - for a resizable window with title bar |
-| `ShowComet` | bool | false | Toggle visibility of the flying comet in the background |
+| `ShowComet` | bool | true | Toggle visibility of the flying comet in the background |
 | `ShowMatrixGrid` | bool | true | Toggle visibility of the background "Matrix"-style grid |
 | `ShowNebulae` | bool | true | Toggle visibility of nebulae background elements |
-| `ShowPlanet` | bool | false | Toggle visibility of the rotating planet in the background |
+| `ShowPlanets` | bool | true | Toggle visibility of the rotating planet in the background |
 | `ShowStars` | bool | true | Toggle visibility of random stars in the background |
 | `ShowVersion` | bool | true | Show the app version near the bottom left of the screen. |
 | `TopmostWindow` | bool | false | If true, keeps the window always on top of other windows, unless they are also set to topmost. |
 | `TotalBattleShips` | int | 30 | (10-150) Total number of ships (Fighters + Raiders) to spawn in the simulation |
 | `UseUnicodeShips` | bool | true | Toggle between Unicode glyphs or auto converts Unicode glyphs to images for ship rendering |
+| `UseShadowing` | bool | false | When using Unicode ships, renders a faint shadow behind each ship to improve visibility against the background |
 
 
 **RefreshRate** Accepted Values:
@@ -96,26 +97,38 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 | `100` | 10 FPS | No |
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
+
 > **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, Fighters once, and Capital Ships can use this twice within one battle.
 
 > **Shield Transfer Color**: When a ship performs a critical transfer, the hitbox displayed around the ship changes color.  Based on the amount of times the ship has performed a critical transfer, the color changes to reflect the increasing risk and desperation of the move.  During each of as a shipt takes damage, the color will get dim until it's unable to transfer on the last 25%.  Original power, hitbox is green/25%-red.  Half power, Cyan/25%-DarkOrchid.  Quarter power, Orange/25%-BlueViolet.  Eighth power, Silver/25%-HotPink.
 
 ---
 
-## Ship Types and Stats
+## Ship Types and Default Stats
 
 All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 
 | Ship Type | Shields | Power | Speed | Hitbox | Recovery Priority | Notes |
 |-----------|---------|-------|-------|--------|-------------------|-------|
-| **RepairRig** (Healer) | 400 | 2 | **2.0** | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery |
+| **RepairRig** (Healer) | 400 | 4 | **2.5** | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery |
 | **Capital Ship** | **800** | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, Twice Raider shields, but half their power |
 | **Fighter** | 200 | 4 | 1.0 | 50 px | **Low** (3rd) | Balanced grunt unit; home-team protector |
-| **Raider** (Enemy) | 400 | **16** | 1.0 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed |
-| ~~Bomber~~ | 400 | 6 | 0.5 | 60 px | **Medium** | **Reserved — not currently deployed** |
+| **Raider** (Enemy) | 400 | **16** | 1.5 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed |
+| ~~Bomber~~ | 400 | 6 | 0.75 | 60 px | **Medium** | **Reserved — not currently deployed** |
 | ~~Transport~~ | 2000 | 0 | 2.0 | 40 px | **Low** | **Reserved — not currently deployed** |
 
-> **Raider vs Capital comparison:** Raiders carry twice the firepower (16 vs 8) but only half the shields (400 vs 800), making them glass-cannon enemies.
+**Raider combat rules:**
+
+| Rule | Detail |
+|------|--------|
+| **Glass cannon** | Half the shields of a Capital Ship (400 vs 800), but twice the firepower (16 vs 8) |
+| **Speed advantage** | 5× faster than Capital Ships (1.5 vs 0.3); matches a Fighter's mobility |
+| **Smaller target** | Same hitbox as a Fighter (50 px); Capital Ships present a much larger target (75 px) |
+| **Heal on hit** | Only ships to gain 2 HP for every hit landed against any allied ship |
+| **Kill bonus** | Only ships to receive the victim's original power stat as bonus HP when destroying an allied ship |
+| **No self-repair** | Cannot heal themselves or other Raiders — they rely entirely on speed, firepower, hit and kill bonuses |
+| **Permanent death** | Never revived when destroyed; every Raider loss is final and shifts the battle permanently |
+| **Heal priority** | Raiders are never prioritized for healing — RepairRigs ignore them entirely |
 
 --
 
@@ -165,7 +178,7 @@ private int _planetSize = 150;              // pulled from app config, diameter 
 private int _planetWrapWidth = 0;           // calculated later, _planetSize * 2, do not modify this here.
 ```
 
-The `_totalBattleShips` is split so that **Raiders outnumber Fighters** by roughly 2:1**, creating strong enemy pressure that if 100 total fighters, the 10 Healers and 10 Capital Ships must balance. The result is a tight, fluctuating battle where either side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight with 100 fighters, with CriticalTransferRaiders set to true, can last around 10-12 minutes before one side is completely wiped out, at which point the (15sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
+The `_totalBattleShips` is split so that **Raiders outnumber Fighters** by roughly 2:1**, creating strong enemy pressure that if 100 total fighters, the 10% more for Healers and 10% more for Capital Ships must balance. The result is a tight, fluctuating battle where either side easily dominates.  The exact numbers can be tweaked by changing the constants, but the default configuration is designed to create a dynamic and engaging simulation.  Currently a fight with 100 fighters, with CriticalTransferRaiders set to true, can last around 10-12 minutes before one side is completely wiped out, at which point the (15sec) auto revive is used or F5 key can be used to revive all the dead and start a new battle.
 
 | Group | Default Count |
 |-------|---------------|
@@ -228,10 +241,14 @@ To prevent multiple RepairRigs from all rushing the same dead ship, a second thr
 
 | Key | Action |
 |-----|--------|
-| **F1** | Show detailed ship info and stats overlay (hold to keep visible) |
-| **F2** | Show summary ship status overlay (hold to keep visible) |
+| **Esc** | Pause / Unpause the simulation |
+| **F1** | Show help and F-key reference overlay |
+| **F2** | Show ship class summary with live status |
+| **F3** | Show live battle statistics overlay |
 | **F5** | Revive all currently dead home-team ships |
-| Hover over title bar | Reveals the close button |
+| **F12** | Open File Explorer at the simulation root folder |
+| Hover far top-right | Reveals the close button (full-screen mode only) |
+| Click far top-left banner | Toggle transparent background (click-through mode) |
 
 ---
 
@@ -265,20 +282,28 @@ SpaceBattleSim/
 ├── Program.cs                 # Entry point
 ├── models/
 │   ├── ships/
-│   │   ├── ShipEnums.cs       # ShipType, ShipStatus, ShipMission, RecoverOrder enums
+│   │   ├── ShipEnums.cs       # ShipType, ShipStatus, ShipMission, ShipRole, RecoverOrder, ActionType enums
+│   │   ├── ShipSkins.cs       # Ship skin image loader and Unicode-to-image cache
 │   │   ├── ShipStats.cs       # Read-only per-type stat definitions
 │   │   └── SpaceShip.cs       # Per-ship state, AI loop, hit-detection, rendering data
+│   ├── BattleStats.cs         # Thread-safe battle audit collector and log writer
 │   ├── DRectangleF.cs         # Extended RectangleF base for positioned objects
 │   ├── DLine.cs               # Line drawing model (laser / repair beams)
+│   ├── DShapes.cs             # Shape drawing model (comet and other animated shapes)
 │   ├── DText.cs               # Text rendering model
 │   └── ItemReq.cs             # Paint request wrapper
 ├── services/
-│   ├── ColorConvert.cs        # color blending / damage-color utilities
-│   └── Logger.cs              # Simple async thread-safe file logger
+│   ├── ColorConvert.cs        # Color blending / damage-color utilities
+│   ├── Logger.cs              # Simple async thread-safe file logger
+│   ├── ModImg.cs              # Unicode text-to-image renderer (Chizl.DrawGraphics)
+│   └── SpaceBackground.cs     # Background layer renderer (nebulae, stars, comet, planet)
 └── utils/
+    ├── AppConfig.cs           # Thread-safe app-config reader/writer with caching
     ├── StaticConfig.cs        # Global UI style constants (colors, pens, brushes, fonts)
     ├── DDefaults.cs           # Drawing defaults (shadow, border, laser pens)
+    ├── DPoints.cs             # 2-D geometry helpers (point spacing, Bézier, angles)
     ├── About.cs               # Assembly version helper
+    ├── Externs.cs             # P/Invoke declarations (Windows API calls)
     └── atomic/
         ├── ABool.cs           # Atomic boolean (thread-safe flag)
         ├── ADateTime.cs       # Atomic DateTime (thread-safe timestamp)
@@ -292,7 +317,7 @@ SpaceBattleSim/
 | Package | Purpose | Found in... |
 |---------|---------|-------------|
 | `Chizl.ThreadSupport` | Atomic primitives (`ABool`, `ADateTime`, `EventStatus`) for lock-free thread safety | [`SpaceBattleSim/utils/atomic/`](SpaceBattleSim/utils/atomic/) |
-| `Chizl.ColorExtension` | color manipulation helpers used during dynamic ship color merging | [`SpaceBattleSim/services/ColorConvert.cs`](SpaceBattleSim/services/ColorConvert.cs) |
+| `Chizl.ColorExtension` | Color manipulation helpers used during dynamic ship color merging | [`SpaceBattleSim/services/ColorConvert.cs`](SpaceBattleSim/services/ColorConvert.cs) |
 | `Chizl.Applications` | Application metadata helpers (`About`) | [`SpaceBattleSim/utils/About.cs`](SpaceBattleSim/utils/About.cs) |
 | `Chizl.StandAloneLogging` | Async thread-safe file logger | [`SpaceBattleSim/utils/Logger.cs`](SpaceBattleSim/utils/Logger.cs) |
 

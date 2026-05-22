@@ -1,6 +1,7 @@
 ﻿using Chizl.ColorExtension;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices.Marshalling;
 // using System.Numerics; //Vector2 is not used in the current implementation, but it can be useful for future enhancements or alternative distance calculations. 
 
 namespace SpaceBattleSim
@@ -312,6 +313,10 @@ namespace SpaceBattleSim
         /// </summary>
         public int Power => Volatile.Read(ref _power);
         /// <summary>
+        /// The original set power for this ship.
+        /// </summary>
+        public int OrgPower => _orgPower;
+        /// <summary>
         /// Gets the current speed value. The speed represents the ship's movement capabilities, and as the ship<br/>
         /// takes damage, the speed value may decrease. When the speed reaches zero, the ship is considered dead.<br/>
         /// The speed value is used to determine the ship's status and can affect its performance in various<br/>
@@ -521,17 +526,16 @@ namespace SpaceBattleSim
             // Volatile read before repair
             var prevShields = this.Shields;
 
-            for (int i = 1; i < repairAmount; i++)
+            for (int i = 0; i < repairAmount; i++)
             {
                 if (Shields + 1 > _orgShields)
-                    break; 
-
+                    break;
                 Interlocked.Increment(ref _shields);
             }
 
-            // this.Shields is a Volatile read, so we get the current value after we potentially
+            // this.Shields is a Volatile.Read, so we get the current value after we potentially
             // update it with repairs. We then clamp the value to ensure it does not go below zero
-            // or above the original shield value.
+            // or above the original shield value. 
             //Interlocked.Exchange(ref _shields, Math.Clamp(this.Shields, 0, _orgShields));
             BattleStats.Audit(this.Name, ActionType.StoleHealth, $"From: {fromWhom} ({repairAmount} repaired). Shields where: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
             UpdateStatus();

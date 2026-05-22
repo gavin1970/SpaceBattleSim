@@ -42,8 +42,8 @@ namespace SpaceBattleSim
         //      (16 or 60   = 16fps or 60ms)
         //      (20 or 50   = 20fps or 50ms)
         //      (30 or 33   = 30fps or 33ms)
-        private readonly static int[] _refreshRateValidValues   = { 16, 33, 50, 100 };  // interval for timer in milliseconds.
-        private readonly static int[] _fpsRateValidValues       = { 60, 30, 20, 10 };   // FPS in same order of _refreshRateValidValues to bind fps to closes interval.
+        private readonly static int[] _refreshRateValidValues = { 16, 33, 50, 100 };  // interval for timer in milliseconds.
+        private readonly static int[] _fpsRateValidValues = { 60, 30, 20, 10 };   // FPS in same order of _refreshRateValidValues to bind fps to closes interval.
         private readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
         private readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 0.5f);   // set limits for planet spin speed.
         private static string _planetTextureFile = ".\\skins\\fungal_planet.png"; // pulled from app config, path to the planet texture image file.
@@ -56,6 +56,7 @@ namespace SpaceBattleSim
         private bool _showStars = true;             // pulled from app config
         private bool _showComet = true;             // pulled from app config
         private bool _showVersion = true;           // pulled from app config
+        private bool _useShadowing = false;         // pulled from app config, set to true to enable shadow effects on controls for enhanced visual depth. 
         private int _totalBattleShips = 100;        // pulled from app config, Total number of Fighters and Raiders combined.
         private bool _criticalTransferRaiders = false; // pulled from app config
         private bool _criticalTransferAlly = false; // pulled from app config
@@ -202,7 +203,7 @@ namespace SpaceBattleSim
                         TitleText.CriticalTransfer = true;
                         this.Invalidate(new Region(TitleText.Rectangle));
                     }
-                    
+
                 }
                 else if (!_pauseScreen)
                 {
@@ -239,7 +240,7 @@ namespace SpaceBattleSim
                     StopLoop();
                     ItemReq.ResetDeadShips();
                 }
-                else if(isF12)
+                else if (isF12)
                 {
                     Process.Start(new ProcessStartInfo
                     {
@@ -291,7 +292,7 @@ namespace SpaceBattleSim
                     Console.WriteLine($"Error deleting logs directory: {ex.Message}");
                 }
             }
-            
+
             this.DoubleBuffered = true;
 
             // Delay the creations to ensure the form is fully initialized
@@ -360,7 +361,7 @@ namespace SpaceBattleSim
                     // Correct location if the planet would be off the screen based on the configured offsets.
                     if (center.X + xOffset + _planetSize > bounds.Width)
                         xOffset = center.X - (((int)bounds.Width - _planetSize) + (this.Padding.Bottom * 2));
-                    
+
                     if (center.Y + yOffset + _planetSize > bounds.Height)
                         yOffset = center.Y - (((int)bounds.Height - _planetSize) + (this.Padding.Left * 2));
 
@@ -413,7 +414,7 @@ namespace SpaceBattleSim
                             SpaceBackground.AddNebula(tmp,
                                 new PointF(bounds.Width * 0.75f, bounds.Height * 0.68f),
                                 radius: 110, Color.FromArgb(60, 180, 40, 0), density: 8800, rng);
-                            
+
                             // Faint teal — upper-right
                             SpaceBackground.AddNebula(tmp,
                                 new PointF(bounds.Width * 0.80f, bounds.Height * 0.20f),
@@ -679,12 +680,12 @@ namespace SpaceBattleSim
                     {
                         Location = new PointF(x, y),
                         Size = flierSize,
-                        ShadowDepth = _shadowStyle.depth,
+                        ShadowDepth = !_useShadowing ? 0 : _shadowStyle.depth,
                         DText = {
                             DFont = _smallFlierFont,
                             Text = shipImg,
-                            ShadowDepth = _shadowStyle.depth,
-                            ShadowColor = Color.FromArgb(32, shipColor),
+                            ShadowDepth = !_useShadowing?0:_shadowStyle.depth,
+                            ShadowColor = !_useShadowing?Color.Empty:Color.FromArgb(32, shipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
                         CriticalTransfer = criticalTransfer,
@@ -709,12 +710,12 @@ namespace SpaceBattleSim
                     {
                         Location = new PointF(x, y),
                         Size = capSize,
-                        ShadowDepth = _shadowStyle.depth,
+                        ShadowDepth = _useShadowing ? 0 : _shadowStyle.depth,
                         DText = {
                             DFont = _largeFlierFont,
                             Text = cap.ShipView,
-                            ShadowDepth = _shadowStyle.depth,
-                            ShadowColor = Color.FromArgb(64, cap.ShipColor),
+                            ShadowDepth = !_useShadowing?0:_shadowStyle.depth,
+                            ShadowColor = !_useShadowing?Color.Empty:Color.FromArgb(64, cap.ShipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
                         CriticalTransfer = _criticalTransferAlly,
@@ -740,12 +741,12 @@ namespace SpaceBattleSim
                     {
                         Location = new PointF(x, y),
                         Size = repairSize,
-                        ShadowDepth = _shadowStyle.depth,
+                        ShadowDepth = _useShadowing ? 0 : _shadowStyle.depth,
                         DText = {
                             DFont = _smallFlierFont,
                             Text = repairRig.ShipView,
-                            ShadowDepth = _shadowStyle.depth,
-                            ShadowColor = Color.FromArgb(64, repairRig.ShipColor),
+                            ShadowDepth = !_useShadowing?0:_shadowStyle.depth,
+                            ShadowColor = !_useShadowing?Color.Empty:Color.FromArgb(64, repairRig.ShipColor),
                         },
                         DestinationRange = (uint)this.Width / 2,
                         CriticalTransfer = _criticalTransferAlly,
@@ -954,6 +955,8 @@ namespace SpaceBattleSim
             SetConfigValue("TopmostWindow", ref _topmostWindow);
             SetConfigValue("AuditLogEnabled", ref _auditLogEnabled);
             SetConfigValue("UseUnicodeShips", ref _useUnicodeShips);
+            if (_useUnicodeShips)
+                SetConfigValue("UseShadowing", ref _useShadowing);
             SetConfigValue("RefreshRate", ref _refreshRate, _refreshRateLimits.min, _refreshRateLimits.max);
 
             if (!_refreshRateValidValues.Contains(_refreshRate))
@@ -962,7 +965,7 @@ namespace SpaceBattleSim
                 // This allows users to specify their desired frame rate directly, and the application will
                 // adjust the refresh rate accordingly to achieve that frame rate. If the provided value is
                 // not valid, it defaults to 30fps (the second value in the _refreshRateValidValues array). 
-                switch(_refreshRate)
+                switch (_refreshRate)
                 {
                     case 60:
                         _refreshRate = _refreshRateValidValues[0];
@@ -1038,7 +1041,7 @@ namespace SpaceBattleSim
 
             // only show the planet configuration options if planets are enabled, since they
             // have no effect without planets and would just take up space in the config
-            if (_showPlanets) 
+            if (_showPlanets)
             {
                 // setup default, then load the planet skin from the config, and if it's valid, load
                 // the texture for the planet. If the config value is invalid, disable planets to
@@ -1159,7 +1162,7 @@ namespace SpaceBattleSim
 
             _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
                                         this.ViewSize.Width, this.ViewSize.Height, this.ViewSize);
-            
+
             // If auto-lock is disabled in the configuration, call the method to prevent the
             // system from automatically locking the screen. This is important for ensuring
             // that the animation can run uninterrupted without the screen locking due to
@@ -1215,7 +1218,7 @@ namespace SpaceBattleSim
                 retval = value;
             else
                 AppConfig.SetConfigValue(key, $"{retval}");
-            
+
             // audit only.
             BattleStats.AddSetting(key, $"{retval}");
         }
@@ -1247,9 +1250,9 @@ namespace SpaceBattleSim
         private static ABool _loopStarted = ABool.False;
         private void StartLoop()
         {
-            if(!_loopStarted.TrySetTrue())
+            if (!_loopStarted.TrySetTrue())
                 return;
-            
+
             //_loopTokenSource.Dispose();
             _loopTokenSource = new CancellationTokenSource();
             // Run the loop on a background thread pool thread
@@ -1453,7 +1456,7 @@ namespace SpaceBattleSim
         /// <remarks>
         /// Single point of Change (SPOC) for any future adjustments to how the form size is calculated or returned.
         /// </remarks>
-        private Size FormSize 
+        private Size FormSize
             => this.ClientSize;
         #endregion
     }
