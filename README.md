@@ -98,7 +98,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
 
-> **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, Fighters once, and Capital Ships can use this twice within one battle.
+> **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, **RepairRigs (Healers) can also use this 4 times** (now matching Raiders with 16 base power), Fighters once, and Capital Ships can use this twice within one battle.
 
 > **Shield Transfer Color**: When a ship performs a critical transfer, the hitbox displayed around the ship changes color.  Based on the amount of times the ship has performed a critical transfer, the color changes to reflect the increasing risk and desperation of the move.  During each of as a shipt takes damage, the color will get dim until it's unable to transfer on the last 25%.  Original power, hitbox is green/25%-red.  Half power, Cyan/25%-DarkOrchid.  Quarter power, Orange/25%-BlueViolet.  Eighth power, Silver/25%-HotPink.
 
@@ -110,10 +110,10 @@ All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 
 | Ship Type | Shields | Power | Speed | Hitbox | Recovery Priority | Notes |
 |-----------|---------|-------|-------|--------|-------------------|-------|
-| **RepairRig** (Healer) | 400 | 4 | **2.5** | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery |
+| **RepairRig** (Healer) | 400 | **16** | **2.5** | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery. Power fuels healing. Auto-renews power at base. |
 | **Capital Ship** | **800** | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, Twice Raider shields, but half their power |
 | **Fighter** | 200 | 4 | 1.0 | 50 px | **Low** (3rd) | Balanced grunt unit; home-team protector |
-| **Raider** (Enemy) | 400 | **16** | 1.5 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed |
+| **Raider** (Enemy) | 400 | **16** | 1.5 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed; heals via hits, kill bonuses, and group resets |
 | ~~Bomber~~ | 400 | 6 | 0.75 | 60 px | **Medium** | **Reserved — not currently deployed** |
 | ~~Transport~~ | 2000 | 0 | 2.0 | 40 px | **Low** | **Reserved — not currently deployed** |
 
@@ -124,10 +124,11 @@ All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 | **Glass cannon** | Half the shields of a Capital Ship (400 vs 800), but twice the firepower (16 vs 8) |
 | **Speed advantage** | 5× faster than Capital Ships (1.5 vs 0.3); matches a Fighter's mobility |
 | **Smaller target** | Same hitbox as a Fighter (50 px); Capital Ships present a much larger target (75 px) |
-| **Heal on hit** | Only ships to gain 2 HP for every hit landed against any allied ship |
-| **Kill bonus** | Only ships to receive the victim's original power stat as bonus HP when destroying an allied ship |
-| **No self-repair** | Cannot heal themselves or other Raiders — they rely entirely on speed, firepower, hit and kill bonuses |
-| **Permanent death** | Never revived when destroyed; every Raider loss is final and shifts the battle permanently |
+| **Heal on hit** | Gain **2 HP** for every hit landed against any allied ship |
+| **Kill bonus** | Receive the victim's **original power stat as bonus HP** (added to shields, once) when destroying an allied ship — killing a Healer grants 16 HP, killing a Fighter grants 4 HP, etc. |
+| **Escalating group reset** | After **50%** of all Raiders have been destroyed, every surviving Raider receives a **full shield and power reset**. The threshold then halves: at **25%** living, another full reset; at **12.5%**, another; and so on, all the way down to **1%** living Raiders. This cascade of resets makes the last surviving Raiders increasingly difficult to finish off. |
+| **No self-repair** | Cannot heal themselves or other Raiders between resets — they rely entirely on speed, firepower, hit bonuses, kill bonuses, and the group reset mechanic |
+| **Permanent death** | Never revived by RepairRigs; every Raider loss is final and shifts the battle permanently |
 | **Heal priority** | Raiders are never prioritized for healing — RepairRigs ignore them entirely |
 
 --
@@ -192,7 +193,7 @@ The `_totalBattleShips` is split so that **Raiders outnumber Fighters** by rough
 
 ## Revive / Recovery System
 
-When a home-team ship's shields reach zero it enters the `Dead` state. RepairRigs scan for dead allies and revival them. The order in which they are prioritized is driven by the `RecoverOrder` enum:
+When a home-team ship's shields reach zero it enters the `Dead` state. RepairRigs scan for dead allies and revive them. The order in which they are prioritized is driven by the `RecoverOrder` enum:
 
 | Priority | Value | Ship |
 |----------|-------|------|
@@ -202,6 +203,20 @@ When a home-team ship's shields reach zero it enters the `Dead` state. RepairRig
 | None | 0 | Raider — **permanent death, never revived** |
 
 RepairRigs are revived first so the recovery pipeline never collapses. Capital Ships follow because of their high combined shield and firepower value. Fighters are last. Raiders are never revived — when destroyed they are gone for the remainder of the session.
+
+### RepairRig (Healer) — Power-Based Healing
+
+RepairRigs now carry **16 power**, matching Raiders, and their power is the fuel for healing rather than combat. Key rules:
+
+| Rule | Detail |
+|------|--------|
+| **Power-fueled healing** | A healer's power stat is spent to restore shields on a target. Healing a Capital Ship from 0 to full (800 HP) costs the full 800 HP worth of power — even if the healer only has 2 power left after repeated Critical Transfers, it will heal with what it has. |
+| **CriticalTransfer parity** | RepairRigs can use Critical Transfer as many times as Raiders (up to 4 times from 16 → 8 → 4 → 2 power), giving them a survival option when under attack. |
+| **Auto-renew at base** | When a RepairRig checks in with the home base it **fully restores its power** to 16, keeping it ready for the next healing cycle. |
+| **Heal lock — both ships must hold still** | When a RepairRig begins healing or reviving a ship, **both the healer and the target are locked in place** until healing completes. Neither can move during this window. |
+| **Simultaneous vulnerability** | Both the healer and the ship being healed can be attacked by enemies during the healing lock. |
+| **Damage breaks the lock** | If the **healer takes damage** while healing, it immediately breaks the lock, disengages, and flees. The target ship is released with whatever partial healing it received and must fight on with that amount. |
+| **Target fights with partial heal** | A ship released mid-heal retains only the shields restored so far — it does not revert to zero, but it does not receive a full heal either. |
 
 ---
 
