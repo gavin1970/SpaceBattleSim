@@ -48,7 +48,7 @@
         {
             // The most fragile ship, but also the fastest and with the smallest hitbox.
             // It is used to heal other ships and should be recovered first.
-            { ShipType.RepairRig, (400, 4, 20, 2.5f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
+            { ShipType.RepairRig, (400, 16, 20, 2.5f, RecoverOrder.Critical, _repairRigShip, _repairRigShipColor, 0.0f) },
             // The most durable and powerful ship as a whole, but also the slowest.
             // It is the main target for the enemy team and should be recovered only
             // after healer and protected at all costs.

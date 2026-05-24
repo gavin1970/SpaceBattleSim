@@ -300,6 +300,10 @@ namespace SpaceBattleSim
         /// </summary>
         public int Shields => Volatile.Read(ref _shields);
         /// <summary>
+        /// RepairRigs validation.
+        /// </summary>
+        public int OrgShields => _orgShields;
+        /// <summary>
         /// Gets the current shield integrity as a percentage of the original shield value.
         /// </summary>
         /// <remarks>Returns 0 if the original shield value is zero. The value represents the proportion
@@ -332,7 +336,12 @@ namespace SpaceBattleSim
         /// Gets a value indicating whether the ship is dead. A dead ship has no shields or power and is<br/>
         /// considered non-operational.<br/>
         /// </summary>
-        public bool IsDead => _shipStatus == ShipStatus.Dead;
+        public bool IsDead => _shipStatus == ShipStatus.Dead || this.Power == 0;
+        /// <summary>
+        /// When a RepairRig is currently healing a ship back after reserection, this ship 
+        /// can't move until finished, but it can't fire at enemy too close.
+        /// </summary>
+        public bool BeingRepaired => _shipStatus == ShipStatus.BeingRepaired;
         /// <summary>
         /// Gets a value indicating whether the ship is in a critical condition. A critical ship has very low<br/>
         /// shields and power, and is at risk of being destroyed.<br/>
@@ -512,9 +521,27 @@ namespace SpaceBattleSim
             // scratched, damaged, critical, or dead.
             UpdateStatus();
         }
-        public void Repair(int repairAmount, string fromWhom)
+        public void Release()
         {
-            if (this.IsEmpty || _shipStatus == ShipStatus.Dead)
+            // making sure it's not set to BeingRepaired, which would cause the ship to be stuck
+            // in that state and not update properly.
+            _shipStatus = ShipStatus.Operational;
+            // Get the real ship status. This allows the ship to update its status based on its
+            // current shield level and other factors, ensuring that it reflects the correct
+            // condition after being released from repair.
+            UpdateStatus();
+        }
+        /// <summary>
+        /// Add HP to ship, but only if it's not empty or already dead (unless it's a RepairRig 
+        /// trying to resurrect it). The ship's status is updated based on the new shield level 
+        /// after repair.<br/>
+        /// </summary>
+        /// <param name="repairAmount"></param>
+        /// <param name="fromWhom"></param>
+        /// <param name="isRepairRig"></param>
+        public void Repair(int repairAmount, string fromWhom, bool isRepairRig = false)
+        {
+            if (this.IsEmpty || (_shipStatus == ShipStatus.Dead && !isRepairRig))
                 return;
 
             // if already at or above original shields, no need to repair, and we can avoid the overhead
@@ -532,11 +559,16 @@ namespace SpaceBattleSim
                 Interlocked.Increment(ref _shields);
             }
 
-            // this.Shields is a Volatile.Read, so we get the current value after we potentially
-            // update it with repairs. We then clamp the value to ensure it does not go below zero
-            // or above the original shield value. 
-            //Interlocked.Exchange(ref _shields, Math.Clamp(this.Shields, 0, _orgShields));
-            BattleStats.Audit(this.Name, ActionType.StoleHealth, $"From: {fromWhom} ({repairAmount} repaired). Shields where: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
+            if (isRepairRig)
+            {
+                BattleStats.Audit(this.Name, ActionType.BeingRepaired, $"From: {fromWhom} ({repairAmount} repaired). Shields where: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
+                _shipStatus = ShipStatus.BeingRepaired;
+                if (this.Power == 0)    // 1 time thing, only during resurrection
+                    Interlocked.Exchange(ref _power, _orgPower);
+            }
+            else
+                BattleStats.Audit(this.Name, ActionType.StoleHealth, $"From: {fromWhom} ({repairAmount} repaired). Shields where: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
+
             UpdateStatus();
         }
         /// <summary>
@@ -551,7 +583,9 @@ namespace SpaceBattleSim
                 if (includePower)
                     Interlocked.Exchange(ref _power, _orgPower);
                 Interlocked.Exchange(ref _shields, _orgShields);
+
                 _shipsMission = ShipMission.Idle;
+                _shipStatus = ShipStatus.Operational;
 
                 if (!string.IsNullOrWhiteSpace(byWho))
                     BattleStats.Audit(this.Name, ActionType.Heal, $"Healed: {byWho}");
@@ -590,7 +624,8 @@ namespace SpaceBattleSim
 
             if (this.Shields == 0)
             {
-                _shipStatus = ShipStatus.Dead;
+                if (!this.BeingRepaired)
+                    _shipStatus = ShipStatus.Dead;
                 _damageColor = Color.FromArgb(alpha, Color.Black);
             }
             else if (dmgLevel >= 90.0)
@@ -603,7 +638,8 @@ namespace SpaceBattleSim
             else if (dmgLevel >= 75.0)
             {
                 _hitboxCircle = hitboxList[1];
-                _shipStatus = ShipStatus.Critical;
+                if (!this.BeingRepaired)
+                    _shipStatus = ShipStatus.Critical;
                 if (!ItemReq.UnicodeShips)
                     alpha = 150;
                 _damageColor = Color.FromArgb(alpha, Color.OrangeRed);
@@ -611,7 +647,8 @@ namespace SpaceBattleSim
             else if (dmgLevel >= 50.0)
             {
                 _hitboxCircle = hitboxList[3];
-                _shipStatus = ShipStatus.Damaged;
+                if (!this.BeingRepaired)
+                    _shipStatus = ShipStatus.Damaged;
                 if (!ItemReq.UnicodeShips)
                     alpha = 140;
                 _damageColor = Color.FromArgb(alpha, Color.Orange);
@@ -619,7 +656,8 @@ namespace SpaceBattleSim
             else if (dmgLevel >= 25.0)
             {
                 _hitboxCircle = hitboxList[4];
-                _shipStatus = ShipStatus.Scratched;
+                if (!this.BeingRepaired)
+                    _shipStatus = ShipStatus.Scratched;
                 if (!ItemReq.UnicodeShips)
                     alpha = 128;
                 _damageColor = Color.FromArgb(alpha, Color.Yellow);
@@ -627,7 +665,8 @@ namespace SpaceBattleSim
             else 
             {
                 _hitboxCircle = hitboxList[5];
-                _shipStatus = ShipStatus.Operational;
+                if (!this.BeingRepaired)
+                    _shipStatus = ShipStatus.Operational;
                 // effectively transparent, but allows us to keep the same brush and just update the
                 // color for performance reasons, since creating new brushes is expensive and we want
                 // to avoid doing it on the main thread if possible.

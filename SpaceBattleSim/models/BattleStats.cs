@@ -222,22 +222,6 @@ namespace SpaceBattleSim
                 }
                 finally
                 {
-                    // I have a 35m audit that some of the log details on the end was cut off.
-                    // To be safe, we will wait for a moment to let the logging thread catch up
-                    // and write any details that may have come in while we were writing the summary,
-                    // this way we can be sure to get all details without having to worry about
-                    // memory usage during the match.
-
-                    // Make sure it doesn't run too long.
-                    var exitTime = DateTime.UtcNow.AddSeconds(10);
-                    // Force the main thread to hold on until the logging thread catches up
-                    while (!_actionAudit.IsEmpty && DateTime.UtcNow < exitTime)
-                    {
-                        Task.Delay(100).Wait();
-                        if (!_queueProcessing.Value && !_actionAudit.IsEmpty)
-                            WriteDetailsToFile(auditName, true);
-                    }
-
                     // clear the queues just in case, but should be empty already if we got here.
                     _actionAudit.Clear();
                     // force to false just in case, but should be false already if we got here.

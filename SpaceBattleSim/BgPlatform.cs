@@ -1,8 +1,10 @@
 ﻿using Chizl.Applications;
 using Chizl.Configurations;
 using Chizl.ThreadSupport;
+using SpaceBattleSim.shapes;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
+using System.Text;
 using static SpaceBattleSim.StaticConfig;
 
 namespace SpaceBattleSim
@@ -84,6 +86,13 @@ namespace SpaceBattleSim
         private int _planetWrapWidth = 0;           // calculated later, _planetSize * 2, do not modify this here.
         private float _xOffset = 0;
         Rectangle _redPlanetRect = Rectangle.Empty;
+
+        // All for Raiders reset logic based on 50% mark.
+        private double _orgTotalRaiders = 0;
+        private double _totalRaiders = 0;
+        private double _aliveRaiders = 0;
+        private double _diffRaiders = 0;
+        private double _aliveAlly = 0;
 
         // Default border width for controls
         const uint _borderWidth = 2;
@@ -238,6 +247,7 @@ namespace SpaceBattleSim
                     _pauseScreen.TrySetTrue();
                     AutoResetTimer?.Stop();
                     StopLoop();
+
                     ItemReq.ResetDeadShips();
                 }
                 else if (isF12)
@@ -657,6 +667,7 @@ namespace SpaceBattleSim
 
                 int x, y;
                 var fighterCnt = _totalBattleShips / 3;
+                _totalRaiders = _totalBattleShips - fighterCnt;
 
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
@@ -771,6 +782,60 @@ namespace SpaceBattleSim
                 }
             }));
         }
+        private void CreateShipCords()
+        {
+            var raiderMotherShip = DDefaults.GetRaidersMotherShip();
+            var firstCords = raiderMotherShip[0];
+            var tLeft = CreateCoords(firstCords, 0.0f, 0.0f);
+            var tRight = CreateCoords(firstCords, 74.0f, 0.0f);
+            var bLeft = CreateCoords(firstCords, 0.0f, 33.0f);
+            var bRight = CreateCoords(firstCords, 74.0f, 33.0f);
+            var topRight = ShapeTransformer.FlipShape(tRight.ToList(), true, false);
+            var bottomLeft = ShapeTransformer.FlipShape(bLeft.ToList(), false, true);
+            var bottomRight = ShapeTransformer.FlipShape(bRight.ToList(), true, true);
+
+            var sb = new StringBuilder();
+
+            Debug.WriteLine("Top Left: ");
+            foreach (PointF cord in tLeft)
+            {
+                if (sb.Length > 0)
+                    sb.Append(", ");
+                sb.Append($"{cord.X}, {cord.Y}");
+            }
+            Debug.WriteLine(sb.ToString());
+            sb.Clear();
+
+            Debug.WriteLine("Top Right: ");
+            foreach (PointF cord in topRight)
+            {
+                if (sb.Length > 0)
+                    sb.Append(", ");
+                sb.Append($"{cord.X}, {cord.Y}");
+            }
+            Debug.WriteLine(sb.ToString());
+            sb.Clear();
+
+            Debug.WriteLine("Bottom Left: ");
+            foreach (PointF cord in bottomLeft)
+            {
+                if (sb.Length > 0)
+                    sb.Append(", ");
+                sb.Append($"{cord.X}, {cord.Y}");
+            }
+            Debug.WriteLine(sb.ToString());
+            sb.Clear();
+
+            Debug.WriteLine("Bottom Rigth: ");
+            foreach (PointF cord in bottomRight)
+            {
+                if (sb.Length > 0)
+                    sb.Append(", ");
+                sb.Append($"{cord.X}, {cord.Y}");
+            }
+            Debug.WriteLine(sb.ToString());
+            sb.Clear();
+        }
         /// <summary>
         /// Initializes the HomeBase item with predefined
         /// coordinates and visual styles if it is empty.
@@ -792,12 +857,15 @@ namespace SpaceBattleSim
                         ShadowPen = new Pen(_shadowStyle.color, 2),
                     },
                 };
+                // Create Ship Testing..
+                //CreateShipCords();
 
+                //_baseCords = DDefaults.GetRaidersMotherShip();
                 _baseCords = DDefaults.GetHomeBase();
 
                 // Move HomeBase based on window sizes and if multiple monitors are involved or not.
-                var anchorX = _formBounds.Center.X - _homeSize.Width;
-                var anchorY = _formBounds.Center.Y - _homeSize.Height;
+                var anchorX = _formBounds.Center.X;// - _homeSize.Width;
+                var anchorY = _formBounds.Center.Y;// - _homeSize.Height;
                 // Calculate the movement needed to position the HomeBase at the center of the form, accounting
                 // for the original anchor point and any existing movement offsets. This ensures that the HomeBase
                 // will be correctly centered on the form regardless of its initial position or any previous movements.
@@ -805,12 +873,12 @@ namespace SpaceBattleSim
                 _moveY += anchorY - _anchorY;
                 // update original anchors with the new movement values so that the HomeBase will be drawn in the
                 // correct location on the first paint and the lines will be anchored to the correct location as well.
-                _anchorX += _moveX;
-                _anchorY += _moveY;
+                //_anchorX += _moveX;
+                //_anchorY += _moveY;
                 // Set the base center point to the new anchor location after applying movement adjustments.
                 // This ensures that the HomeBase will be positioned correctly on the form, and all lines anchored
                 // to this point will also be drawn in the correct location.
-                _baseCenter = new PointF(_anchorX, _anchorY);
+                _baseCenter = new PointF(_anchorX+ _moveX, _anchorY+ _moveY);
                 // don't really use this, but setting the HomeBase.Location to the base center point for clarity and
                 // potential future use. The HomeBase is primarily drawn using the _baseCords and movement offsets,
                 // so the Location property is not critical in this implementation, but it can be useful for reference
@@ -1201,6 +1269,7 @@ namespace SpaceBattleSim
                 AutoResetTimer.Enabled = true;
             };
         }
+
         /// <summary>
         /// Retrieves a configuration value associated with the specified key, or sets the configuration to the provided
         /// value if the key does not exist.
@@ -1273,20 +1342,19 @@ namespace SpaceBattleSim
             {
                 stopwatch.Restart();
 
-                // 1. UPDATE: Run your physics, positions, collisions here (Off-thread!)
+                // UPDATE: Run your physics, positions, collisions here (Off-thread!)
                 //UpdateSpaceBattleSimulation();
 
-                // 2. RENDER: Safely invoke the UI thread to draw the updated state
+                // RENDER: Safely invoke the UI thread to draw the updated state
                 if (this.IsHandleCreated && !this.IsDisposed)
                 {
                     // BeginInvoke is asynchronous; it won't block your physics loop
                     this.BeginInvoke(new Action(() => {
-                        //this.Invalidate();
                         RefreshPaint();
                     }));
                 }
 
-                // 3. FRAME THROTTLING: Smart delay to maintain a steady frame rate
+                // FRAME THROTTLING: Smart delay to maintain a steady frame rate
                 stopwatch.Stop();
                 int msToWait = (int)(frameTarget.TotalMilliseconds - stopwatch.ElapsedMilliseconds);
 
@@ -1393,6 +1461,10 @@ namespace SpaceBattleSim
                 for (int i = 0; i < _fKeyDisplay.Length; i++)
                     g.DrawString(_fKeyDisplay[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, yStart + ((i * 20))));
             }
+            //else
+            //{
+            //    g.DrawString($"Diff: {_diffRaiders:0.00}% - {_aliveRaiders} active Raiders out of {_totalRaiders}", _smallFlierFont, Brushes.White, _versionLoc);
+            //}
 
             if (TitleText.Visible) TitleText.DrawItem(g);
             if (CloseButton.Visible) CloseButton.DrawItem(g);
@@ -1400,14 +1472,30 @@ namespace SpaceBattleSim
             // Render buffer to screen (THIS is the only drawing that hits the screen)
             _bufferedGraphics.Render();
         }
-
+        
         /// <summary>
-        /// Runs ever 30sec to see if a reset is needed.
+        /// Runs ever 15sec to see if a reset is needed.
         /// </summary>
         private void AutoResetTimer_Tick(object sender, EventArgs e)
         {
-            if (ItemReq.NeedsDeadReset())
+            _aliveRaiders = ItemReq.RaiderAliveCount;
+            _aliveAlly = ItemReq.AllyAliveCount;
+
+            if (_aliveRaiders == 0 || _aliveAlly == 0)
+            {
+                _totalRaiders = _orgTotalRaiders;
                 ItemReq.ResetDeadShips();
+            }
+            else
+            {
+                _diffRaiders = (_aliveRaiders / _totalRaiders) * 100;
+                if (_diffRaiders <= 50.0f)
+                {
+                    _totalRaiders = _aliveRaiders;
+                    ItemReq.ResetAliveRaiders();
+                }
+            }
+
         }
         /// <summary>
         /// Handles the actions required when the form is closed.

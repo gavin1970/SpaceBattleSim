@@ -75,4 +75,21 @@
 
         return coordsList;
     }
+
+    public static List<float[]> GetRaidersMotherShip()
+    {
+        List<float[]> coordsList = new List<float[]>();
+        // ---===[ Ship, Top Left ]===---
+        coordsList.Add(new float[] { 2, 44, 18, 37, 56, 37, 64, 32, 76, 32, 76, 41, 66, 47, 58, 47, 44, 56, 44, 65, 22, 65, 22, 62, 9, 62, 2, 55 });
+        // ---===[ Ship, Top Right ]===---
+        coordsList.Add(new float[] { 150, 44, 134, 37, 96, 37, 88, 32, 76, 32, 76, 41, 86, 47, 94, 47, 108, 56, 108, 65, 130, 65, 130, 62, 143, 62, 150, 55 });
+        // ---===[ Ship, Bottom Left ]===---
+        coordsList.Add(new float[] { 2, 86, 18, 93, 56, 93, 64, 98, 76, 98, 76, 89, 66, 83, 58, 83, 44, 74, 44, 65, 22, 65, 22, 68, 9, 68, 2, 75 });
+        // ---===[ Ship, Bottom Right ]===---
+        coordsList.Add(new float[] { 150, 86, 134, 93, 96, 93, 88, 98, 76, 98, 76, 89, 86, 83, 94, 83, 108, 74, 108, 65, 130, 65, 130, 68, 143, 68, 150, 75 });
+        // ---===[ Ship, Center Peice ]===---
+        //coordsList.Add(new float[] { ... });
+
+        return coordsList;
+    }
 }

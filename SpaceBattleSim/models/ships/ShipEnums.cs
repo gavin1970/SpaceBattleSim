@@ -36,7 +36,12 @@
         /// <summary>
         /// This ship is currently under attack.
         /// </summary>
-        UnderAttack
+        UnderAttack,
+        /// <summary>
+        /// While this ship is being repaired, it is considered to be in a vulnerable 
+        /// state, as it may not be able to defend itself effectively against enemy attacks.
+        /// </summary>
+        BeingRepaired,
     }
 
     /// <summary>

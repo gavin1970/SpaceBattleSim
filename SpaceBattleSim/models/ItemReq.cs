@@ -483,18 +483,32 @@ namespace SpaceBattleSim
         /// <remarks>Set this property to <see langword="true"/> to display Unicode symbols in place of
         /// images. This may improve compatibility with text-based environments or accessibility tools.</remarks>
         public static bool UnicodeShips { get { return _unicodeShips; } set { _unicodeShips = value; } }
+
         /// <summary>
         /// Gets a value indicating whether any raider spaceship is currently alive.
         /// </summary>
         /// <remarks>A raider is considered alive if its status is not set to dead. This property can be
         /// used to quickly determine if at least one raider remains active in the current context.</remarks>
-        public static bool AnyRaiderAlive => _allSpaceShips.Where(w => w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Any();
+        public static int RaiderAliveCount => _allSpaceShips.Where(w => w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Count();
         /// <summary>
         /// Gets a value indicating whether any allied spaceship is currently alive.
         /// </summary>
         /// <remarks>An allied spaceship is defined as a ship that is not a raider and whose status is not
         /// dead. This property can be used to determine if there are any remaining allied ships in play.</remarks>
-        public static bool AnyAllyAlive => _allSpaceShips.Where(w => !w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Any();
+        public static int AllyAliveCount => _allSpaceShips.Where(w => !w.Value.IsRaider && w.Value.Status != ShipStatus.Dead).Count();
+
+        /// <summary>
+        /// Gets a value indicating whether any raider spaceship is currently alive.
+        /// </summary>
+        /// <remarks>A raider is considered alive if its status is not set to dead. This property can be
+        /// used to quickly determine if at least one raider remains active in the current context.</remarks>
+        public static bool AnyRaiderAlive => RaiderAliveCount > 0;
+        /// <summary>
+        /// Gets a value indicating whether any allied spaceship is currently alive.
+        /// </summary>
+        /// <remarks>An allied spaceship is defined as a ship that is not a raider and whose status is not
+        /// dead. This property can be used to determine if there are any remaining allied ships in play.</remarks>
+        public static bool AnyAllyAlive => AllyAliveCount > 0;
         /// <summary>
         /// Determines whether a dead reset is required based on the status of raiders and allies.
         /// </summary>
@@ -505,6 +519,16 @@ namespace SpaceBattleSim
                 return true;
 
             return false;
+        }
+        /// <summary>
+        /// Resets the stats of all alive raider ships.
+        /// </summary>
+        public static void ResetAliveRaiders()
+        {
+            foreach (var ship in _allSpaceShips.Where(w => w.Value.IsRaider && w.Value.Status != ShipStatus.Dead))
+            {
+                _allSpaceShips[ship.Key].ResetStats("50 % AutoReset", true);
+            }
         }
         /// <summary>
         /// Resets only the ships that are currently marked as Dead, 
@@ -659,7 +683,7 @@ namespace SpaceBattleSim
                     _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
                     _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList()
                                        .ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
-                    _spaceShip.CurrentMission = ShipMission.Idle;
+                    //_spaceShip.CurrentMission = ShipMission.Idle;
                 }
 
                 // Target is dead or gone — clear lock.
@@ -701,8 +725,30 @@ namespace SpaceBattleSim
                 }
                 else
                 {
+                    var currentHP = _allSpaceShips[_spaceShip.Name].ShieldIntegrity;
+                    _allSpaceShips[_activeTargetName].Repair(_spaceShip.Power, this.Name, true);
+                    while (_allSpaceShips[_activeTargetName].BeingRepaired)
+                    {
+                        _allSpaceShips[_activeTargetName].Repair(_spaceShip.Power, this.Name, true);
+                        if (_allSpaceShips[_activeTargetName].ShieldIntegrity >= 100)
+                        {
+                            // we are done healing, reset the targeted ship so it can move on as a new
+                            // refreshed ship.
+                            _allSpaceShips[_activeTargetName].ResetStats(this.Name, true);
+                            break;
+                        }
+                        else if (currentHP != _allSpaceShips[_spaceShip.Name].ShieldIntegrity)
+                        {
+                            // release the lock on the partially repaired ship, because this healer is 
+                            // taking damage from Raiders.
+                            _allSpaceShips[_activeTargetName].Release();
+                            break;
+                        }
+
+                        Task.Delay(100).Wait();
+                    }
+
                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
-                    _allSpaceShips[_activeTargetName].ResetStats(this.Name, true);
                     _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
                     _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList()
                                        .ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
@@ -744,7 +790,7 @@ namespace SpaceBattleSim
                 this.Animation = false;
                 _spaceShip.CurrentMission = ShipMission.Idle;
                 // do not reset power, unless killed.
-                _spaceShip.ResetStats("HomeBase_Recharge", false);
+                _spaceShip.ResetStats("HomeBase_Recharge", true);
                 _activeTargetName = string.Empty;
             }
 
@@ -764,9 +810,10 @@ namespace SpaceBattleSim
             {
                 this.Animation = false;
                 _activeTargetName = string.Empty;
+                if (this.NextDestination == this.HomeBaseLocation)
+                    _spaceShip.CurrentMission = ShipMission.Idle;
                 if (this.NextDestination != this.HomeBaseLocation)
                 {
-                    _spaceShip.CurrentMission = ShipMission.Idle;
                     _lastTargetLocation = this.NextDestination;
                     this.NextDestination = this.HomeBaseLocation;
                 }
@@ -794,9 +841,14 @@ namespace SpaceBattleSim
 
             if (_spaceShip.CurrentMission != ShipMission.OnRepair && _spaceShip.CurrentMission != ShipMission.HeadingHome)
             {
-                _spaceShip.CurrentMission = ShipMission.Idle;
-                _pendingDestination = this.HomeBaseLocation;
-                this.NextDestination = this.HomeBaseLocation;
+                if (!this.HomeBaseLocation.Equals(this.Location))
+                {
+                    //_spaceShip.CurrentMission = ShipMission.Idle;
+                    _pendingDestination = this.HomeBaseLocation;
+                    this.NextDestination = this.HomeBaseLocation;
+                }
+                else
+                    _spaceShip.CurrentMission = ShipMission.Idle;
             }
         }
         /// <summary>
@@ -858,7 +910,7 @@ namespace SpaceBattleSim
         private void RunCombatScanAsync()
         {
             var now = DateTime.UtcNow;
-            if (_isInBattleCheck.Value || (now - _lastScanTime) < _scanInterval)
+            if (_isInBattleCheck.Value || (now - _lastScanTime) < _scanInterval || _spaceShip.BeingRepaired)
                 return;
 
             _lastScanTime = now;
@@ -915,12 +967,17 @@ namespace SpaceBattleSim
         /// </summary>
         private void UpdateMovement()
         {
+            if (_spaceShip.BeingRepaired)
+            {
+                this.NextDestination = this.Location;
+                return;
+            }
+
             // by using X or Y instead of both, we can create a more dynamic movement
             // pattern where the item can move in straight lines along the axes,
             // creating a more varied and less predictable animation effect.
             var x = this.Location.X;
             var y = this.Location.Y;
-
             // Consume any pending destination from the combat scan above every frame,
             // so steering toward an enemy overrides the current path immediately.
             if (!_pendingDestination.IsEmpty && !_spaceShip.IsRepairRig)
@@ -1105,19 +1162,27 @@ namespace SpaceBattleSim
                 if (DLine.DrawList.Count > 0 && DLine.HasAnchor && this.HomeBaseLocation.IsEmpty)
                     this.HomeBaseLocation = DLine.DrawList.First().Start;
 
-                if (_allSpaceShips.TryGetValue(this.Name, out _))
+                if (_allSpaceShips.TryGetValue(this.Name, out SpaceShip? spaceShip))
                 {
+                    // any updates to the shared ship info from other threads (like combat scans)
+                    // will be reflected here, so we always want to pull the latest version at
+                    // the start of each draw cycle to ensure we are working with the most current
+                    // status and position for this ship, which is crucial for accurate rendering
+                    // and interaction during battle.
+                    _spaceShip = spaceShip;
                     // if animation was off, that means it was dead, its not dead anymore,
                     // meaning this ship was repaired, but the _spaceShip doesn't have
                     // access to this class, so lets reset it's state.  RepairRig are an
                     // exception, they can be repaired but not fight, so they don't get
                     // the animation treatment.
-                    if (!this.Animation && !_spaceShip.IsDead && !_spaceShip.IsRepairRig)
+                    if (!this.Animation && !_spaceShip.IsDead && !_spaceShip.IsRepairRig && !_spaceShip.BeingRepaired)
                         this.Animation = true;
+                    else if(_spaceShip.BeingRepaired && this.Animation)
+                        this.Animation = false;
                 }
 
                 RectangleF clsBtnRect = this.Rectangle;
-                if (this.Animation || (_spaceShip.IsRepairRig && !_spaceShip.IsDead))
+                if (this.Animation || (_spaceShip.IsRepairRig && !_spaceShip.IsDead && !_spaceShip.BeingRepaired))
                 {
                     if (this._dText.Text != this._dText.OrgText)
                         this._dText.Text = this._dText.OrgText;
@@ -1136,6 +1201,8 @@ namespace SpaceBattleSim
                     UpdateMovement();
                     clsBtnRect = this.Rectangle;
                 }
+                else
+                    this.NextDestination = this.Location;
 
                 // Shadow rectangle for the close button, offset by shadowing depth
                 RectangleF clsBtnShdwRect = new RectangleF(this.Left + boxShadowDepth, this.Top + boxShadowDepth, this.Width, this.Height);
