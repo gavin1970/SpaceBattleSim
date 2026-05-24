@@ -73,7 +73,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 | `PlanetSize` | int | 100 | Diameter of the rotating planet in pixels |
 | `PlanetSpinSpeed` | float | 0.1 | Rotation speed of the planet (degrees per frame) |
 | `PlanetTextureFile` | string | `.\skins\jupiter-surface.jpg` | File path for the planet texture image (png, jpg, or bmp under `.\skins\`) |
-| `RefreshRate` | float | 33 | Refresh Rate in milliseconds.  This is the time between each frame update, and it can be adjusted to  improve performance on older machines. |
+| `RefreshRate` | float | 20 | Frames Per Second (FPS), which will be translated to milliseconds.  This is the time between each frame update, and it can be adjusted to  improve performance on older machines. |
 | `ScreenViewType` | string | `FullScreenCurrent` | Default: `FullScreenCurrent` - Full screen.  `FullScreenAll` - Set to FullScreen across all monitors.  `Windowed` - for a resizable window with title bar |
 | `ShowComet` | bool | true | Toggle visibility of the flying comet in the background |
 | `ShowMatrixGrid` | bool | true | Toggle visibility of the background "Matrix"-style grid |
@@ -89,12 +89,12 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 **RefreshRate** Accepted Values:
 
-| Value | FPS | IsDefault |
+| FPS | Refresh Rate | IsDefault |
 |---|---|---|
-| `16` | 60 FPS | No |
-| `33` | 30 FPS | Yes |
-| `50` | 20 FPS | No |
-| `100` | 10 FPS | No |
+| `60` | 16 | No |
+| `30` | 33 | No |
+| `20` | 50 | Yes |
+| `10` | 100 | No |
 
 > **SpaceBattleSim.dll.config** is found at the root of the application.
 
