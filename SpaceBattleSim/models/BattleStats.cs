@@ -151,7 +151,7 @@ namespace SpaceBattleSim
             sb.AppendLine(new string('-', fLine.Length));
 
             foreach (var setting in _settingValues)
-                sb.AppendLine($"{setting.Key}: {setting.Value}");
+                sb.AppendLine($"{setting.Key}: {setting.Value}{(setting.Key=="RefreshRate" ? $" - ({ShipStats.RefreshRateText})" : "")}");
 
             sb.AppendLine(new string('-', fLine.Length));
 
