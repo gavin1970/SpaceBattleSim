@@ -185,6 +185,15 @@ namespace SpaceBattleSim
                 try
                 {
                     List<string> detailsFileArray = new List<string>();
+                    var endTime = DateTime.UtcNow.AddSeconds(10);
+                    // Force the main thread to hold on until the logging thread catches up
+                    while (!_detailAudit.IsEmpty && DateTime.UtcNow < endTime)
+                    {
+                        Task.Delay(100).Wait();
+                        if (!_queueProcessing.Value && !_detailAudit.IsEmpty)
+                            ProcessQueuesAsync().Wait();
+                    }
+
                     // If the details temp file exists, load it up and copy content over the details log
                     // file, then delete the temp file. 
                     if (File.Exists(tempFile))
@@ -213,6 +222,23 @@ namespace SpaceBattleSim
                 }
                 finally
                 {
+                    // I have a 35m audit that some of the log details on the end was cut off.
+                    // To be safe, we will wait for a moment to let the logging thread catch up
+                    // and write any details that may have come in while we were writing the summary,
+                    // this way we can be sure to get all details without having to worry about
+                    // memory usage during the match.
+
+                    // Make sure it doesn't run too long.
+                    var exitTime = DateTime.UtcNow.AddSeconds(10);
+                    // Force the main thread to hold on until the logging thread catches up
+                    while (!_actionAudit.IsEmpty && DateTime.UtcNow < exitTime)
+                    {
+                        Task.Delay(100).Wait();
+                        if (!_queueProcessing.Value && !_actionAudit.IsEmpty)
+                            WriteDetailsToFile(auditName, true);
+                    }
+
+                    // clear the queues just in case, but should be empty already if we got here.
                     _actionAudit.Clear();
                     // force to false just in case, but should be false already if we got here.
                     _queueProcessing.SetFalse();
@@ -245,6 +271,7 @@ namespace SpaceBattleSim
             if (maxWait == 0)
                 return;
 
+            // NOW it is completely safe to close the file handles and clear your collections
             StringBuilder sb = new StringBuilder();
 
             try
@@ -268,6 +295,8 @@ namespace SpaceBattleSim
             finally
             {
                 _detailProcessing.SetFalse();
+                if(!_detailAudit.IsEmpty)
+                    WriteDetailsToFile(fileName, true);
             }
         }
         /// <summary>

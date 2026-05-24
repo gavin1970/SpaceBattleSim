@@ -502,11 +502,10 @@ namespace SpaceBattleSim
                 {
                     BattleStats.Audit(this.Name, ActionType.AlmostDead, $"Last moments are from: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity:00}%)");
                 }
-                else
+                else if(!this.IsDead)
                 {
                     BattleStats.Audit(this.Name, ActionType.UnderAttack, $"By: {byWho} ({damage} dmg). Shields at: {this.Shields} ({this.ShieldIntegrity:00}%)");
                 }
-
             }
 
             // Update the ship's status based on the new shield level, determining whether it is still operational,
