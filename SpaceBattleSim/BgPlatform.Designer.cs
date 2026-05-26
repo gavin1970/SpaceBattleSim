@@ -31,21 +31,7 @@ namespace SpaceBattleSim
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            RefreshTimer = new System.Windows.Forms.Timer(components);
-            AutoResetTimer = new System.Windows.Forms.Timer(components);
             SuspendLayout();
-            // 
-            // RefreshTimer
-            // 
-            //RefreshTimer.Enabled = false;
-            //RefreshTimer.Interval = 30000;
-            //RefreshTimer.Tick += RefreshTimer_Tick;
-            // 
-            // AutoResetTimer
-            // 
-            AutoResetTimer.Enabled = false;
-            AutoResetTimer.Interval = 30000;
-            AutoResetTimer.Tick += AutoResetTimer_Tick;
             // 
             // BgPlatform
             // 
@@ -56,8 +42,5 @@ namespace SpaceBattleSim
             ResumeLayout(false);
         }
         #endregion
-
-        private System.Windows.Forms.Timer RefreshTimer;
-        private System.Windows.Forms.Timer AutoResetTimer;
     }
 }

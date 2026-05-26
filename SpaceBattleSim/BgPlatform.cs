@@ -5,6 +5,7 @@ using SpaceBattleSim.shapes;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Text;
+using SpaceBattleSim.Models.Events;
 using static SpaceBattleSim.StaticConfig;
 
 namespace SpaceBattleSim
@@ -18,10 +19,10 @@ namespace SpaceBattleSim
         // while keeping the grid lines visible. 
         static bool _transparentBG = false;
         static ABool _startup = ABool.True;
-        static readonly SizeF _homeSize = new SizeF(125.0f, 144.0f);
         const string _appTitle = "Space Battleground Simulation";
-        static string _appInfo = "Version: {0} - F1 (Help)";
-        static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
+        private static string _appInfo = "Version: {0} - F1 (Help)";
+        private static ABool _loopStarted = ABool.False;
+        private static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
             "Esc - Pause/Unpause screen\n " +
             "F1  - This Help Message\n " +
             "F2  - Ship's class type information\n " +
@@ -110,6 +111,7 @@ namespace SpaceBattleSim
         // Tuple to hold the shadow color and depth for consistent styling across controls.
         readonly (Color color, uint depth) _shadowStyle = (Color.FromArgb(64, Color.White), 5);
         // Fonts for different controls, using Arial as a common font for simplicity. Adjust sizes and styles as needed.
+        readonly Font _xSmallFlierFont = new Font("Arial", 8, FontStyle.Regular);
         readonly Font _smallFlierFont = new Font("Arial", 12, FontStyle.Regular);
         readonly Font _largeFlierFont = new Font("Arial", 16, FontStyle.Regular);
         readonly Font _closeBtnFont = new Font("Arial", 22, FontStyle.Regular);
@@ -133,6 +135,7 @@ namespace SpaceBattleSim
         private static float _yCounter = 0.0f;
         private static Point _lastStartPoint = Point.Empty;
         private static PointF _versionLoc = PointF.Empty;
+        private static PointF _percResetLoc = PointF.Empty;
         private static List<float[]> _baseCords = new();
         private static PointF _baseCenter = PointF.Empty;
         private readonly Pen _planetBorderPen = new Pen(Color.FromArgb(32, Color.Black), 10);
@@ -162,6 +165,10 @@ namespace SpaceBattleSim
             // attempts if the close button is clicked multiple times.
             _eventStatus.Set(_formClosing, false);
 
+            // Subscribe to the ShipStatusChanged event from the ItemReq class. This allows
+            // the form to respond to changes in ship status, such as updating the display
+            // or triggering animations when a ship's status changes (e.g., from alive to destroyed).
+            ItemReq.ShipStatusChanged += ItemReq_ShipStatusChanged;
             // Start the object creation process with a short
             // delay to ensure the form is fully initialized.
             BuildObjects(100);
@@ -245,10 +252,9 @@ namespace SpaceBattleSim
                 else if (isF5)
                 {
                     _pauseScreen.TrySetTrue();
-                    AutoResetTimer?.Stop();
                     StopLoop();
 
-                    ItemReq.ResetDeadShips();
+                    ItemReq.ResetAllShips();
                 }
                 else if (isF12)
                 {
@@ -271,7 +277,6 @@ namespace SpaceBattleSim
                     _fKeyDisplay = new string[] { };
                 else if (isF5)
                 {
-                    AutoResetTimer?.Start();
                     StartLoop();
                     _pauseScreen.TrySetFalse();
                 }
@@ -334,6 +339,7 @@ namespace SpaceBattleSim
 
                 // location for version text to be displayed.
                 _versionLoc = new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25);
+                _percResetLoc = new PointF(Padding.Left, this.FormSize.Height - Padding.Bottom - 10);
 
                 // If transparency background, you can create a fully transparent background while still allowing the
                 // grid lines to be visible. Adjusting the Alpha value allows you to control the transparency level of
@@ -668,6 +674,8 @@ namespace SpaceBattleSim
                 int x, y;
                 var fighterCnt = _totalBattleShips / 3;
                 _totalRaiders = _totalBattleShips - fighterCnt;
+                _orgTotalRaiders = _totalRaiders;
+                _diffRaiders = 100.0f;
 
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
@@ -864,8 +872,8 @@ namespace SpaceBattleSim
                 _baseCords = DDefaults.GetHomeBase();
 
                 // Move HomeBase based on window sizes and if multiple monitors are involved or not.
-                var anchorX = _formBounds.Center.X;// - _homeSize.Width;
-                var anchorY = _formBounds.Center.Y;// - _homeSize.Height;
+                var anchorX = _formBounds.Center.X;
+                var anchorY = _formBounds.Center.Y;
                 // Calculate the movement needed to position the HomeBase at the center of the form, accounting
                 // for the original anchor point and any existing movement offsets. This ensures that the HomeBase
                 // will be correctly centered on the form regardless of its initial position or any previous movements.
@@ -873,8 +881,7 @@ namespace SpaceBattleSim
                 _moveY += anchorY - _anchorY;
                 // update original anchors with the new movement values so that the HomeBase will be drawn in the
                 // correct location on the first paint and the lines will be anchored to the correct location as well.
-                //_anchorX += _moveX;
-                //_anchorY += _moveY;
+
                 // Set the base center point to the new anchor location after applying movement adjustments.
                 // This ensures that the HomeBase will be positioned correctly on the form, and all lines anchored
                 // to this point will also be drawn in the correct location.
@@ -1247,8 +1254,6 @@ namespace SpaceBattleSim
                 );
 
                 StartLoop();
-                AutoResetTimer.Interval = 15000;
-                AutoResetTimer.Enabled = true;
             };
         }
 
@@ -1298,7 +1303,6 @@ namespace SpaceBattleSim
         #endregion
 
         #region Form Events
-        private static ABool _loopStarted = ABool.False;
         private void StartLoop()
         {
             if (!_loopStarted.TrySetTrue())
@@ -1443,10 +1447,8 @@ namespace SpaceBattleSim
                 for (int i = 0; i < _fKeyDisplay.Length; i++)
                     g.DrawString(_fKeyDisplay[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, yStart + ((i * 20))));
             }
-            //else
-            //{
-            //    g.DrawString($"Diff: {_diffRaiders:0.00}% - {_aliveRaiders} active Raiders out of {_totalRaiders}", _smallFlierFont, Brushes.White, _versionLoc);
-            //}
+            else
+                g.DrawString($"{_diffRaiders:0.0}%", _xSmallFlierFont, Brushes.White, _percResetLoc);
 
             if (TitleText.Visible) TitleText.DrawItem(g);
             if (CloseButton.Visible) CloseButton.DrawItem(g);
@@ -1454,31 +1456,36 @@ namespace SpaceBattleSim
             // Render buffer to screen (THIS is the only drawing that hits the screen)
             _bufferedGraphics.Render();
         }
-        
-        /// <summary>
-        /// Runs ever 15sec to see if a reset is needed.
-        /// </summary>
-        private void AutoResetTimer_Tick(object sender, EventArgs e)
+
+        private void ItemReq_ShipStatusChanged(object sender, StatusChangeArgs e)
         {
+            //only care about dead Raiders for now.
+            if (e.ShipStatus != ShipStatus.Dead || e.ShipType != ShipType.Raider)
+                return;
+
             _aliveRaiders = ItemReq.RaiderAliveCount;
             _aliveAlly = ItemReq.AllyAliveCount;
 
             if (_aliveRaiders == 0 || _aliveAlly == 0)
             {
+                ItemReq.ResetAllShips();
+                // resync
+                _aliveRaiders = _orgTotalRaiders;
                 _totalRaiders = _orgTotalRaiders;
-                ItemReq.ResetDeadShips();
+                _diffRaiders = 100.0f;
             }
             else
             {
                 _diffRaiders = (_aliveRaiders / _totalRaiders) * 100;
                 if (_diffRaiders <= 50.0f)
                 {
-                    _totalRaiders = _aliveRaiders;
                     ItemReq.ResetAliveRaiders();
+                    _totalRaiders = _aliveRaiders;
+                    _diffRaiders = (_aliveRaiders / _totalRaiders) * 100;
                 }
             }
-
         }
+
         /// <summary>
         /// Handles the actions required when the form is closed.
         /// </summary>
@@ -1489,7 +1496,6 @@ namespace SpaceBattleSim
         {
             // Stop timers first
             StopLoop();
-            AutoResetTimer?.Stop();
 
             // Dispose buffer
             _bufferedGraphics?.Dispose();

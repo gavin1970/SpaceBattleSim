@@ -1,5 +1,6 @@
 ﻿using Chizl.StandAloneLogging;
 using Chizl.ThreadSupport;
+using SpaceBattleSim.Models.Events;
 using System.Collections.Concurrent;
 using static DDefaults;
 
@@ -18,6 +19,7 @@ namespace SpaceBattleSim
 
         // battle time tracking
         private static TimeSpan _battleTime = TimeSpan.Zero;
+        public static event StatusChangeHandler? ShipStatusChanged;
 
         // Start time of the current battle, used to track the duration of battles and reset times
         // when all ships are dead.
@@ -538,7 +540,7 @@ namespace SpaceBattleSim
         /// them to their initial state while leaving alive ships 
         /// unchanged and vunerable.
         /// </summary>
-        public static void ResetDeadShips()
+        public static void ResetAllShips()
         {
             var utc = ADateTime.UtcNow;
             _battleTime = utc - _startBattle.Value;
@@ -618,7 +620,8 @@ namespace SpaceBattleSim
             else
             {
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Total", 5)} | " +
-                             $"{CreatePaddedString("Alive", 6)} | {CreatePaddedString("Dead", 4)} ";
+                             $"{CreatePaddedString("Alive", 6)} | {CreatePaddedString("Dead", 4)} | " +
+                             $"{CreatePaddedString("Percent", 7)} ";
 
                 retVal.Add($"This Battle Time: {(ADateTime.UtcNow.Value - _startBattle.Value).ToString(@"hh\:mm\:ss")}");
                 retVal.Add($"Last Total Battle Time: {_battleTime.ToString(@"hh\:mm\:ss")}");
@@ -633,10 +636,13 @@ namespace SpaceBattleSim
                     if (sType == ShipType.Transport || sType == ShipType.Bomber)
                         continue;
 
-                    var totalByType = _allSpaceShips.Where(w => w.Value.ShipType == sType).Count();
-                    var deadByType = _allSpaceShips.Where(w => w.Value.ShipType == sType && w.Value.Status == ShipStatus.Dead).Count();
-                    retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{totalByType}", 5)} | " +
-                               $"{CreatePaddedString($"{totalByType-deadByType}", 6)} | {CreatePaddedString($"{deadByType}", 4)} ");
+                    double totalByType = _allSpaceShips.Where(w => w.Value.ShipType == sType).Count();
+                    double deadByType = _allSpaceShips.Where(w => w.Value.ShipType == sType && w.Value.Status == ShipStatus.Dead).Count();
+                    double aliveByType = totalByType - deadByType;
+
+                    retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{totalByType:0}", 5)} | " +
+                               $"{CreatePaddedString($"{aliveByType:0}", 6)} | {CreatePaddedString($"{deadByType:0}", 4)} | " +
+                               $"{CreatePaddedString($"{((aliveByType / totalByType) * 100):0.0}%", 7)} ");
                 }
             }
 
@@ -1148,6 +1154,7 @@ namespace SpaceBattleSim
             g.DrawRectangle(this.GetBorder, clsBtnRect);
         }
 
+        private ShipStatus _shipStatus = ShipStatus.Operational;
         /// <summary>
         /// Draws a Item with a shadow, background, border, and an 'X' symbol onto the specified graphics
         /// surface.
@@ -1170,6 +1177,13 @@ namespace SpaceBattleSim
                     // status and position for this ship, which is crucial for accurate rendering
                     // and interaction during battle.
                     _spaceShip = spaceShip;
+                    if (_shipStatus != _spaceShip.Status)
+                    {
+                        // update history.
+                        _shipStatus = _spaceShip.Status;
+                        // any listener for status changes can react to this event, such as the UI updating a status display or triggering sound effects.
+                        ShipStatusChanged?.Invoke(this, new StatusChangeArgs(_spaceShip.ShipType, _spaceShip.Name, _spaceShip.Status));
+                    }
                     // if animation was off, that means it was dead, its not dead anymore,
                     // meaning this ship was repaired, but the _spaceShip doesn't have
                     // access to this class, so lets reset it's state.  RepairRig are an
