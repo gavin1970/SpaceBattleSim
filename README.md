@@ -91,7 +91,6 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 | FPS | Refresh Rate | IsDefault |
 |---|---|---|
-| `60` | 16 | No |
 | `30` | 33 | No |
 | `20` | 50 | Yes |
 | `10` | 100 | No |

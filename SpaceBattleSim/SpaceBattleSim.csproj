@@ -17,8 +17,8 @@
 				<ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
 				<PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
 				<AssemblyVersion>6.0.0.0</AssemblyVersion>
-				<FileVersion>6.5.26.1258</FileVersion>
-				<Version>6.5.26.0</Version>
+				<FileVersion>6.5.27.2152</FileVersion>
+				<Version>6.5.27.0</Version>
 		</PropertyGroup>
 
 		<ItemGroup>
