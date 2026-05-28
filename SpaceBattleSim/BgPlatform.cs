@@ -1065,6 +1065,7 @@ namespace SpaceBattleSim
                     break;
                 case 20:
                 default:
+                    _fpsRate = 20;  // In case it's using default instead of 20;
                     // if value doesn't match, default to 20fps, 50ms refresh rate.
                     _refreshRate = _refreshRateValidValues[1];
                     ShipStats.RefreshRateText = "Medium (20fps)";
@@ -1073,6 +1074,8 @@ namespace SpaceBattleSim
                     ShipStats.AdjSpeed = 1.5f;// 1.0f;
                     break;
             }
+
+            ShipStats.RefreshRate = _fpsRate;
 
             // Battle and ship configuration settings
             SetConfigValue("TotalBattleShips", ref _totalBattleShips, _totalBattleShipsLimits.min, _totalBattleShipsLimits.max);

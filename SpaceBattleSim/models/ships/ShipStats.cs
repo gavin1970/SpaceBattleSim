@@ -77,6 +77,7 @@
 
         public static float AdjSpeed { get; set; } = 0.0f;
         public static string RefreshRateText { get; set; } = string.Empty;
+        public static int RefreshRate { get; set; } = 20;
 
         /// <summary>
         /// Initializes a new instance of the ShipStats class with the specified ship type.

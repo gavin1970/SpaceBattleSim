@@ -123,13 +123,19 @@ namespace SpaceBattleSim
                 {
                     if (_parentForm != null)
                     {
+                        lock (_logLocker)
+                        {
+                            if (!_logger.IsEmpty)
+                            {
+                                _logger.WriteLine(LogLevel.Application, $"Logger Shutting down for ItemReq instances.");
+                                _logger.Dispose();
+                                _logger = Logger.Empty;
+                            }
+                        }
+
                         _parentForm.MouseMove -= _parentForm_MouseMove;
                         _parentForm.MouseUp -= _parentForm_MouseUp;
                         _parentForm.MouseDown -= _parentForm_MouseDown;
-                        // Since this is multithreaded and all instances of this class have reference to the
-                        // parent, we don't want to close the parent and dispose it for each open instance.
-                        ///_parentForm.Close();    // Close the dummy form to ensure it is not visible or interactable.
-                        ///_parentForm.Dispose();  // Ensure the dummy form does not consume resources.
                     }
                 }
 
@@ -188,11 +194,8 @@ namespace SpaceBattleSim
                 // issues.
                 if (_logger.IsEmpty)
                 {
-                    if(Logger.Static.IsEmpty)
-                        Logger.Static = Logger.Default;
-
-                    _logger = Logger.Static;
-                    _logger.WriteLine(LogLevel.Application, $"Logger initialized for ItemReq instances. ItemReq.Name: {name}");
+                    _logger = Logger.Default;
+                    _logger.WriteLine(LogLevel.Application, $"Logger initialized for ItemReq instances.");
                     _startBattle = ADateTime.UtcNow;
                     _battleTime = TimeSpan.Zero;
                 }
@@ -587,7 +590,7 @@ namespace SpaceBattleSim
                     return _shipStats;
 
                 var header = $"| {CreatePaddedString("Type", 9)} | {CreatePaddedString("Shields", 7)} | " +
-                             $"{CreatePaddedString("Power", 10)} | {CreatePaddedString("HitBox", 6)} | " +
+                             $"{CreatePaddedString("Power", 11)} | {CreatePaddedString("HitBox", 6)} | " +
                              $"{CreatePaddedString("Speed", 5)} | {CreatePaddedString("Recovery", 8)} | " +
                              $"{CreatePaddedString("Crit", 4)} | {CreatePaddedString("Image", 5)} ";
 
@@ -606,12 +609,10 @@ namespace SpaceBattleSim
                         continue;
                     
                     var shipStats = new ShipStats(sType);
-                    // RepairRig doesn't do damage, so show 0 dps for clarity instead of "Power * 33.33333333333333" which would be misleading.
-                    // Power * 3 is the formula for calculating dps for all other ship types and comes from the refresh timer
-                    // that occurs .30 of a second muliplied by ShipTypes->Power, rounded.
-                    var dps = sType == ShipType.RepairRig ? 0 : shipStats.Power * 3;
+
+                    var dps = shipStats.Power * (ShipStats.RefreshRate / 2);
                     retVal.Add($"| {CreatePaddedString($"{sType}", 9)} | {CreatePaddedString($"{shipStats.Shields}", 7)} | " +
-                                 $"{CreatePaddedString($"{shipStats.Power:00} - {(dps)}dps", 10)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
+                                 $"{CreatePaddedString($"{shipStats.Power:00} - {(dps)}{(sType == ShipType.RepairRig ? "hps" : "dps")}", 11)} | {CreatePaddedString($"{shipStats.Hitbox}", 6)} | " +
                                  $"{CreatePaddedString($"{shipStats.Speed:0.000}", 5)} | {CreatePaddedString($"{shipStats.Recovery}", 8)} | " +
                                  $"{CreatePaddedString($"{shipStats.HasCritalTransfer}", 4)} |{CreatePaddedString($" {shipStats.ShipView}", 4)} ");
                 }
@@ -723,10 +724,12 @@ namespace SpaceBattleSim
                     // instead of being completely one-shot by RepairRigs every time.
                     if (_spaceShip.IsRaider)
                     {
-                        if(_allSpaceShips[_activeTargetName].IsDead)
-                            _spaceShip.Repair(_allSpaceShips[_activeTargetName].OrgPower, _activeTargetName); //_spaceShip.Power
-                        else
-                            _spaceShip.Repair(2, _activeTargetName); //_spaceShip.Power
+                        var repair = Math.Clamp(_allSpaceShips[_activeTargetName].Power, 2, 8);
+                        var bonus = _allSpaceShips[_activeTargetName].OrgPower;
+
+                        _spaceShip.Repair(repair, _activeTargetName);
+                        if (_allSpaceShips[_activeTargetName].IsDead)   // if killed the target, then there is a bonus.
+                            _spaceShip.Repair(bonus, _activeTargetName);
                     }
                 }
                 else

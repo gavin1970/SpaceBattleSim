@@ -170,6 +170,28 @@ namespace Chizl.ThreadSupport
             return this;
         }
         /// <summary>
+        /// Attempts to update the internal date/time if it differs from the current value.<br/>
+        /// Kind defaults to true since it's an update to existing internal value.
+        /// </summary>
+        /// <param name="dt">The DateTime value to compare and update to.</param>
+        /// <returns><c>true</c> if the update succeeded; otherwise, <c>false</c>.</returns>
+        public bool TryUpdate(DateTime dt)
+        {
+            try
+            {
+                if(dt.Ticks != _dateTime.Ticks)
+                {
+                    AdjustTime(dt, true);
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;   // Return false if any exception occurs during adjustment
+            }
+        }
+        /// <summary>
         /// Adjusts the current date and time by the specified time interval, ahead or 
         /// behind, while handling potential overflow scenarios gracefully.<br/>
         /// Kind is not updated by this method, as it is an adjustment to the existing 
