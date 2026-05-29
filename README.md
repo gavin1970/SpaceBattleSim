@@ -123,10 +123,10 @@ All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 | **Glass cannon** | Half the shields of a Capital Ship (400 vs 800), but twice the firepower (16 vs 8) |
 | **Speed advantage** | 5× faster than Capital Ships (1.5 vs 0.3); matches a Fighter's mobility |
 | **Smaller target** | Same hitbox as a Fighter (50 px); Capital Ships present a much larger target (75 px) |
-| **Heal on hit** | Gain **2 HP** for every hit landed against any allied ship |
-| **Kill bonus** | Receive the victim's **original power stat as bonus HP** (added to shields, once) when destroying an allied ship — killing a Healer grants 16 HP, killing a Fighter grants 4 HP, etc. |
+| **Heal on hit** | Gain **Current Power / 2 HP** for every hit landed against any allied ship |
+| **Kill bonus** | Receive the victim's **(original power * 2) stat as bonus HP** (added to shields, once) when destroying an allied ship — killing a Healer grants 32 HP, killing a Fighter grants 8 HP, etc. |
 | **Escalating group reset** | After **50%** of all Raiders have been destroyed, every surviving Raider receives a **full shield and power reset**. The threshold then halves: at **25%** living, another full reset; at **12.5%**, another; and so on, all the way down to **1%** living Raiders. This cascade of resets makes the last surviving Raiders increasingly difficult to finish off. |
-| **No self-repair** | Cannot heal themselves or other Raiders between resets — they rely entirely on speed, firepower, hit bonuses, kill bonuses, and the group reset mechanic |
+| **self-repair** | Heal Only comes between resets — hit bonuses, kill bonuses, and the group reset mechanic |
 | **Permanent death** | Never revived by RepairRigs; every Raider loss is final and shifts the battle permanently |
 | **Heal priority** | Raiders are never prioritized for healing — RepairRigs ignore them entirely |
 
