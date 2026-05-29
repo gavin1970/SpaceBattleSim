@@ -81,7 +81,7 @@ namespace SpaceBattleSim
         /// When ship is destroyed, this character will be used to represent the dead ship 
         /// instead of the text content.<br/>
         /// </summary>
-        public char DeadDisplay { get; } = '✞';
+        public char DeadDisplay { get; set; } = '✞';
         /// <summary>
         /// Gets or sets the font used for rendering text.<br/>
         /// Default: Arial, 12pt, Regular

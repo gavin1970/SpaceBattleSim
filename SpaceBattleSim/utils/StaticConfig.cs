@@ -82,6 +82,21 @@
         public class FormStyle
         {
             /// <summary>
+            /// Gets the current size of the form.<br/>
+            /// </summary>
+            /// <remarks>
+            /// Single point of Change (SPOC) for any future adjustments to how the form size is calculated or returned.
+            /// </remarks>
+            public static Size FormSize { get; set; } = Size.Empty;
+            /// <summary>
+            /// Gets the current FormSize of the form excluding padding.
+            /// </summary>
+            /// <remarks>
+            /// Single point of Change (SPOC) for any future adjustments to how the view size is calculated or returned.
+            /// </remarks>
+            public static Size ViewSize => new Size(FormSize.Width - (Padding.Left + Padding.Right),
+                                                    FormSize.Height - (Padding.Top + Padding.Bottom));
+            /// <summary>
             /// Gets or sets the background color. Default is a solid color defined 
             /// by _consoleBlack constant, which is a very dark shade of black.
             /// </summary>

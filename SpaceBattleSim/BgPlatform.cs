@@ -170,6 +170,12 @@ namespace SpaceBattleSim
             // the form to respond to changes in ship status, such as updating the display
             // or triggering animations when a ship's status changes (e.g., from alive to destroyed).
             ItemReq.ShipStatusChanged += ItemReq_ShipStatusChanged;
+
+            // Other classes will be using this form size for calculations, so I set it here in
+            // the constructor after the form is initialized. This ensures that any controls or
+            // animations that rely on the form size will have the correct dimensions to work with.
+            FormStyle.FormSize = this.ClientSize;
+
             // Start the object creation process with a short
             // delay to ensure the form is fully initialized.
             BuildObjects(100);
@@ -254,8 +260,7 @@ namespace SpaceBattleSim
                 {
                     _pauseScreen.TrySetTrue();
                     StopLoop();
-
-                    ItemReq.ResetAllShips();
+                    ResetLocations();
                 }
                 else if (isF12)
                 {
@@ -285,7 +290,22 @@ namespace SpaceBattleSim
 
             _startup.SetFalse();
         }
+        private void ResetLocations()
+        {
+            foreach (var ship in _battleShips)
+            {
+                // Randomly position the _battleShips items within the bounds of the form
+                var x = Random.Shared.Next(0, FormStyle.ViewSize.Width + 1);
+                var y = Random.Shared.Next(0, FormStyle.ViewSize.Height + 1);
 
+                // Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
+                ship.Location = new PointF(x, y);
+                ship.NextDestination = PointF.Empty;
+                ship.LastDestination = PointF.Empty;
+            }
+            ItemReq.ResetAllShips();
+
+        }
         /// <summary>
         /// One time method to create all the necessary ItemReq objects for the form. 
         /// This is called in the constructor after a short delay to ensure the form 
@@ -339,8 +359,8 @@ namespace SpaceBattleSim
                 BuildCloseButton();
 
                 // location for version text to be displayed.
-                _versionLoc = new PointF(Padding.Left + 10, this.FormSize.Height - Padding.Bottom - 25);
-                _percResetLoc = new PointF(Padding.Left, this.FormSize.Height - Padding.Bottom - 10);
+                _versionLoc = new PointF(Padding.Left + 10, FormStyle.FormSize.Height - Padding.Bottom - 25);
+                _percResetLoc = new PointF(Padding.Left, FormStyle.FormSize.Height - Padding.Bottom - 10);
 
                 // If transparency background, you can create a fully transparent background while still allowing the
                 // grid lines to be visible. Adjusting the Alpha value allows you to control the transparency level of
@@ -365,9 +385,9 @@ namespace SpaceBattleSim
         /// </summary>
         private void BuildSpaceTime()
         {
-            var center = new Point(this.ViewSize.Width / 2, this.ViewSize.Height / 2);
+            var center = new Point(FormStyle.ViewSize.Width / 2, FormStyle.ViewSize.Height / 2);
             var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
-                                        this.ViewSize.Width, this.ViewSize.Height);
+                                        FormStyle.ViewSize.Width, FormStyle.ViewSize.Height);
 
             if (_showPlanets)
             {
@@ -399,7 +419,7 @@ namespace SpaceBattleSim
                         // Bake the static background (stars + nebulae) into a bitmap once.
                         // Alpha accumulates properly on a Bitmap, so nebulae build up density
                         // without needing a huge density value.
-                        _spaceCache = new Bitmap(this.ViewSize.Width, this.ViewSize.Height,
+                        _spaceCache = new Bitmap(FormStyle.ViewSize.Width, FormStyle.ViewSize.Height,
                                                  System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
                         using var bg = Graphics.FromImage(_spaceCache);
@@ -475,7 +495,7 @@ namespace SpaceBattleSim
             {
                 this.Invoke(new Action(() => {
                     var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
-                                                this.ViewSize.Width, this.ViewSize.Height);
+                                                FormStyle.ViewSize.Width, FormStyle.ViewSize.Height);
 
                     SpaceBackground.AddComet(_cometShapes,
                         head: new PointF(bounds.Width * 0.15f, bounds.Height * 0.18f),
@@ -498,13 +518,13 @@ namespace SpaceBattleSim
                 return;
 
             // Create a grid of ItemReq objects for the matrix background
-            int cols = this.ViewSize.Width / _matrixCellSize;
-            int rows = this.ViewSize.Height / _matrixCellSize;
+            int cols = FormStyle.ViewSize.Width / _matrixCellSize;
+            int rows = FormStyle.ViewSize.Height / _matrixCellSize;
 
             MatrixArray = new ItemReq(this, $"MatrixArray")
             {
                 Location = new PointF(this.Padding.Left, this.Padding.Top),
-                Size = new Size(this.ViewSize.Width, this.ViewSize.Height),
+                Size = new Size(FormStyle.ViewSize.Width, FormStyle.ViewSize.Height),
                 BGColor = Color.Transparent, //Color.FromArgb(255, this.BackColor),
                 BorderColor = _shadowStyle.color,
                 BorderWidth = _borderWidth,
@@ -557,7 +577,7 @@ namespace SpaceBattleSim
             // top-right corner of the screen. Accounting for top and right padding along
             // with the MatrixArray border width to ensure it doesn't overlap with the
             // matrix grid lines
-            var x = (int)(this.FormSize.Width - factorButtonSize);
+            var x = (int)(FormStyle.FormSize.Width - factorButtonSize);
             var y = (int)(this.Padding.Top + MatrixArray.BorderWidth);
 
             this.Invoke(new Action(() =>
@@ -664,8 +684,8 @@ namespace SpaceBattleSim
             // Calculate the X/Y Location of the close button that will be in the top-right corner
             // of the screen. Accounting for top and right padding along with the MatrixArray border
             // width to ensure it doesn't overlap with the matrix grid lines
-            var w = this.ViewSize.Width;
-            var h = this.ViewSize.Height;
+            var w = FormStyle.ViewSize.Width;
+            var h = FormStyle.ViewSize.Height;
 
             this.Invoke(new Action(() =>
             {
@@ -693,6 +713,7 @@ namespace SpaceBattleSim
                     var shipImg = cnt < fighterCnt ? fight.ShipView : raid.ShipView;
                     var shipType = cnt < fighterCnt ? ShipType.Fighter : ShipType.Raider;
                     var shipColor = cnt < fighterCnt ? fight.ShipColor : raid.ShipColor;
+                    var shipDeadText = cnt < fighterCnt ? '✞' : '⟚';
                     var criticalTransfer = ((cnt >= fighterCnt && _criticalTransferRaiders) || (cnt < fighterCnt && _criticalTransferAlly));
                     var partName = $"{shipType}";
 
@@ -706,6 +727,7 @@ namespace SpaceBattleSim
                             Text = shipImg,
                             ShadowDepth = !_useShadowing?0:_shadowStyle.depth,
                             ShadowColor = !_useShadowing?Color.Empty:Color.FromArgb(32, shipColor),
+                            DeadDisplay = shipDeadText
                         },
                         DestinationRange = (uint)this.Width / 2,
                         CriticalTransfer = criticalTransfer,
@@ -791,6 +813,10 @@ namespace SpaceBattleSim
                 }
             }));
         }
+        /// <summary>
+        /// Creates and outputs ship coordinates for all four quadrants of the raider mother ship with appropriate
+        /// transformations applied to each quadrant.
+        /// </summary>
         private void CreateShipCords()
         {
             var raiderMotherShip = DDefaults.GetRaidersMotherShip();
@@ -946,7 +972,7 @@ namespace SpaceBattleSim
                     InActiveHide = true,
                     Visible = true,
                     AnimateClick = true,
-                    DestinationRange = (uint)Math.Min(ViewSize.Width / 2, ViewSize.Height / 2),
+                    DestinationRange = (uint)Math.Min(FormStyle.ViewSize.Width / 2, FormStyle.ViewSize.Height / 2),
                 };
 
                 TitleText.MouseMove += (sender, e) =>
@@ -1006,6 +1032,10 @@ namespace SpaceBattleSim
 
             return retVal.ToArray();
         }
+        /// <summary>
+        /// Converts static help information into an array of strings for display in the bottom
+        /// left corner of the screen.
+        /// </summary>
         private string[] HelpDisplayText()
         {
             var retVal = new List<string>();
@@ -1026,6 +1056,9 @@ namespace SpaceBattleSim
         {
             // System configuration settings
             SetConfigValue("ScreenViewType", ref _screenViewType);
+            if(_screenViewType == SimScreenView.Windowed)
+                FormStyle.FormSize = this.ClientSize;
+
             SetConfigValue("ShowVersion", ref _showVersion);
             SetConfigValue("DisableAutoLock", ref _disableAutoLock);
             SetConfigValue("TopmostWindow", ref _topmostWindow);
@@ -1180,6 +1213,7 @@ namespace SpaceBattleSim
                 this.StartPosition = FormStartPosition.CenterScreen;
                 this.FormBorderStyle = FormBorderStyle.Fixed3D;
                 this.WindowState = FormWindowState.Normal;
+                this.Resize += BgPlatform_Resize;
             }
             else if (_screenViewType == SimScreenView.FullScreenAll)
             {
@@ -1210,8 +1244,12 @@ namespace SpaceBattleSim
                 this.WindowState = FormWindowState.Maximized;
             }
 
+            // Set the form size in the FormStyle to match the actual client size of the form. 
+            FormStyle.FormSize = this.ClientSize;
+            
+            // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
             _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
-                                        this.ViewSize.Width, this.ViewSize.Height, this.ViewSize);
+                                        FormStyle.ViewSize.Width, FormStyle.ViewSize.Height, FormStyle.ViewSize);
 
             // If auto-lock is disabled in the configuration, call the method to prevent the
             // system from automatically locking the screen. This is important for ensuring
@@ -1249,7 +1287,19 @@ namespace SpaceBattleSim
                 StartLoop();
             };
         }
+        /// <summary>
+        /// On used when the form is setup as Windowed, to handle resizing of the form and adjust the form 
+        /// size and bounds accordingly.
+        /// </summary>
+        private void BgPlatform_Resize(object? sender, EventArgs e)
+        {
+            // Set the form size in the FormStyle to match the actual client size of the form. 
+            FormStyle.FormSize = this.ClientSize;
 
+            // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
+            _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
+                                        FormStyle.ViewSize.Width, FormStyle.ViewSize.Height, FormStyle.ViewSize);
+        }
         /// <summary>
         /// Retrieves a configuration value associated with the specified key, or sets the configuration to the provided
         /// value if the key does not exist.
@@ -1311,6 +1361,18 @@ namespace SpaceBattleSim
             _loopStarted.SetFalse();
             _loopTokenSource.Cancel();
         }
+        /// <summary>
+        /// What keeps the refresh going.  This replaces form timers and allows the physics 
+        /// update and rendering to run asynchronously without blocking the UI thread. The 
+        /// loop runs continuously until the cancellation token is triggered, allowing for 
+        /// smooth animation and responsive UI interactions. By using a smart delay based on 
+        /// the target frame rate, we can maintain a consistent refresh rate while minimizing 
+        /// CPU usage and ensuring that the application remains responsive to user input. 
+        /// This approach provides a more efficient and flexible way to manage the game loop 
+        /// compared to traditional timer-based methods.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         private async Task GameLoopAsync(CancellationToken token)
         {
             // Targeting ~33 FPS (approx 30ms)
@@ -1341,7 +1403,6 @@ namespace SpaceBattleSim
                     await Task.Delay(msToWait, token);
             }
         }
-
         /// <summary>
         /// Handles the timer tick event to trigger a repaint of the control.
         /// </summary>
@@ -1430,13 +1491,13 @@ namespace SpaceBattleSim
 
             if (_fKeyDisplay.Length > 0)
             {
-                float y = this.FormSize.Height - this.Padding.Bottom - (_fKeyDisplay.Length * 24);
+                float y = FormStyle.FormSize.Height - this.Padding.Bottom - (_fKeyDisplay.Length * 24);
                 float width = _fKeyDisplay.OrderByDescending(s => s.Length).FirstOrDefault()?.Length ?? 60.0f;
                 RectangleF rect = new RectangleF(this.Padding.Left + 5, y - 5, (width * 10.0f) + 10.0f, (_fKeyDisplay.Length * 20) + 20);
                 g.FillRectangle(Brushes.Blue, rect);
                 g.DrawRectangle(new Pen(Brushes.Yellow, 1), rect);
 
-                var yStart = this.ViewSize.Height - Padding.Bottom - 30 - ((_fKeyDisplay.Length - 1) * 20);
+                var yStart = FormStyle.ViewSize.Height - Padding.Bottom - 30 - ((_fKeyDisplay.Length - 1) * 20);
                 for (int i = 0; i < _fKeyDisplay.Length; i++)
                     g.DrawString(_fKeyDisplay[i], _statsFont, Brushes.Yellow, new PointF(Padding.Left + 10, yStart + ((i * 20))));
             }
@@ -1450,6 +1511,10 @@ namespace SpaceBattleSim
             _bufferedGraphics.Render();
         }
 
+        /// <summary>
+        /// Picks up when a status of any ship changes.  However we are only using it for 
+        /// Dead Raiders at this time.
+        /// </summary>
         private void ItemReq_ShipStatusChanged(object sender, StatusChangeArgs e)
         {
             //only care about dead Raiders for now.
@@ -1461,7 +1526,7 @@ namespace SpaceBattleSim
 
             if (_aliveRaiders == 0 || _aliveAlly == 0)
             {
-                ItemReq.ResetAllShips();
+                ResetLocations();
                 // resync
                 _aliveRaiders = _orgTotalRaiders;
                 _totalRaiders = _orgTotalRaiders;
@@ -1478,7 +1543,6 @@ namespace SpaceBattleSim
                 }
             }
         }
-
         /// <summary>
         /// Handles the actions required when the form is closed.
         /// </summary>
@@ -1508,25 +1572,6 @@ namespace SpaceBattleSim
 
             base.OnFormClosed(e);
         }
-        #endregion
-
-        #region Private Support Properties
-        /// <summary>
-        /// Gets the current FormSize of the form excluding padding.
-        /// </summary>
-        /// <remarks>
-        /// Single point of Change (SPOC) for any future adjustments to how the view size is calculated or returned.
-        /// </remarks>
-        private Size ViewSize => new Size(this.FormSize.Width - (this.Padding.Left + this.Padding.Right),
-                                          this.FormSize.Height - (this.Padding.Top + this.Padding.Bottom));
-        /// <summary>
-        /// Gets the current size of the form.<br/>
-        /// </summary>
-        /// <remarks>
-        /// Single point of Change (SPOC) for any future adjustments to how the form size is calculated or returned.
-        /// </remarks>
-        private Size FormSize
-            => this.ClientSize;
         #endregion
     }
 }

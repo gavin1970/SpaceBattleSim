@@ -1,7 +1,8 @@
 ﻿using Chizl.ColorExtension;
 using Chizl.ThreadSupport;
 using System.Collections.Concurrent;
-using System.Runtime.InteropServices.Marshalling;
+using System.Text;
+using static SpaceBattleSim.StaticConfig;
 // using System.Numerics; //Vector2 is not used in the current implementation, but it can be useful for future enhancements or alternative distance calculations. 
 
 namespace SpaceBattleSim
@@ -13,38 +14,38 @@ namespace SpaceBattleSim
     {
         private static readonly Color SHIP_COLOR_DEFAULT = Color.FromArgb(255, Color.ForestGreen);
         private static readonly Color SHIP_IMG_CLR_DEFAULT = Color.FromArgb(1, Color.Black);
-        private static readonly List<Pen> _hitboxLowestCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(100, Color.Purple), 2),
-            new Pen(Color.FromArgb(100, Color.Red), 2),
-            new Pen(Color.FromArgb(25, Color.Silver), 1),
-            new Pen(Color.FromArgb(50, Color.Silver), 2),
-            new Pen(Color.FromArgb(75, Color.Silver), 3),
-            new Pen(Color.FromArgb(100, Color.Silver), 4)
-        };
-        private static readonly List<Pen> _hitboxLowCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(100, Color.Purple), 2),
-            new Pen(Color.FromArgb(100, Color.Red), 2),
-            new Pen(Color.FromArgb(25, Color.Orange), 1),
-            new Pen(Color.FromArgb(50, Color.Orange), 2),
-            new Pen(Color.FromArgb(75, Color.Orange), 3),
-            new Pen(Color.FromArgb(100, Color.Orange), 4)
-        };
-        private static readonly List<Pen> _hitboxMidCircleList = new List<Pen>() {
-            new Pen(Color.FromArgb(100, Color.Purple), 2),
-            new Pen(Color.FromArgb(100, Color.Red), 2),
-            new Pen(Color.FromArgb(25, Color.Cyan), 1),
-            new Pen(Color.FromArgb(50, Color.Cyan), 2),
-            new Pen(Color.FromArgb(75, Color.Cyan), 3),
-            new Pen(Color.FromArgb(100, Color.Cyan), 4)
-        };
-        private static readonly List<Pen> _hitboxHighCircleList = new List<Pen>() {
-            new(Color.FromArgb(100, Color.Purple), 2),
-            new Pen(Color.FromArgb(100, Color.Red), 2),
-            new Pen(Color.FromArgb(25, Color.Green), 1),
-            new Pen(Color.FromArgb(50, Color.Green), 2),
-            new Pen(Color.FromArgb(75, Color.Green), 3),
-            new Pen(Color.FromArgb(100, Color.Green), 4)
-        };
+        private static readonly List<Pen> _hitboxLowestCircleList = [
+            new (Color.FromArgb(100, Color.Red), 2),
+            new (Color.FromArgb(100, Color.Purple), 2),
+            new (Color.FromArgb(25, Color.Silver), 1),
+            new (Color.FromArgb(50, Color.Silver), 2),
+            new (Color.FromArgb(75, Color.Silver), 4),
+            new (Color.FromArgb(100, Color.Silver), 4)
+        ];
+        private static readonly List<Pen> _hitboxLowCircleList = [
+            new (Color.FromArgb(100, Color.Red), 2),
+            new (Color.FromArgb(100, Color.Purple), 2),
+            new (Color.FromArgb(25, Color.Orange), 1),
+            new (Color.FromArgb(50, Color.Orange), 2),
+            new (Color.FromArgb(75, Color.Orange), 4),
+            new (Color.FromArgb(100, Color.Orange), 4)
+        ];
+        private static readonly List<Pen> _hitboxMidCircleList = [
+            new (Color.FromArgb(100, Color.Red), 2),
+            new (Color.FromArgb(100, Color.Purple), 2),
+            new (Color.FromArgb(25, Color.Cyan), 1),
+            new (Color.FromArgb(50, Color.Cyan), 2),
+            new (Color.FromArgb(75, Color.Cyan), 4),
+            new (Color.FromArgb(100, Color.Cyan), 4)
+        ];
+        private static readonly List<Pen> _hitboxHighCircleList = [
+            new (Color.FromArgb(100, Color.Red), 2),
+            new (Color.FromArgb(100, Color.Purple), 2),
+            new (Color.FromArgb(25, Color.Green), 1),
+            new (Color.FromArgb(50, Color.Green), 2),
+            new (Color.FromArgb(75, Color.Green), 4),
+            new (Color.FromArgb(100, Color.Green), 4)
+        ];
 
         private enum SHIP_BRUSH_TYPE
         {
@@ -544,37 +545,60 @@ namespace SpaceBattleSim
             if (this.IsEmpty || (_shipStatus == ShipStatus.Dead && !isRepairRig))
                 return;
 
+            var hadChanged = false;
+            var whatChanged = new StringBuilder();
+            var prevShields = this.Shields;
+            var actionType = isRepairRig ? ActionType.BeingRepaired : ActionType.StoleHealth;
+
             // if already at or above original shields, no need to repair, and we can avoid the overhead
             // of the interlocked operations and status update.
-            if (Shields >= _orgShields)
-                return;
-
-            // Volatile read before repair
-            var prevShields = this.Shields;
-
-            for (int i = 0; i < repairAmount; i++)
+            if (this.Shields < _orgShields)
             {
-                if (Shields + 1 > _orgShields)
-                    break;
-                Interlocked.Increment(ref _shields);
+                hadChanged = true;
+                for (int i = 0; i < repairAmount; i++)
+                {
+                    if (Interlocked.Increment(ref _shields) > _orgShields)
+                    {
+                        Interlocked.Exchange(ref _shields, _orgShields);
+                        break;
+                    }
+                }
+                whatChanged.Append($"Shields was: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
             }
 
             if (isRepairRig)
             {
-                BattleStats.Audit(this.Name, ActionType.BeingRepaired, $"From: {fromWhom} ({repairAmount} repaired). Shields where: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
+                var prevPower = this.Power;
                 _shipStatus = ShipStatus.BeingRepaired;
-                if (this.Power == 0)    // 1 time thing, only during resurrection
-                    Interlocked.Exchange(ref _power, _orgPower);
+
+                if (this.Power < _orgPower)
+                {
+                    for (int i = 0; i < repairAmount; i++)
+                    {
+                        if (Interlocked.Increment(ref _power) > _orgPower)
+                        {
+                            Interlocked.Exchange(ref _power, _orgPower);
+                            break;
+                        }
+                    }
+
+                    if (hadChanged)
+                        whatChanged.Append(", ");
+
+                    whatChanged.Append($"Power before: {prevPower}, after: {this.Power}");
+                }
+                else if (!hadChanged)
+                    return;
             }
-            else
-                BattleStats.Audit(this.Name, ActionType.StoleHealth, $"From: {fromWhom} ({repairAmount} repaired). Shields where: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
+            else if (!hadChanged)
+                return;
+
+            BattleStats.Audit(this.Name, actionType, $"From: {fromWhom} ({repairAmount} repaired). {whatChanged}");
 
             UpdateStatus();
         }
-        /// <summary>
-        /// Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
-        /// </summary>
-        public void ResetStats(string byWho, bool includePower)
+
+        public void ResetStats(string byWho, bool includePower, bool newLocation = false)
         {
             if (this.IsEmpty || !_reset.TrySetTrue())
                 return;
@@ -583,6 +607,16 @@ namespace SpaceBattleSim
                 if (includePower)
                     Interlocked.Exchange(ref _power, _orgPower);
                 Interlocked.Exchange(ref _shields, _orgShields);
+
+                if (newLocation)
+                {
+                    // Randomly position the _battleShips items within the bounds of the form
+                    var x = Random.Shared.Next(0, FormStyle.ViewSize.Width + 1);
+                    var y = Random.Shared.Next(0, FormStyle.ViewSize.Height + 1);
+
+                    // Resets the ship's stats to their initial values, including shields, power, status, and damage color.<br/>
+                    this.Location = new PointF(x, y);
+                }
 
                 _shipsMission = ShipMission.Idle;
                 _shipStatus = ShipStatus.Operational;

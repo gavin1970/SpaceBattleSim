@@ -532,7 +532,7 @@ namespace SpaceBattleSim
         {
             foreach (var ship in _allSpaceShips.Where(w => w.Value.IsRaider && w.Value.Status != ShipStatus.Dead))
             {
-                _allSpaceShips[ship.Key].ResetStats("50 % AutoReset", true);
+                _allSpaceShips[ship.Key].ResetStats("50 % AutoReset", true, true);
             }
         }
         /// <summary>
@@ -564,7 +564,7 @@ namespace SpaceBattleSim
             // resetting all ships, we ensure a consistent starting point for each battle and avoid potential
             // bugs related to ship status.
             foreach (var ship in _allSpaceShips)
-                _allSpaceShips[ship.Key].ResetStats("AutoReset", true);
+                _allSpaceShips[ship.Key].ResetStats("AutoReset", true, true);
 
             _spaceShipsInRepair.Clear();
             _startBattle = ADateTime.UtcNow;
@@ -724,12 +724,30 @@ namespace SpaceBattleSim
                     // instead of being completely one-shot by RepairRigs every time.
                     if (_spaceShip.IsRaider)
                     {
-                        var repair = Math.Clamp(_allSpaceShips[_activeTargetName].Power, 2, 8);
-                        var bonus = _allSpaceShips[_activeTargetName].OrgPower;
+                        // Self heal for 1/2 the power for each hit on a target.  As the raider takes on more damage
+                        // and loses power, it recieves less self healing.  This is the equivalent of Ally's RepairRig,
+                        // but for Raiders only.
+                        var repair = Math.Clamp((_allSpaceShips[_spaceShip.Name].Power / 2), 1, 8);
 
-                        _spaceShip.Repair(repair, _activeTargetName);
-                        if (_allSpaceShips[_activeTargetName].IsDead)   // if killed the target, then there is a bonus.
-                            _spaceShip.Repair(bonus, _activeTargetName);
+                        // If the target is killed by the hit, the Raider gets a bonus heal that is double to
+                        // the target's original power on top of what it will recieve for it's repair.
+                        // Double, because this is a one time thing that can only happen if they kill the
+                        // target, and it is meant to be a bonus reward.
+                        // This can be a significant boost and may allow the Raider to survive longer
+                        // in battle, especially if it manages to kill high-power targets. This adds
+                        // an element of risk and reward to the Raider's playstyle, encouraging
+                        // aggressive tactics while also providing a potential lifeline if they
+                        // can successfully take down their opponents.
+                        var bonus = _allSpaceShips[_activeTargetName].OrgPower * 2;
+
+                        // Repair thy self.
+                        _spaceShip.Repair(repair, _activeTargetName, false);
+
+                        // If target is killed, then there is a bonus repair.  If the target is not killed, then
+                        // there is no bonus repair.  If they kill a RepairRig, then they get 32hp, the max that can
+                        // be recieved for a bonus and it is in addition to the self heal above.
+                        if (_allSpaceShips[_activeTargetName].IsDead)
+                            _spaceShip.Repair(bonus, _activeTargetName, false);
                     }
                 }
                 else
@@ -743,7 +761,7 @@ namespace SpaceBattleSim
                         {
                             // we are done healing, reset the targeted ship so it can move on as a new
                             // refreshed ship.
-                            _allSpaceShips[_activeTargetName].ResetStats(this.Name, true);
+                            _allSpaceShips[_activeTargetName].ResetStats(this.Name, true, false);
                             break;
                         }
                         else if (currentHP != _allSpaceShips[_spaceShip.Name].ShieldIntegrity)
@@ -799,7 +817,7 @@ namespace SpaceBattleSim
                 this.Animation = false;
                 _spaceShip.CurrentMission = ShipMission.Idle;
                 // do not reset power, unless killed.
-                _spaceShip.ResetStats("HomeBase_Recharge", true);
+                _spaceShip.ResetStats("HomeBase_Recharge", true, false);
                 _activeTargetName = string.Empty;
             }
 
@@ -812,7 +830,10 @@ namespace SpaceBattleSim
         private void ProcessRepairRigIdle(PointF myLoc)
         {
             List<SpaceShip> deadShipsList = _allSpaceShips
-                .Where(w => !w.Value.IsEmpty && w.Value.Name != this.Name && w.Value.IsDead && w.Value.Recovery != 0)
+                .Where(w => !w.Value.IsEmpty &&                     // is valid ship
+                       w.Value.Name != this.Name &&                 // not self
+                       w.Value.IsDead &&                            // is dead
+                       w.Value.Recovery != (int)RecoverOrder.None)  // not enemy - raiders are currently the only Recovery = RecoverOrder.None
                 .Select(s => s.Value).ToList();
 
             if (deadShipsList.Count == 0)
@@ -994,12 +1015,12 @@ namespace SpaceBattleSim
                 // Add a small random scatter so ships don't all pile onto the exact
                 // same pixel when targeting the same enemy, without distorting direction.
                 const int scatter = 12;
-                var rX = _pendingDestination.X + Random.Shared.Next(-scatter, scatter + 1);
+                var rX = _pendingDestination.X - Random.Shared.Next(-scatter, scatter + 1);
                 var rY = _pendingDestination.Y + Random.Shared.Next(-scatter, scatter + 1);
 
                 this.NextDestination = new PointF(
                     Math.Clamp(rX, 0, ParentSize.Width - this.ShipInfo.Width),
-                    Math.Clamp(rY, 0, ParentSize.Height - this.Height));
+                    Math.Clamp(rY, 0, ParentSize.Height - this.ShipInfo.Height));
 
                 _pendingDestination = PointF.Empty;
             }
@@ -1180,6 +1201,7 @@ namespace SpaceBattleSim
                     // status and position for this ship, which is crucial for accurate rendering
                     // and interaction during battle.
                     _spaceShip = spaceShip;
+
                     if (_shipStatus != _spaceShip.Status)
                     {
                         // update history.
