@@ -31,7 +31,14 @@ namespace SpaceBattleSim
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            Timer_Emp_Cleanup = new System.Windows.Forms.Timer(components);
             SuspendLayout();
+            // 
+            // Timer_Emp_Cleanup
+            // 
+            Timer_Emp_Cleanup.Enabled = true;
+            Timer_Emp_Cleanup.Interval = 1000;
+            Timer_Emp_Cleanup.Tick += Timer_Emp_Cleanup_Tick;
             // 
             // BgPlatform
             // 
@@ -42,5 +49,7 @@ namespace SpaceBattleSim
             ResumeLayout(false);
         }
         #endregion
+
+        private System.Windows.Forms.Timer Timer_Emp_Cleanup;
     }
 }

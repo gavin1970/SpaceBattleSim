@@ -10,6 +10,11 @@
     public enum ActionType
     {
         /// <summary>
+        /// No specific action or event has occurred. This value can be 
+        /// used as a default or placeholder when no other action type applies.
+        /// </summary>
+        None = 0,
+        /// <summary>
         /// This ship stole health from another ship.
         /// </summary>
         StoleHealth,
@@ -42,6 +47,17 @@
         /// state, as it may not be able to defend itself effectively against enemy attacks.
         /// </summary>
         BeingRepaired,
+        /// <summary>
+        /// This ship was released from being repaired, and is now operational again. 
+        /// It may still be damaged, but it is no longer in a vulnerable state and can 
+        /// defend itself against enemy attacks.
+        /// </summary>
+        Released,
+        /// <summary>
+        /// This ship is currently being hit by an EMP blast, which temporarily disables 
+        /// its systems and renders it unable to function properly.
+        /// </summary>
+        EmpBlast,
     }
 
     /// <summary>
@@ -114,6 +130,13 @@
         /// Indicates that the Fighter is currently being repaired.
         /// </summary>
         BeingRepaired = 5,
+        /// <summary>
+        /// Indicates that the ship is currently disabled and cannot perform any actions. 
+        /// This status is typically used on Raiders that are in the process of an EMP 
+        /// Burst, where they are temporarily disabled and unable to function until the 
+        /// EMP effect wears off.
+        /// </summary>
+        Disabled = 6,
     }
 
     /// <summary>

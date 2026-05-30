@@ -320,7 +320,7 @@ namespace Chizl.StandAloneLogging
         /// Synchronously flushes any remaining log messages in the queue to the appropriate log files. 
         /// This method blocks until all messages have been processed.
         /// </summary>
-        public void Flush() => ProcessQueueAsync().Wait();
+        public async Task Flush() => await ProcessQueueAsync();
         /// <summary>
         /// Initializes or updates log file resources for the current date and enabled log levels.
         /// </summary>
@@ -457,7 +457,7 @@ namespace Chizl.StandAloneLogging
         {
             if (!disposedValue)
             {
-                this.Flush();
+                _ = this.Flush();
                 disposedValue = true;
             }
         }

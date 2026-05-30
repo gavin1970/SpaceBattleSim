@@ -93,6 +93,7 @@ namespace SpaceBattleSim
         private SolidBrush _shipsImageBrush = new SolidBrush(SHIP_IMG_CLR_DEFAULT);     // default
         private ShipMission _shipsMission = ShipMission.Idle;
 
+        private ADateTime _disabledEndTime = ADateTime.MinValue;
         private string _shipName = string.Empty;
         private bool _isEnabled = false;
         private bool _isEmpty = true;
@@ -344,6 +345,29 @@ namespace SpaceBattleSim
         /// </summary>
         public bool BeingRepaired => _shipStatus == ShipStatus.BeingRepaired;
         /// <summary>
+        /// Gets a value indicating whether the ship is disabled due to a temporary affect like an EMP blast.<br/>
+        /// An disabled ship cannot perform any actions until the effect wears off.
+        /// </summary>
+        public bool IsDisabled 
+        {
+            get
+            {
+                if (_disabledEndTime.Value > DateTime.UtcNow)
+                    return true;
+
+                if (_shipStatus == ShipStatus.Disabled)
+                {
+                    _disabledEndTime.TryUpdate(DateTime.MinValue);
+                    _shipStatus = ShipStatus.Operational;
+                    // Disabled has been removed.
+                    BattleStats.Audit(this.Name, ActionType.EmpBlast, $"Is no longer disabled from EMP blast.");
+                    Release();
+                }
+
+                return false;
+            }
+        }
+        /// <summary>
         /// Gets a value indicating whether the ship is in a critical condition. A critical ship has very low<br/>
         /// shields and power, and is at risk of being destroyed.<br/>
         /// </summary>
@@ -408,6 +432,22 @@ namespace SpaceBattleSim
         #endregion
 
         #region Public Methods
+        public void DisableShip(int disabledSec, PointF location)
+        {
+            if (!_isRaider)
+                return;
+
+            if (_disabledEndTime.Value > DateTime.UtcNow)
+                return;
+
+            if (disabledSec > 10)
+                disabledSec = 10;
+
+            _disabledEndTime.AdjustTime(DateTime.UtcNow.AddSeconds(disabledSec), true);
+
+            _shipStatus = ShipStatus.Disabled;
+            BattleStats.Audit(this.Name, ActionType.EmpBlast, $"Temporarily disabled at: {location}");
+        }
         /// <summary>
         /// Attempts to set the RepairRig name and distance if the current instance is not empty and the RepairRig is not
         /// needed.
@@ -522,11 +562,22 @@ namespace SpaceBattleSim
             // scratched, damaged, critical, or dead.
             UpdateStatus();
         }
+        /// <summary>
+        /// Releases the ship from being repaired or disabled, allowing it to update its 
+        /// status based on its current shield level and other factors. This method is typically 
+        /// called when a RepairRig has finished repairing the ship, allowing it to return to 
+        /// normal operation and update its status accordingly. The ship's status is updated 
+        /// based on the new shield level, determining whether it is still operational, scratched, 
+        /// damaged, critical, or dead. This allows for dynamic management of the ship's condition 
+        /// and performance in various contexts, such as gameplay mechanics or visual 
+        /// representations in a simulation.<br/>
+        /// </summary>
         public void Release()
         {
             // making sure it's not set to BeingRepaired, which would cause the ship to be stuck
             // in that state and not update properly.
             _shipStatus = ShipStatus.Operational;
+            BattleStats.Audit(this.Name, ActionType.Released, $"Status set back to: {_shipStatus}");
             // Get the real ship status. This allows the ship to update its status based on its
             // current shield level and other factors, ensuring that it reflects the correct
             // condition after being released from repair.
@@ -544,6 +595,13 @@ namespace SpaceBattleSim
         {
             if (this.IsEmpty || (_shipStatus == ShipStatus.Dead && !isRepairRig))
                 return;
+
+            if (this.IsDisabled)
+            {
+                BattleStats.Audit(this.Name, ActionType.None, $"Repair can not occur, because ship is disabled: {_shipStatus}");
+                return;
+            }
+
 
             var hadChanged = false;
             var whatChanged = new StringBuilder();
@@ -596,14 +654,25 @@ namespace SpaceBattleSim
             BattleStats.Audit(this.Name, actionType, $"From: {fromWhom} ({repairAmount} repaired). {whatChanged}");
 
             UpdateStatus();
-        }
-
+        }        
+        /// <summary>
+        /// Resets the ship's stats to their initial values, including shields, power, status, and location.<br/>
+        /// </summary>
+        /// <param name="byWho">The entity responsible for the reset.</param>
+        /// <param name="includePower">Whether to reset the ship's power.</param>
+        /// <param name="newLocation">Whether to assign a new random location to the ship.</param>
         public void ResetStats(string byWho, bool includePower, bool newLocation = false)
         {
-            if (this.IsEmpty || !_reset.TrySetTrue())
+            if (this.IsEmpty || this.IsDisabled || !_reset.TrySetTrue())
                 return;
             try
             {
+                if (this.IsDisabled)
+                {
+                    BattleStats.Audit(this.Name, ActionType.None, $"ResetStats can not occur, because ship is disabled: {_shipStatus}");
+                    return;
+                }
+
                 if (includePower)
                     Interlocked.Exchange(ref _power, _orgPower);
                 Interlocked.Exchange(ref _shields, _orgShields);
@@ -658,7 +727,7 @@ namespace SpaceBattleSim
 
             if (this.Shields == 0)
             {
-                if (!this.BeingRepaired)
+                if (!this.BeingRepaired && !this.IsDisabled)
                     _shipStatus = ShipStatus.Dead;
                 _damageColor = Color.FromArgb(alpha, Color.Black);
             }
@@ -672,7 +741,7 @@ namespace SpaceBattleSim
             else if (dmgLevel >= 75.0)
             {
                 _hitboxCircle = hitboxList[1];
-                if (!this.BeingRepaired)
+                if (!this.BeingRepaired && !this.IsDisabled)
                     _shipStatus = ShipStatus.Critical;
                 if (!ItemReq.UnicodeShips)
                     alpha = 150;
@@ -681,7 +750,7 @@ namespace SpaceBattleSim
             else if (dmgLevel >= 50.0)
             {
                 _hitboxCircle = hitboxList[3];
-                if (!this.BeingRepaired)
+                if (!this.BeingRepaired && !this.IsDisabled)
                     _shipStatus = ShipStatus.Damaged;
                 if (!ItemReq.UnicodeShips)
                     alpha = 140;
@@ -690,7 +759,7 @@ namespace SpaceBattleSim
             else if (dmgLevel >= 25.0)
             {
                 _hitboxCircle = hitboxList[4];
-                if (!this.BeingRepaired)
+                if (!this.BeingRepaired && !this.IsDisabled)
                     _shipStatus = ShipStatus.Scratched;
                 if (!ItemReq.UnicodeShips)
                     alpha = 128;
@@ -699,7 +768,7 @@ namespace SpaceBattleSim
             else 
             {
                 _hitboxCircle = hitboxList[5];
-                if (!this.BeingRepaired)
+                if (!this.BeingRepaired && !this.IsDisabled)
                     _shipStatus = ShipStatus.Operational;
                 // effectively transparent, but allows us to keep the same brush and just update the
                 // color for performance reasons, since creating new brushes is expensive and we want

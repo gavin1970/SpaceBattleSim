@@ -2,6 +2,7 @@
 using Chizl.ThreadSupport;
 using SpaceBattleSim.Models.Events;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using static DDefaults;
 
 namespace SpaceBattleSim
@@ -20,6 +21,7 @@ namespace SpaceBattleSim
         // battle time tracking
         private static TimeSpan _battleTime = TimeSpan.Zero;
         public static event StatusChangeHandler? ShipStatusChanged;
+        public static readonly ConcurrentBag<ActiveEmpZone> ActiveEmps = new ConcurrentBag<ActiveEmpZone>();
 
         // Start time of the current battle, used to track the duration of battles and reset times
         // when all ships are dead.
@@ -724,6 +726,13 @@ namespace SpaceBattleSim
                     // instead of being completely one-shot by RepairRigs every time.
                     if (_spaceShip.IsRaider)
                     {
+                        if (_spaceShip.IsDisabled)
+                        {
+                            Debug.WriteLine($"Ship '{_spaceShip.Name}' is disabled!  Animation: {this.Animation}");
+                            this.Animation = false;
+                            return;
+                        }
+
                         // Self heal for 1/2 the power for each hit on a target.  As the raider takes on more damage
                         // and loses power, it recieves less self healing.  This is the equivalent of Ally's RepairRig,
                         // but for Raiders only.
@@ -766,16 +775,26 @@ namespace SpaceBattleSim
                         }
                         else if (currentHP != _allSpaceShips[_spaceShip.Name].ShieldIntegrity)
                         {
+                            currentHP = _allSpaceShips[_spaceShip.Name].ShieldIntegrity;
+                            if (!ActiveEmps.Where(w => w.Center.Equals(_allSpaceShips[_spaceShip.Name].Location)).Any())
+                                ActiveEmps.Add(new ActiveEmpZone(_allSpaceShips[_spaceShip.Name].Location, 200, 5));
+
                             // release the lock on the partially repaired ship, because this healer is 
                             // taking damage from Raiders.
-                            _allSpaceShips[_activeTargetName].Release();
-                            break;
+                            //_allSpaceShips[_activeTargetName].Release();
+                            //break;
                         }
 
+                        // prevents maxing out the CPU when repairing a ship that is taking on more damage
+                        // than the RepairRig can heal, which can happen when there are multiple Raiders
+                        // attacking the RepairRig at the same time.  This allows the RepairRig to continue
+                        // repairing as much as it can without causing performance issues, and it gives
+                        // the player a chance to see the RepairRig in action even in tough situations.
                         Task.Delay(100).Wait();
                     }
 
                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
+                    _allSpaceShips[_activeTargetName].Release();
                     _spaceShipsInRepair.TryRemove(_activeTargetName, out _);
                     _spaceShipsInRepair.Where(w => w.Value.Name == this.Name).ToList()
                                        .ForEach(s => _spaceShipsInRepair.TryRemove(s.Key, out _));
@@ -940,7 +959,7 @@ namespace SpaceBattleSim
         private void RunCombatScanAsync()
         {
             var now = DateTime.UtcNow;
-            if (_isInBattleCheck.Value || (now - _lastScanTime) < _scanInterval || _spaceShip.BeingRepaired)
+            if (_isInBattleCheck.Value || (now - _lastScanTime) < _scanInterval || _spaceShip.BeingRepaired || _spaceShip.IsDisabled)
                 return;
 
             _lastScanTime = now;
@@ -976,6 +995,11 @@ namespace SpaceBattleSim
                         this.Animation = false;
                         this._dText.Text = $"{this._dText.DeadDisplay}";
                     }
+                    else if (_spaceShip.IsDisabled)
+                    {
+                        Debug.WriteLine($"Ship '{_spaceShip.Name}' is disabled!  Animation: {this.Animation}");
+                        this.Animation = false;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -997,7 +1021,7 @@ namespace SpaceBattleSim
         /// </summary>
         private void UpdateMovement()
         {
-            if (_spaceShip.BeingRepaired)
+            if (_spaceShip.BeingRepaired || _spaceShip.IsDisabled)
             {
                 this.NextDestination = this.Location;
                 return;
@@ -1178,6 +1202,31 @@ namespace SpaceBattleSim
             g.DrawRectangle(this.GetBorder, clsBtnRect);
         }
 
+        private bool Check4EmpBlast()
+        {
+            if (!_spaceShip.IsRaider)
+                return false;
+
+            // Check if this is a valid ship for EMP blast radius to effect it.
+            if (ActiveEmps.Count == 0 ||
+                _spaceShip.IsDead ||
+                _spaceShip.Location.IsEmpty)
+                return false;
+
+            if (ActiveEmps.Where(w => w.ExpiresAt > DateTime.UtcNow && w.Contains(_allSpaceShips[_spaceShip.Name].Location)).Any())
+            {
+                if (!_spaceShip.IsRaider || !_allSpaceShips[_spaceShip.Name].IsRaider)
+                    return false;
+
+                _allSpaceShips[_spaceShip.Name].DisableShip(5, _allSpaceShips[_spaceShip.Name].Location);
+                //_spaceShip.DisableShip(5, _spaceShip.Location);
+                Debug.WriteLine($"Ship '{_spaceShip.Name}' was hit by an EMP blast and is disabled for 5 seconds!");
+                return true;
+            }
+
+            return false;
+        }
+
         private ShipStatus _shipStatus = ShipStatus.Operational;
         /// <summary>
         /// Draws a Item with a shadow, background, border, and an 'X' symbol onto the specified graphics
@@ -1201,6 +1250,8 @@ namespace SpaceBattleSim
                     // status and position for this ship, which is crucial for accurate rendering
                     // and interaction during battle.
                     _spaceShip = spaceShip;
+                    
+                    Check4EmpBlast();
 
                     if (_shipStatus != _spaceShip.Status)
                     {
@@ -1214,14 +1265,25 @@ namespace SpaceBattleSim
                     // access to this class, so lets reset it's state.  RepairRig are an
                     // exception, they can be repaired but not fight, so they don't get
                     // the animation treatment.
-                    if (!this.Animation && !_spaceShip.IsDead && !_spaceShip.IsRepairRig && !_spaceShip.BeingRepaired)
+                    if(_spaceShip.IsRaider && !this.Animation && !_spaceShip.IsDisabled)
                         this.Animation = true;
-                    else if(_spaceShip.BeingRepaired && this.Animation)
-                        this.Animation = false;
+
+                    if (!this.Animation)
+                    {
+                        if(_spaceShip.IsRaider && !_spaceShip.IsDisabled && !_spaceShip.IsDead)
+                            this.Animation = true;
+                        if (!_spaceShip.IsDead && !_spaceShip.IsRepairRig && !_spaceShip.BeingRepaired && !_spaceShip.IsDisabled)
+                            this.Animation = true;
+                    }
+                    else
+                    {
+                        if (_spaceShip.BeingRepaired || _spaceShip.IsDisabled)
+                            this.Animation = false;
+                    }
                 }
 
                 RectangleF clsBtnRect = this.Rectangle;
-                if (this.Animation || (_spaceShip.IsRepairRig && !_spaceShip.IsDead && !_spaceShip.BeingRepaired))
+                if (this.Animation || (_spaceShip.IsRepairRig && !_spaceShip.IsDead && !_spaceShip.BeingRepaired && !_spaceShip.IsDisabled))
                 {
                     if (this._dText.Text != this._dText.OrgText)
                         this._dText.Text = this._dText.OrgText;

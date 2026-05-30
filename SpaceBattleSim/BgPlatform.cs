@@ -45,8 +45,9 @@ namespace SpaceBattleSim
         //      (20 or 50   = 20fps or 50ms)
         //      (30 or 33   = 30fps or 33ms)
         //      (60 or 16   = 60fps or 16ms)
-        private readonly static int[] _refreshRateValidValues = { 33, 50, 100 };    // interval for timer in milliseconds.
-        private readonly static int[] _fpsRateValidValues = { 30, 20, 10 };         // FPS in same order of _refreshRateValidValues to bind fps to closes interval.
+        private readonly static int[] _refreshRateValidValues = { 33, 50, 100 };        // interval for timer in milliseconds.
+        private readonly static float[] _adjustSpeeds = { 0.6f, 1.5f, 3.0f };           // Adjust speed of ships based on FPS so that ships are not too slow or two fast.
+
         private readonly static (int min, int max) _planetSizeLimits = (50, 400);               // set limits for planet size.
         private readonly static (float min, float max) _planetSpinSpeedLimits = (0.0f, 0.5f);   // set limits for planet spin speed.
         private static string _planetTextureFile = ".\\skins\\fungal_planet.png"; // pulled from app config, path to the planet texture image file.
@@ -100,6 +101,13 @@ namespace SpaceBattleSim
         const uint _borderWidth = 2;
         // Size of the matrix grid (50pxx50px)
         const int _matrixCellSize = 40;
+
+        // EMP blast lines for capital ships, using semi-transparent pens to create a glowing
+        // effect. The glow pen is thicker and more transparent, while the core pen is thinner
+        // and more opaque, creating a layered effect for the EMP blast visuals.
+        private static readonly Pen _glowPenY = new Pen(Color.FromArgb(64, 255, 190, 64), 8f);
+        private static readonly Pen _glowPenC = new Pen(Color.FromArgb(64, 64, 190, 255), 2f);
+        private static readonly Pen _corePenW = new Pen(Color.FromArgb(128, 230, 245, 255), 0.5f);
 
         // Moves X position of HomeBase and _capitalShip anchor points if changed.
         private static float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
@@ -391,7 +399,8 @@ namespace SpaceBattleSim
 
             if (_showPlanets)
             {
-                this.Invoke(new Action(() => {
+                this.Invoke(new Action(() =>
+                {
                     int xOffset = Math.Clamp(_planetSize, 25, 100) * 2;
                     int yOffset = Math.Clamp(_planetSize, 25, 100);
 
@@ -413,7 +422,8 @@ namespace SpaceBattleSim
 
             if (_spaceCache == null)
             {
-                this.Invoke(new Action(() => {
+                this.Invoke(new Action(() =>
+                {
                     if (_showStars || _showNebulae)
                     {
                         // Bake the static background (stars + nebulae) into a bitmap once.
@@ -493,7 +503,8 @@ namespace SpaceBattleSim
             // Comet stays in _cometShapes (it animates each frame)
             if (_cometShapes.DrawList.Count == 0)
             {
-                this.Invoke(new Action(() => {
+                this.Invoke(new Action(() =>
+                {
                     var bounds = new RectangleF(this.Padding.Left, this.Padding.Top,
                                                 FormStyle.ViewSize.Width, FormStyle.ViewSize.Height);
 
@@ -912,7 +923,7 @@ namespace SpaceBattleSim
                 // Set the base center point to the new anchor location after applying movement adjustments.
                 // This ensures that the HomeBase will be positioned correctly on the form, and all lines anchored
                 // to this point will also be drawn in the correct location.
-                _baseCenter = new PointF(_anchorX+ _moveX, _anchorY+ _moveY);
+                _baseCenter = new PointF(_anchorX + _moveX, _anchorY + _moveY);
                 // don't really use this, but setting the HomeBase.Location to the base center point for clarity and
                 // potential future use. The HomeBase is primarily drawn using the _baseCords and movement offsets,
                 // so the Location property is not critical in this implementation, but it can be useful for reference
@@ -1056,7 +1067,7 @@ namespace SpaceBattleSim
         {
             // System configuration settings
             SetConfigValue("ScreenViewType", ref _screenViewType);
-            if(_screenViewType == SimScreenView.Windowed)
+            if (_screenViewType == SimScreenView.Windowed)
                 FormStyle.FormSize = this.ClientSize;
 
             SetConfigValue("ShowVersion", ref _showVersion);
@@ -1087,14 +1098,14 @@ namespace SpaceBattleSim
                     // no adjustment needed for 30fps, as it is the default frame rate for the animation. This ensures
                     // that the ships will move at their intended speed without any modifications, providing a smooth
                     // and visually appealing experience for users who prefer the default refresh rate.
-                    ShipStats.AdjSpeed = .5f;
+                    ShipStats.AdjSpeed = _adjustSpeeds[0];
                     break;
                 case 10:
                     _refreshRate = _refreshRateValidValues[2];
                     ShipStats.RefreshRateText = "Low (10fps)";
                     // slow down the ships more significantly to compensate for the much lower frame rate, preventing them
                     // from moving too fast and creating a smoother animation.
-                    ShipStats.AdjSpeed = 3.0f;
+                    ShipStats.AdjSpeed = _adjustSpeeds[2];
                     break;
                 case 20:
                 default:
@@ -1104,7 +1115,7 @@ namespace SpaceBattleSim
                     ShipStats.RefreshRateText = "Medium (20fps)";
                     // speed up the ships slightly to compensate for the lower frame rate, preventing them
                     // from moving too slow and creating a smoother animation.
-                    ShipStats.AdjSpeed = 1.5f;// 1.0f;
+                    ShipStats.AdjSpeed = _adjustSpeeds[1];
                     break;
             }
 
@@ -1246,7 +1257,7 @@ namespace SpaceBattleSim
 
             // Set the form size in the FormStyle to match the actual client size of the form. 
             FormStyle.FormSize = this.ClientSize;
-            
+
             // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
             _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
                                         FormStyle.ViewSize.Width, FormStyle.ViewSize.Height, FormStyle.ViewSize);
@@ -1390,7 +1401,8 @@ namespace SpaceBattleSim
                 if (this.IsHandleCreated && !this.IsDisposed)
                 {
                     // BeginInvoke is asynchronous; it won't block your physics loop
-                    this.BeginInvoke(new Action(() => {
+                    this.BeginInvoke(new Action(() =>
+                    {
                         RefreshPaint();
                     }));
                 }
@@ -1403,6 +1415,27 @@ namespace SpaceBattleSim
                     await Task.Delay(msToWait, token);
             }
         }
+        //private const int _maxWaitDrawEmp = 10;
+        //private static int _waitDrawEmp = _maxWaitDrawEmp;
+
+        public void DrawEmp(Graphics g, PointF empCenter, float empDiameter)
+        {
+            //if (Interlocked.Decrement(ref _waitDrawEmp) > 0)
+            //    return;
+
+            //Interlocked.Exchange(ref _waitDrawEmp, _maxWaitDrawEmp);
+
+            // Generate the EMP points
+            PointF[] lightningRing = EffectsGenerator.CreateLightningRing(empCenter, empDiameter, segments: 50, jaggedness: 4f);
+
+            // Draw the Outer Glow (Thick, semi-transparent blue/cyan)
+            g.DrawLines(_glowPenY, lightningRing);
+            // Draw the Outer Glow (Thick, semi-transparent blue/cyan)
+            g.DrawLines(_glowPenC, lightningRing);
+            // Draw the Core (Thin, bright white/light blue)
+            g.DrawLines(_corePenW, lightningRing);
+        }
+
         /// <summary>
         /// Handles the timer tick event to trigger a repaint of the control.
         /// </summary>
@@ -1487,6 +1520,9 @@ namespace SpaceBattleSim
                 // Draw the Space Battle (Fighters & Raiders)
                 foreach (var ship in _battleShips)
                     if (ship.Visible) ship.DrawItem(g);
+
+                foreach(var emp in ItemReq.ActiveEmps.ToList())
+                    DrawEmp(g, emp.Center, emp.MaxRadius);
             }
 
             if (_fKeyDisplay.Length > 0)
@@ -1573,5 +1609,17 @@ namespace SpaceBattleSim
             base.OnFormClosed(e);
         }
         #endregion
+
+        private void Timer_Emp_Cleanup_Tick(object sender, EventArgs e)
+        {
+            if (ItemReq.ActiveEmps.IsEmpty)
+                return;
+
+            // remove all Emps that no longer are active.
+            ItemReq.ActiveEmps.ToList().ForEach(emp => {
+                if (emp.ExpiresAt < DateTime.UtcNow)
+                    ItemReq.ActiveEmps.TryTake(out _);
+            });
+        }
     }
 }

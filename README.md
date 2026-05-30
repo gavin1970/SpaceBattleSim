@@ -1,6 +1,6 @@
 ﻿# SpaceBattleSim — Space Battleground Simulation
 
-A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — nebulae, stars, moving comet, rotating planet, ships, lasers, repair-beams, the grid, shadow effects, and color blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols, planet image dynamic resize/wrap for rotation).
+A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — nebulae, stars, moving comet, rotating planet, ships, lasers, repair-beams, the grid, shadow effects, and color blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols, planet image dynamic resize/wrap for rotation) and EMP blasts.
 
 ---
 
@@ -8,7 +8,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 - [What It Is](#what-it-is)
 - [Features](#features)
-- [Ship Types and Stats](#ship-types-and-stats)
+- [Ship Types and Default Stats](#ship-types-and-default-stats)
 - [Fleet Configuration](#fleet-configuration)
 - [Revive / Recovery System](#revive--recovery-system)
 - [Architecture](#architecture)
@@ -52,6 +52,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 - **Conflict-free repair assignments** — a second thread-safe dictionary ensures only one RepairRig claims a dead ally at a time.
 - **Dynamic color health indicator** — ship color shifts as shields drops as hitbox diameter changes base on power transfer if enabled.
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
+- **EMP blast rendering** — visual effects for EMP blasts from RepairRigs that disable Raider ships temporarily.  Only used when RepairRig is currently healing and is attacked directly.
 - **F-key HUD overlays** — press Esc to Pause/Unpause, F1 for help, F2 for ship stats, F3 to view live battle stats, F5 to instantly reset all ships back to full health, or F12 to open an Explorer window at the simulation root folder.  Audit logging, if enabled, will show manual reset instead of Ally or Raider win.
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
 - **Image ship symbols** — when app.config->`UseUnicodeShips` is set to false, each ShipType as Unicode glyph is rendered as an image on the fly in memory and used for the ships rendering.  Since Unicode uses color blending to show damage, the image rendering is static, but will have an overlay of black and get darker as the ship takes damage instead.
