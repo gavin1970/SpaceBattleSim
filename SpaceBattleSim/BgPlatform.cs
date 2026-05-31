@@ -7,6 +7,7 @@ using System.Drawing.Drawing2D;
 using System.Text;
 using SpaceBattleSim.Models.Events;
 using static SpaceBattleSim.StaticConfig;
+using System.Drawing.Text;
 
 namespace SpaceBattleSim
 {
@@ -105,9 +106,9 @@ namespace SpaceBattleSim
         // EMP blast lines for capital ships, using semi-transparent pens to create a glowing
         // effect. The glow pen is thicker and more transparent, while the core pen is thinner
         // and more opaque, creating a layered effect for the EMP blast visuals.
-        private static readonly Pen _glowPenY = new Pen(Color.FromArgb(64, 255, 190, 64), 8f);
-        private static readonly Pen _glowPenC = new Pen(Color.FromArgb(64, 64, 190, 255), 2f);
-        private static readonly Pen _corePenW = new Pen(Color.FromArgb(128, 230, 245, 255), 0.5f);
+        private static readonly Pen _glowPenBack = new Pen(Color.FromArgb(120, 255, 190, 64), 6f);       // orange outer glow
+        private static readonly Pen _glowPenCenter = new Pen(Color.FromArgb(130, 64, 190, 255), 4f);     // cyan center accent
+        private static readonly Pen _corePenFront = new Pen(Color.FromArgb(235, 150, 255, 255), 1.25f);  // bright core with increased transparency for a more subtle effect
 
         // Moves X position of HomeBase and _capitalShip anchor points if changed.
         private static float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
@@ -1390,6 +1391,15 @@ namespace SpaceBattleSim
             var frameTarget = TimeSpan.FromMilliseconds(_refreshRate);
             var stopwatch = new Stopwatch();
 
+            // YUK!!
+            //_glowPenBack.LineJoin = LineJoin.Round;   //LineJoin.Bevel    // Default is LineJoin.Miter.
+            //_glowPenCenter.LineJoin = LineJoin.Round;
+            //_corePenFront.LineJoin = LineJoin.Round;
+
+            _glowPenBack.MiterLimit = 2f;
+            _glowPenCenter.MiterLimit = 20f;
+            _corePenFront.MiterLimit = 10f;
+
             while (!token.IsCancellationRequested)
             {
                 stopwatch.Restart();
@@ -1415,25 +1425,24 @@ namespace SpaceBattleSim
                     await Task.Delay(msToWait, token);
             }
         }
-        //private const int _maxWaitDrawEmp = 10;
-        //private static int _waitDrawEmp = _maxWaitDrawEmp;
 
+        /// <summary>
+        /// Draws an EMP (Electromagnetic Pulse) effect on the provided Graphics context at the specified center point and diameter.
+        /// </summary>
+        /// <param name="g">The Graphics context to draw on.</param>
+        /// <param name="empCenter">The center point of the EMP effect.</param>
+        /// <param name="empDiameter">The diameter of the EMP effect.</param>
         public void DrawEmp(Graphics g, PointF empCenter, float empDiameter)
         {
-            //if (Interlocked.Decrement(ref _waitDrawEmp) > 0)
-            //    return;
-
-            //Interlocked.Exchange(ref _waitDrawEmp, _maxWaitDrawEmp);
-
             // Generate the EMP points
-            PointF[] lightningRing = EffectsGenerator.CreateLightningRing(empCenter, empDiameter, segments: 50, jaggedness: 4f);
+            PointF[] lightningRing = EffectsGenerator.CreateLightningRing(empCenter, empDiameter, segments: 200, jaggedness: 10f);
 
             // Draw the Outer Glow (Thick, semi-transparent blue/cyan)
-            g.DrawLines(_glowPenY, lightningRing);
+            g.DrawLines(_glowPenBack, lightningRing);
             // Draw the Outer Glow (Thick, semi-transparent blue/cyan)
-            g.DrawLines(_glowPenC, lightningRing);
+            g.DrawLines(_glowPenCenter, lightningRing);
             // Draw the Core (Thin, bright white/light blue)
-            g.DrawLines(_corePenW, lightningRing);
+            g.DrawLines(_corePenFront, lightningRing);
         }
 
         /// <summary>
@@ -1451,7 +1460,9 @@ namespace SpaceBattleSim
                 g.Clear(this.BackColor);
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+            g.CompositingMode = CompositingMode.SourceOver;
+            g.CompositingQuality = CompositingQuality.HighSpeed;
 
             if (!_pauseScreen)
             {
@@ -1521,7 +1532,7 @@ namespace SpaceBattleSim
                 foreach (var ship in _battleShips)
                     if (ship.Visible) ship.DrawItem(g);
 
-                foreach(var emp in ItemReq.ActiveEmps.ToList())
+                foreach(var emp in ItemReq.ActiveEmps.Values.ToList())
                     DrawEmp(g, emp.Center, emp.MaxRadius);
             }
 
@@ -1608,6 +1619,7 @@ namespace SpaceBattleSim
 
             base.OnFormClosed(e);
         }
+        private static readonly object _empLock = new();
         /// <summary>
         /// Handles the clean up of expired EMP effects from the active EMP list.
         /// </summary>
@@ -1618,7 +1630,8 @@ namespace SpaceBattleSim
 
             // remove all Emps that no longer are active.
             ItemReq.ActiveEmps.ToList().ForEach(emp => {
-                if (emp.HasEnded) ItemReq.ActiveEmps.TryTake(out _);
+                if (emp.Value.HasEnded) 
+                    ItemReq.ActiveEmps.TryRemove(emp.Key, out _);
             });
         }
         #endregion

@@ -30,7 +30,7 @@ namespace SpaceBattleSim
         // battle time tracking
         private static TimeSpan _battleTime = TimeSpan.Zero;
         public static event StatusChangeHandler? ShipStatusChanged;
-        public static readonly ConcurrentBag<ActiveEmpZone> ActiveEmps = new ConcurrentBag<ActiveEmpZone>();
+        public static readonly ConcurrentDictionary<string, ActiveEmpZone> ActiveEmps = new();
 
         // Start time of the current battle, used to track the duration of battles and reset times
         // when all ships are dead.
@@ -786,8 +786,7 @@ namespace SpaceBattleSim
                         else if (currentHP != _spaceShip.ShieldIntegrity)
                         {
                             currentHP = _spaceShip.ShieldIntegrity;
-                            if (!ActiveEmps.Where(w => w.Center.Equals(center)).Any())
-                                ActiveEmps.Add(new ActiveEmpZone(center, 200, 2));
+                            ActiveEmps.TryAdd(_spaceShip.Name, new ActiveEmpZone(center, 200, 2));
 
                             // release the lock on the partially repaired ship, because this healer is 
                             // taking damage from Raiders.
@@ -1215,10 +1214,19 @@ namespace SpaceBattleSim
             // Border of button
             g.DrawRectangle(this.GetBorder, clsBtnRect);
         }
-
+        /// <summary>
+        /// Checks if the ship is currently within the radius of any active EMP blasts
+        /// and applies the disabled status if so. RepairRigs are the only ones that
+        /// can create EMP blasts, and Raiders are the only ones that can be affected
+        /// by them, so this method checks if the current ship is a Raider and not
+        /// already disabled, then iterates through the active EMP zones to see if the
+        /// ship's location falls within any of them. If it does, the ship is disabled
+        /// for 5 seconds, during which it cannot move or attack, but it can still be
+        /// targeted and damaged by other ships, making it vulnerable.
+        /// </summary>
         private bool Check4EmpBlast()
         {
-            if (!_spaceShip.IsRaider)
+            if (!_spaceShip.IsRaider || _spaceShip.IsDisabled)
                 return false;
 
             // Check if this is a valid ship for EMP blast radius to effect it.
@@ -1227,11 +1235,8 @@ namespace SpaceBattleSim
                 _spaceShip.Location.IsEmpty)
                 return false;
 
-            if (ActiveEmps.Where(w => w.IsActive && w.Contains(_spaceShip.Location)).Any())
+            if (ActiveEmps.Where(w => w.Value.IsActive && w.Value.Contains(_spaceShip.Location)).Any())
             {
-                if (!_spaceShip.IsRaider)
-                    return false;
-
                 _spaceShip.DisableShip(5, _spaceShip.Location);
                 Debug.WriteLine($"Ship '{_spaceShip.Name}' was hit by an EMP blast and is disabled for 5 seconds!");
                 return true;
@@ -1263,9 +1268,14 @@ namespace SpaceBattleSim
                     // status and position for this ship, which is crucial for accurate rendering
                     // and interaction during battle.
                     _spaceShip = spaceShip;
-                    
+
+                    // RepairRigs use EMP to disable Raiders once a raider attacks the RepairRig
+                    // while it's healing. If EMP blast hits, it disables the ship for 5 seconds,
+                    // during which it cannot move or attack, but it can still be fired apon, so
+                    // it is vulnerable.
                     Check4EmpBlast();
 
+                    // if a status change, send an event to anyone listening.
                     if (_shipStatus != _spaceShip.Status)
                     {
                         // update history.

@@ -18,6 +18,7 @@
 
             // Calculate the angle step based on how many segments we want
             float angleStep = (float)(Math.PI * 2) / segments;
+            float lastDisp = 0;
 
             for (int i = 0; i < segments; i++)
             {
@@ -26,7 +27,10 @@
                 // Generate a random displacement for the lightning effect
                 // This displaces the radius slightly inward or outward
                 float displacement = (float)(_random.NextDouble() * 2.0 - 1.0) * jaggedness;
-                float noisyRadius = radius + displacement;
+                lastDisp = (lastDisp * 0.25f) + (displacement * 0.75f);
+                float noisyRadius = radius + lastDisp;
+
+                //float noisyRadius = radius + displacement;
 
                 // Convert polar coordinates (angle, radius) to Cartesian (X, Y)
                 float x = center.X + (float)Math.Cos(currentAngle) * noisyRadius;
