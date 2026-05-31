@@ -1617,8 +1617,7 @@ namespace SpaceBattleSim
 
             // remove all Emps that no longer are active.
             ItemReq.ActiveEmps.ToList().ForEach(emp => {
-                if (emp.ExpiresAt < DateTime.UtcNow)
-                    ItemReq.ActiveEmps.TryTake(out _);
+                if (emp.HasEnded) ItemReq.ActiveEmps.TryTake(out _);
             });
         }
     }

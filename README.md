@@ -23,7 +23,7 @@ A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to bui
 
 ## What It Is
 
-**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, rotating planet, and Raiders fighting against Friendly autonomously. Ships move randomly across the canvas, detect enemies inside their *hitbox radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.  The simulation is designed to be visually engaging and strategically dynamic, with the ebb and flow of battle creating emergent moments of triumph and defeat.  The default configuration creates a fast-paced, intense battle where the home team is under constant pressure from the Raiders, and the RepairRigs must work tirelessly to keep them alive.  The visual effects and dynamic color changes add to the immersive experience, making it more than just a technical demo but a captivating space battle simulation.
+**SpaceBattleSim** has no interaction except to look at stats.  It spawns a configurable fleet of spaceships dynamically on a dark grid with 3 Nebulae, many stars, a flying comet, rotating planet, and Raiders fighting against Friendly autonomously. Ships move randomly across the canvas, detect enemies inside their *HitBox Radius*, fire lasers, take damage, and either die or get revived by a healer, if friendly. The entire simulation runs with no game engine or graphics framework — it is a showcase of raw WinForms `OnPaint` / `Timer`-driven rendering with zero jumpiness or lag.  The simulation is designed to be visually engaging and strategically dynamic, with the ebb and flow of battle creating emergent moments of triumph and defeat.  The default configuration creates a fast-paced, intense battle where the home team is under constant pressure from the Raiders, and the RepairRigs must work tirelessly to keep them alive.  The visual effects and dynamic color changes add to the immersive experience, making it more than just a technical demo but a captivating space battle simulation.
 
 **Single Monitor - Full Screen**
 ![Single Monitor full-screen view](imgs/full_screen_view.png)
@@ -50,7 +50,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 - **Per-ship independent threads** — every ship runs its AI loop on its own background thread.
 - **Thread-safe shared state** — a `ConcurrentDictionary` tracks every ship's current position and health, readable by all threads simultaneously.
 - **Conflict-free repair assignments** — a second thread-safe dictionary ensures only one RepairRig claims a dead ally at a time.
-- **Dynamic color health indicator** — ship color shifts as shields drops as hitbox diameter changes base on power transfer if enabled.
+- **Dynamic color health indicator** — ship color shifts as shields drops as HitBox diameter changes base on power transfer if enabled.
 - **Laser and repair-beam rendering** — red laser lines for attacks, blue repair-beam lines for recovery.
 - **EMP blast rendering** — visual effects for EMP blasts from RepairRigs that disable Raider ships temporarily.  Only used when RepairRig is currently healing and is attacked directly.
 - **F-key HUD overlays** — press Esc to Pause/Unpause, F1 for help, F2 for ship stats, F3 to view live battle stats, F5 to instantly reset all ships back to full health, or F12 to open an Explorer window at the simulation root folder.  Audit logging, if enabled, will show manual reset instead of Ally or Raider win.
@@ -100,7 +100,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 > **CriticalTransfer** settings enable a risky but powerful last-ditch survival tactic for ships on the brink of destruction. When enabled, if a ship's shields drop below 25%, it can sacrifice half of its remaining firepower to instantly restore its shields to full. This creates dramatic comeback moments and adds strategic depth, as even a heavily damaged ship has a chance to turn the tide of battle with a well-timed transfer. Raiders with this ability become particularly dangerous, as they can survive long enough to unleash devastating counterattacks after recharging their shields.  The firepower cannot drop below 2 for either ally or raiders, so this is a last-ditch move that can be used multiple times per match based on original firepower the each ship.  This means Raiders can use this 4 times, **RepairRigs (Healers) can also use this 4 times** (now matching Raiders with 16 base power), Fighters once, and Capital Ships can use this twice within one battle.
 
-> **Shield Transfer Color**: When a ship performs a critical transfer, the hitbox displayed around the ship changes color.  Based on the amount of times the ship has performed a critical transfer, the color changes to reflect the increasing risk and desperation of the move.  During each of as a shipt takes damage, the color will get dim until it's unable to transfer on the last 25%.  Original power, hitbox is green/25%-red.  Half power, Cyan/25%-DarkOrchid.  Quarter power, Orange/25%-BlueViolet.  Eighth power, Silver/25%-HotPink.
+> **Shield Transfer Color**: When a ship performs a critical transfer, the HitBox displayed around the ship changes color.  Based on the amount of times the ship has performed a critical transfer, the color changes to reflect the increasing risk and desperation of the move.  During each of as a shipt takes damage, the color will get dim until it's unable to transfer on the last 25%.  Original power, HitBox is green/25%-red.  Half power, Cyan/25%-DarkOrchid.  Quarter power, Orange/25%-BlueViolet.  Eighth power, Silver/25%-HotPink.
 
 ---
 
@@ -108,28 +108,28 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 
 All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 
-| Ship Type | Shields | Power | Speed | Hitbox | Recovery Priority | Notes |
+| Ship Type | Shields | Power | Speed | HitBox | Recovery Priority | Notes |
 |-----------|---------|-------|-------|--------|-------------------|-------|
-| **RepairRig** (Healer) | 400 | **16** | **2.5** | 20 px | **Critical** (1st) | Smallest hitbox, fastest; sole purpose is recovery. Power fuels healing. Auto-renews power at base. |
+| **RepairRig** (Healer) | 400 | **16** | **2.5** | 20 px | **Critical** (1st) | Smallest HitBox, fastest; sole purpose is recovery. Power fuels healing. Auto-renews power at base. |
 | **Capital Ship** | **800** | 8 | 0.3 | 75 px | **High** (2nd) | Slowest, Twice Raider shields, but half their power |
-| **Fighter** | 200 | 4 | 1.0 | 50 px | **Low** (3rd) | Balanced grunt unit; home-team protector |
+| **Fighter** | 400 | 8 | 1.0 | 50 px | **Low** (3rd) | Balanced grunt unit; home-team protector |
 | **Raider** (Enemy) | 400 | **16** | 1.5 | 50 px | **None** | Twice Capital Ship power; **never revived** when destroyed; heals via hits, kill bonuses, and group resets |
-| ~~Bomber~~ | 400 | 6 | 0.75 | 60 px | **Medium** | **Reserved — not currently deployed** |
-| ~~Transport~~ | 2000 | 0 | 2.0 | 40 px | **Low** | **Reserved — not currently deployed** |
+
 
 **Raider combat rules:**
 
 | Rule | Detail |
 |------|--------|
-| **Glass cannon** | Half the shields of a Capital Ship (400 vs 800), but twice the firepower (16 vs 8) |
+| **Glass cannon** | Half the shields (400) of a Capital Ship (800), but twice the firepower (16 vs 8) |
 | **Speed advantage** | 5× faster than Capital Ships (1.5 vs 0.3); matches a Fighter's mobility |
-| **Smaller target** | Same hitbox as a Fighter (50 px); Capital Ships present a much larger target (75 px) |
+| **Smaller range** | Same HitBox as a Fighter (50 px); Capital Ships present a much larger range (75 px) |
 | **Heal on hit** | Gain **Current Power / 2 HP** for every hit landed against any allied ship |
-| **Kill bonus** | Receive the victim's **(original power * 2) stat as bonus HP** (added to shields, once) when destroying an allied ship — killing a Healer grants 32 HP, killing a Fighter grants 8 HP, etc. |
+| **Kill bonus** | Receive the victim's **(original power * 2) stat as bonus HP** (added to shields, once) when destroying an allied ship — killing a Healer grants 32 HP, killing a Fighter grants 16 HP, etc. |
 | **Escalating group reset** | After **50%** of all Raiders have been destroyed, every surviving Raider receives a **full shield and power reset**. The threshold then halves: at **25%** living, another full reset; at **12.5%**, another; and so on, all the way down to **1%** living Raiders. This cascade of resets makes the last surviving Raiders increasingly difficult to finish off. |
-| **self-repair** | Heal Only comes between resets — hit bonuses, kill bonuses, and the group reset mechanic |
+| **self-repair** | Heal Only comes between resets — hit bonuses (power/2), kill bonuses (target power*2), and the group reset mechanic |
 | **Permanent death** | Never revived by RepairRigs; every Raider loss is final and shifts the battle permanently |
-| **Heal priority** | Raiders are never prioritized for healing — RepairRigs ignore them entirely |
+| **Heal priority** | Raiders are never prioritized for healing — RepairRigs ignore them entirely as RepairRigs can be killed by a Raider |
+| **Disabled** | Raiders can attack RepairRigs, but if they ever attack while a RepairRig is performing a Heal, the Raider will be disabled by the RepairRig's EMP defensive systems for 5 seconds.  If a EMP is already in effect and the Raider runs into it, the effect to that specific Raider starts then and will last 5 seconds, even if the EMP is no longer active. |
 
 --
 
@@ -234,7 +234,7 @@ BgPlatform (UI Thread)
                                 └── BufferedGraphics.Render() ──► flips to screen
 
 SpaceShip Thread (× N)
-  └── Move ──► scan hitbox ──► attack / repair ──► update shared dictionary entry
+  └── Move ──► scan HitBox ──► attack / repair ──► update shared dictionary entry
 ```
 
 -	Timer → RefreshTimer

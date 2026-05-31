@@ -21,23 +21,22 @@
         // U+2CD5 - 11501 - Ⳮ - Leftwards triangle-headed curved arrow
         // U+2313 - 8987 - ⌓ - Watch -- HourGlass With Flowing Sand
         // U+2316 - 8982 - ⌖ - Position Indicator
+        // U+2b5d - 11213 - ⯍ - Leftwards triangle-headed right angle arrow
+        // U+293a - 10618 - ⥺ - Leftwards triangle-headed arrow with double vertical stroke
+        // U+2620 - 9760 - ☠️ - Skull and crossbones --- CANNOT BE USED, TAKES MORE THAN ONE CHARACTER SPACE, SEE https://www.compart.com/en/unicode/U+2620
 
         readonly static string _repairRigShip = char.ConvertFromUtf32(8982);   // 8982 - ⌖ = \u2316
         readonly static string _capitalShip = char.ConvertFromUtf32(11159);    // 10070 - ❖ = \u2756
-        readonly static string _bomberShip = char.ConvertFromUtf32(11258);     // 11258 - ⯺ = \u2bfa
+        // readonly static string _bomberShip = char.ConvertFromUtf32(11258);     // 11258 - ⯺ = \u2bfa
         readonly static string _fighterShip = char.ConvertFromUtf32(11033);    // 11033 - ⬙ = \u2b59
-        readonly static string _transportShip = char.ConvertFromUtf32(11213);  // 11213 - ⯍ = \u2b5d
         readonly static string _raiderShip = char.ConvertFromUtf32(11501);     // 11501 - Ⳮ = \u2cd5
-        //readonly static string _raiderShip = char.ConvertFromUtf32(10618);   // 10618 - ⥺ = \u293a
-        //readonly static string _deadShip = char.ConvertFromUtf32(9760);      // 9760 - ☠️ = \u2620
 
-        readonly static Color _unuseDefault = Color.Gray;
+        // readonly static Color _unuseDefault = Color.Gray;
         readonly static Color _raiderColor = Color.FromArgb(255, 255, 0, 0);
         readonly static Color _fighterColor = Color.FromArgb(255, 0, 255, 0);
         readonly static Color _capitalShipColor = Color.FromArgb(255, 200, 200, 200);
         readonly static Color _repairRigShipColor = Color.FromArgb(255, 0, 255, 255);
-        readonly static Color _bomberShipColor = _unuseDefault;
-        readonly static Color _transportShipColor = _unuseDefault;
+        //readonly static Color _bomberShipColor = _unuseDefault;
 
         static private readonly Dictionary<ShipType, 
                 (int Shields, int Power, int HitBox, float Speed, 
@@ -54,15 +53,13 @@
             // after healer and protected at all costs.
             { ShipType.Capital, (800, 8, 75, 0.3f, RecoverOrder.High, _capitalShip, _capitalShipColor, 0.0f) },
             // Small random ship to protect the home base.
-            { ShipType.Fighter, (200, 4, 50, 1.0f, RecoverOrder.Low, _fighterShip, _fighterColor, 0.0f) },
+            { ShipType.Fighter, (400, 8, 50, 1.0f, RecoverOrder.Low, _fighterShip, _fighterColor, 0.0f) },
             // Half the shield of a Captial ship and twice as much power.
             // The same hitbox and speed as a Fighter, but no recovery since
             // they are not on the home team.  Rotation needs work, leave 0.0f for now. 
             { ShipType.Raider, (400, 16, 50, 1.50f, RecoverOrder.None, _raiderShip, _raiderColor, 0.0f) },
             // #############[ Curent not used ]############# 
-            { ShipType.Bomber, (400, 6, 60, 0.75f, RecoverOrder.Medium, _bomberShip, _bomberShipColor, 0.0f) },
-            // #############[ Curent not used ]############# 
-            { ShipType.Transport, (2000, 0, 40, 2.0f, RecoverOrder.Low, _transportShip, _transportShipColor, 0.0f) },
+            // { ShipType.Bomber, (600, 32, 60, 0.75f, RecoverOrder.Medium, _bomberShip, _bomberShipColor, 0.0f) },
         };
 
         private int _shields = 0;

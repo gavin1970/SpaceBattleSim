@@ -761,6 +761,7 @@ namespace SpaceBattleSim
                 }
                 else
                 {
+                    var center = _allSpaceShips[_spaceShip.Name].Location;
                     var currentHP = _allSpaceShips[_spaceShip.Name].ShieldIntegrity;
                     _allSpaceShips[_activeTargetName].Repair(_spaceShip.Power, this.Name, true);
                     while (_allSpaceShips[_activeTargetName].BeingRepaired)
@@ -776,8 +777,8 @@ namespace SpaceBattleSim
                         else if (currentHP != _allSpaceShips[_spaceShip.Name].ShieldIntegrity)
                         {
                             currentHP = _allSpaceShips[_spaceShip.Name].ShieldIntegrity;
-                            if (!ActiveEmps.Where(w => w.Center.Equals(_allSpaceShips[_spaceShip.Name].Location)).Any())
-                                ActiveEmps.Add(new ActiveEmpZone(_allSpaceShips[_spaceShip.Name].Location, 200, 5));
+                            if (!ActiveEmps.Where(w => w.Center.Equals(center)).Any())
+                                ActiveEmps.Add(new ActiveEmpZone(center, 200, 2));
 
                             // release the lock on the partially repaired ship, because this healer is 
                             // taking damage from Raiders.
@@ -1265,10 +1266,10 @@ namespace SpaceBattleSim
                     // access to this class, so lets reset it's state.  RepairRig are an
                     // exception, they can be repaired but not fight, so they don't get
                     // the animation treatment.
-                    if(_spaceShip.IsRaider && !this.Animation && !_spaceShip.IsDisabled)
-                        this.Animation = true;
+                    //if(_spaceShip.IsRaider && !this.Animation && !_spaceShip.IsDisabled && !_spaceShip.IsDead)
+                    //    this.Animation = true;
 
-                    if (!this.Animation)
+                    if (!this.Animation && !_spaceShip.IsDead)
                     {
                         if(_spaceShip.IsRaider && !_spaceShip.IsDisabled && !_spaceShip.IsDead)
                             this.Animation = true;
@@ -1277,7 +1278,7 @@ namespace SpaceBattleSim
                     }
                     else
                     {
-                        if (_spaceShip.BeingRepaired || _spaceShip.IsDisabled)
+                        if (_spaceShip.BeingRepaired || _spaceShip.IsDisabled || _spaceShip.IsDead)
                             this.Animation = false;
                     }
                 }
