@@ -41,6 +41,11 @@
         /// current UTC time compared to the ExpiresAt timestamp.
         /// </summary>
         public bool HasEnded => DateTime.UtcNow >= ExpiresAt;
+        /// <summary>
+        /// Indicates whether the EMP zone is currently active, which 
+        /// is true if it has not yet expired.
+        /// </summary>
+        public bool IsActive => !HasEnded;
 
         /// <summary>
         /// Thread-safe check using standard Pythagorean math to see if a ship is caught inside.

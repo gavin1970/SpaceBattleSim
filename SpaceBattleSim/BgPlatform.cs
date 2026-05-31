@@ -1608,8 +1608,9 @@ namespace SpaceBattleSim
 
             base.OnFormClosed(e);
         }
-        #endregion
-
+        /// <summary>
+        /// Handles the clean up of expired EMP effects from the active EMP list.
+        /// </summary>
         private void Timer_Emp_Cleanup_Tick(object sender, EventArgs e)
         {
             if (ItemReq.ActiveEmps.IsEmpty)
@@ -1620,5 +1621,6 @@ namespace SpaceBattleSim
                 if (emp.HasEnded) ItemReq.ActiveEmps.TryTake(out _);
             });
         }
+        #endregion
     }
 }

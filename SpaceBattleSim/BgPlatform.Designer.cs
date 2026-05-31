@@ -37,7 +37,7 @@ namespace SpaceBattleSim
             // Timer_Emp_Cleanup
             // 
             Timer_Emp_Cleanup.Enabled = true;
-            Timer_Emp_Cleanup.Interval = 1000;
+            Timer_Emp_Cleanup.Interval = 500;
             Timer_Emp_Cleanup.Tick += Timer_Emp_Cleanup_Tick;
             // 
             // BgPlatform

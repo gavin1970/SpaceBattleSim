@@ -15,6 +15,15 @@ namespace SpaceBattleSim
     internal class ItemReq : IDisposable
     {
         const int _alternateShadowDepth = 7;
+        // frames between display of laser flash.
+        const int _maxShotCounter = 3;
+        // Randomize the initial shot counter for each ship so they don't all fire
+        // in sync, creating a more dynamic and visually interesting battle scene.
+        // By starting with a random value between 0 and the maximum shot counter,
+        // we can ensure that each ship's firing pattern is staggered, which adds to
+        // the realism and excitement of the simulation.
+        private int _shotCounter = Random.Shared.Next(0, _maxShotCounter + 1);
+
         internal static readonly object _logLocker = new();
         internal static Logger _logger = Logger.Empty;
 
@@ -736,7 +745,7 @@ namespace SpaceBattleSim
                         // Self heal for 1/2 the power for each hit on a target.  As the raider takes on more damage
                         // and loses power, it recieves less self healing.  This is the equivalent of Ally's RepairRig,
                         // but for Raiders only.
-                        var repair = Math.Clamp((_allSpaceShips[_spaceShip.Name].Power / 2), 1, 8);
+                        var repair = Math.Clamp((_spaceShip.Power / 2), 1, 8);
 
                         // If the target is killed by the hit, the Raider gets a bonus heal that is double to
                         // the target's original power on top of what it will recieve for it's repair.
@@ -761,8 +770,8 @@ namespace SpaceBattleSim
                 }
                 else
                 {
-                    var center = _allSpaceShips[_spaceShip.Name].Location;
-                    var currentHP = _allSpaceShips[_spaceShip.Name].ShieldIntegrity;
+                    var center = _spaceShip.Location;
+                    var currentHP = _spaceShip.ShieldIntegrity;
                     _allSpaceShips[_activeTargetName].Repair(_spaceShip.Power, this.Name, true);
                     while (_allSpaceShips[_activeTargetName].BeingRepaired)
                     {
@@ -774,9 +783,9 @@ namespace SpaceBattleSim
                             _allSpaceShips[_activeTargetName].ResetStats(this.Name, true, false);
                             break;
                         }
-                        else if (currentHP != _allSpaceShips[_spaceShip.Name].ShieldIntegrity)
+                        else if (currentHP != _spaceShip.ShieldIntegrity)
                         {
-                            currentHP = _allSpaceShips[_spaceShip.Name].ShieldIntegrity;
+                            currentHP = _spaceShip.ShieldIntegrity;
                             if (!ActiveEmps.Where(w => w.Center.Equals(center)).Any())
                                 ActiveEmps.Add(new ActiveEmpZone(center, 200, 2));
 
@@ -1133,12 +1142,16 @@ namespace SpaceBattleSim
             var hbRect = new RectangleF(shipCx - hbR, shipCy - hbR, hbR * 2, hbR * 2);
             g.DrawEllipse(_spaceShip.HitboxCircle, hbRect);
 
-            // If the ship has recently fired (within the last 300ms), draw a laser line toward the last target
-            // location to visually indicate an attack, creating a dynamic combat effect that shows the direction
-            // of fire and adds visual feedback to the battle interactions. _showFire is true every other frame,
-            // causing a blink.
-            if (_showFire.TrySetTrue())
+            // If the ship has recently fired (within the last 3 frames), draw a laser line toward the last target
+            // location to visually indicate an attack, creating a dynamic flashing laser effect that shows the direction
+            // of fire and adds visual feedback to the battle interactions. _maxShotCounter sets framees between each shot,
+            // so adjusting it can make the laser flash faster or slower, but it should be balanced to create a noticeable
+            // effect without overwhelming the visuals or making the laser appear static.  The random initial value for
+            // _shotCounter adds variability to the firing pattern between ships, so not all ships will fire at different
+            // times, enhancing the dynamic feel of the battle scene.
+            if (Interlocked.Decrement(ref _shotCounter) == 0)
             {
+                Interlocked.Exchange(ref _shotCounter, _maxShotCounter);
                 if (!_lastTargetLocation.IsEmpty && (DateTime.UtcNow - _lastCombatTime).TotalMilliseconds < 300)
                     g.DrawLine(_laserPen, new PointF(shipCx, shipCy), _lastTargetLocation);
                 else if ((DateTime.UtcNow - _lastCombatTime).TotalMilliseconds >= 300)
@@ -1214,13 +1227,12 @@ namespace SpaceBattleSim
                 _spaceShip.Location.IsEmpty)
                 return false;
 
-            if (ActiveEmps.Where(w => w.ExpiresAt > DateTime.UtcNow && w.Contains(_allSpaceShips[_spaceShip.Name].Location)).Any())
+            if (ActiveEmps.Where(w => w.IsActive && w.Contains(_spaceShip.Location)).Any())
             {
-                if (!_spaceShip.IsRaider || !_allSpaceShips[_spaceShip.Name].IsRaider)
+                if (!_spaceShip.IsRaider)
                     return false;
 
-                _allSpaceShips[_spaceShip.Name].DisableShip(5, _allSpaceShips[_spaceShip.Name].Location);
-                //_spaceShip.DisableShip(5, _spaceShip.Location);
+                _spaceShip.DisableShip(5, _spaceShip.Location);
                 Debug.WriteLine($"Ship '{_spaceShip.Name}' was hit by an EMP blast and is disabled for 5 seconds!");
                 return true;
             }
