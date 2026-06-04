@@ -14,6 +14,8 @@ namespace SpaceBattleSim
     /// </summary>
     internal class ItemReq : IDisposable
     {
+        const int _empLengthSec = 2;
+        const int _empDiameterPx = 200;
         const int _alternateShadowDepth = 7;
         // frames between display of laser flash.
         const int _maxShotCounter = 3;
@@ -742,21 +744,10 @@ namespace SpaceBattleSim
                             return;
                         }
 
-                        // Self heal for 1/2 the power for each hit on a target.  As the raider takes on more damage
-                        // and loses power, it recieves less self healing.  This is the equivalent of Ally's RepairRig,
-                        // but for Raiders only.
-                        var repair = Math.Clamp((_spaceShip.Power / 2), 1, 8);
-
-                        // If the target is killed by the hit, the Raider gets a bonus heal that is double to
-                        // the target's original power on top of what it will recieve for it's repair.
-                        // Double, because this is a one time thing that can only happen if they kill the
-                        // target, and it is meant to be a bonus reward.
-                        // This can be a significant boost and may allow the Raider to survive longer
-                        // in battle, especially if it manages to kill high-power targets. This adds
-                        // an element of risk and reward to the Raider's playstyle, encouraging
-                        // aggressive tactics while also providing a potential lifeline if they
-                        // can successfully take down their opponents.
-                        var bonus = _allSpaceShips[_activeTargetName].OrgPower * 2;
+                        // Self heal for the current target's power for each hit on a target.  As the target
+                        // takes on more damage and loses power, the Raider receives less self healing.  This is the
+                        // equivalent of Ally's RepairRig, but for Raiders only.
+                        var repair = Math.Clamp((_allSpaceShips[_activeTargetName].Power), 1, 8);
 
                         // Repair thy self.
                         _spaceShip.Repair(repair, _activeTargetName, false);
@@ -765,7 +756,23 @@ namespace SpaceBattleSim
                         // there is no bonus repair.  If they kill a RepairRig, then they get 32hp, the max that can
                         // be recieved for a bonus and it is in addition to the self heal above.
                         if (_allSpaceShips[_activeTargetName].IsDead)
+                        {
+                            // If the target is killed by the hit, the Raider gets a bonus heal that is double to
+                            // the target's original power on top of what it will recieve for it's repair.
+                            // Double, because this is a one time thing that can only happen if they kill the
+                            // target, and it is meant to be a bonus reward.
+                            // This can be a significant boost and may allow the Raider to survive longer
+                            // in battle, especially if it manages to kill high-power targets. This adds
+                            // an element of risk and reward to the Raider's playstyle, encouraging
+                            // aggressive tactics while also providing a potential lifeline if they
+                            // can successfully take down their opponents.
+                            var bonus = _allSpaceShips[_activeTargetName].OrgPower * 2;
+
+                            // Add bonus to Raider's HP, but cap it at the max HP for a Raider.
+                            // However, if Raider's power is down, increase the bonus accordingly
+                            // along with power.
                             _spaceShip.Repair(bonus, _activeTargetName, false);
+                        }
                     }
                 }
                 else
@@ -786,7 +793,7 @@ namespace SpaceBattleSim
                         else if (currentHP != _spaceShip.ShieldIntegrity)
                         {
                             currentHP = _spaceShip.ShieldIntegrity;
-                            ActiveEmps.TryAdd(_spaceShip.Name, new ActiveEmpZone(center, 200, 2));
+                            ActiveEmps.TryAdd(_spaceShip.Name, new ActiveEmpZone(center, _empDiameterPx, _empLengthSec));
 
                             // release the lock on the partially repaired ship, because this healer is 
                             // taking damage from Raiders.
@@ -801,6 +808,9 @@ namespace SpaceBattleSim
                         // the player a chance to see the RepairRig in action even in tough situations.
                         Task.Delay(100).Wait();
                     }
+
+                    // flyaway EMP around target after repairs, so healed target can get run or start shooting..
+                    // ActiveEmps.TryAdd(_spaceShip.Name, new ActiveEmpZone(_allSpaceShips[_activeTargetName].Location, _empDiameterPx, _empLengthSec * 2));
 
                     _spaceShip.CurrentMission = ShipMission.HeadingHome;
                     _allSpaceShips[_activeTargetName].Release();

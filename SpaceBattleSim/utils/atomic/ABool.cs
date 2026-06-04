@@ -1,12 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-// Copyright (c) 2026 Gavin W. Landon (chizl.com)
+﻿// Copyright (c) 2026 Gavin W. Landon (chizl.com)
 // Licensed under the MIT License. See LICENSE file http://www.chizl.com/LICENSE.txt for full license information.
 // SPDX-License-Identifier: MIT
 namespace Chizl.ThreadSupport
 {
     /// <summary>
-    /// Thread Safe System.Boolean value..
+    /// Lock-free thread-safe, System.Boolean value..
     /// <para>Why ABool:</para>
     /// <list type="bullet">
     ///   <item><description>Correct on all .NET versions</description></item>
@@ -35,7 +33,7 @@ namespace Chizl.ThreadSupport
         private const int TRUE = 1;
 
         // Value uses for True (1) or False (0).
-        private int _boolValue;
+        private int _boolValue = FALSE;
 
         /// <summary>
         /// Thread Safe System.Boolean value..<br/>
@@ -74,7 +72,6 @@ namespace Chizl.ThreadSupport
         ///     Return: True
         /// </code>
         /// </summary>
-        [NotNull]
         public bool Value => Volatile.Read(ref _boolValue) == TRUE;
         #endregion
 
@@ -199,7 +196,7 @@ namespace Chizl.ThreadSupport
         /// NOTE: Do not mutate while used as a key in hash-based collections.
         /// </summary>
         /// <returns>Based on Value, True returns 1, False returns 0.</returns>
-        public override int GetHashCode() => Value ? 1 : 0;
+        public override int GetHashCode() => Value ? TRUE : FALSE;
         /// <summary>
         /// To display in strings, this override will show up correctly.
         /// <code>

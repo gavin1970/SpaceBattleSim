@@ -1,4 +1,5 @@
-﻿# SpaceBattleSim — Space Battleground Simulation
+﻿
+# ![imgs/skull_front-view_full_bg_1024x559.png](imgs/skull_front-view_full_bg_1024x559.png)
 
 A pure **.NET 8 / WinForms** battlefield simulation that demonstrates how to build real-time 2-D graphics **without any third-party rendering libraries**. Everything you see — nebulae, stars, moving comet, rotating planet, ships, lasers, repair-beams, the grid, shadow effects, and color blending — is drawn directly with `System.Drawing` (`Graphics`, `Pen`, `Brush`, `Font`, Unicode symbols, planet image dynamic resize/wrap for rotation) and EMP blasts.
 
@@ -127,6 +128,7 @@ All values are defined in `SpaceBattleSim/models/ships/ShipStats.cs`.
 | **Kill bonus** | Receive the victim's **(original power * 2) stat as bonus HP** (added to shields, once) when destroying an allied ship — killing a Healer grants 32 HP, killing a Fighter grants 16 HP, etc. |
 | **Escalating group reset** | After **50%** of all Raiders have been destroyed, every surviving Raider receives a **full shield and power reset**. The threshold then halves: at **25%** living, another full reset; at **12.5%**, another; and so on, all the way down to **1%** living Raiders. This cascade of resets makes the last surviving Raiders increasingly difficult to finish off. |
 | **self-repair** | Heal Only comes between resets — hit bonuses (power/2), kill bonuses (target power*2), and the group reset mechanic |
+| **power-restore** | When critical transfer is enabled for Raiders and has already been used, cutting the power in half each time, the power can be restore each time the HP bonus from hits and kills is more than max of the Shields.  Example: Raider used critical transfer twice, so power is at 4 and it's current Shields are at 390.  If the Raider kills a RepairRig, it gets (32*2) bonus HP.  Since the max HP is 400, the overflow 54 plus 30% of max shields (400 x .3) will be the new shields ((54 + (400 x .3)) = 174), but Power will be multiplied by 2, bring the power back to 8.  This can only happen until the power is back to original. |
 | **Permanent death** | Never revived by RepairRigs; every Raider loss is final and shifts the battle permanently |
 | **Heal priority** | Raiders are never prioritized for healing — RepairRigs ignore them entirely as RepairRigs can be killed by a Raider |
 | **Disabled** | Raiders can attack RepairRigs, but if they ever attack while a RepairRig is performing a Heal, the Raider will be disabled by the RepairRig's EMP defensive systems for 5 seconds.  If a EMP is already in effect and the Raider runs into it, the effect to that specific Raider starts then and will last 5 seconds, even if the EMP is no longer active. |

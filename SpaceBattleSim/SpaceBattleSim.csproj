@@ -17,8 +17,8 @@
 				<ApplicationIcon>Chizl_Atomic_Blue_512.ico</ApplicationIcon>
 				<PackageIcon>Chizl_Atomic_Blue_512.png</PackageIcon>
 				<AssemblyVersion>6.0.0.0</AssemblyVersion>
-				<FileVersion>6.5.31.1922</FileVersion>
-				<Version>6.5.31.0</Version>
+				<FileVersion>6.6.04.0644</FileVersion>
+				<Version>6.6.04.0</Version>
 		</PropertyGroup>
 
 		<ItemGroup>
@@ -37,24 +37,27 @@
 		</ItemGroup>
 
 		<ItemGroup>
-		  <None Update="..\imgs\full_all_screens_view.png">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
-		  <None Update="..\imgs\full_screen_view.png">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
-		  <None Update="App.config">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
-		  <None Update="skins\fungal_planet.png">
-		    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		  </None>
-		  <None Update="skins\gas_giant_planet.png">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
-		  <None Update="skins\jupiter-surface.jpg">
-		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		  </None>
+				<None Update="..\imgs\skull_front-view_full_bg_1024x559.png">
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
+				<None Update="..\imgs\full_all_screens_view.png">
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
+				<None Update="..\imgs\full_screen_view.png">
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
+				<None Update="App.config">
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
+				<None Update="skins\fungal_planet.png">
+						<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+				</None>
+				<None Update="skins\gas_giant_planet.png">
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
+				<None Update="skins\jupiter-surface.jpg">
+						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+				</None>
 		</ItemGroup>
 
 </Project>

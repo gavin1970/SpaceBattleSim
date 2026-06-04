@@ -58,6 +58,7 @@ namespace SpaceBattleSim
         // based on ShipType. This drops as they take damage.
         private char _hitBox = (char)0;
         private int _orgShields = 0;
+        private int _30PercentShields = 0;
         private int _shields = 0;
         private int _orgPower = 0;
         private int _power = 0;
@@ -124,6 +125,7 @@ namespace SpaceBattleSim
                 var shipStats = new ShipStats(_shipType);
                 _orgPower = shipStats.Power;
                 _orgShields = shipStats.Shields;
+                _30PercentShields = (int)(shipStats.Shields * 0.3);
                 _speed = shipStats.Speed;
                 _hitBox = (char)shipStats.Hitbox;
                 _criticalTransfer = criticalTransfer || shipStats.HasCritalTransfer;
@@ -610,15 +612,52 @@ namespace SpaceBattleSim
 
             // if already at or above original shields, no need to repair, and we can avoid the overhead
             // of the interlocked operations and status update.
-            if (this.Shields < _orgShields)
+            if (this.Shields < _orgShields && repairAmount > 0)
             {
                 hadChanged = true;
-                for (int i = 0; i < repairAmount; i++)
+                while (this.Shields < _orgShields)
                 {
-                    if (Interlocked.Increment(ref _shields) > _orgShields)
+                    for (int i = 0; i < repairAmount; i++)
                     {
-                        Interlocked.Exchange(ref _shields, _orgShields);
+                        if (Interlocked.Increment(ref _shields) > _orgShields)
+                        {
+                            Interlocked.Exchange(ref _shields, _orgShields);
+                            break;
+                        }
+                    }
+
+                    whatChanged.Append($"Shields was: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");
+
+                    if (!this.IsRaider || this.Shields < _orgShields)
                         break;
+
+                    var overflow = Math.Clamp(_orgShields - (this.Shields + repairAmount), repairAmount, _orgShields);
+                    // reset, to stay out of loop
+                    repairAmount = 0;
+
+                    // Doing it this way, because multiple threads could be repairing and we want to make sure we get
+                    // the current value each time, and not just once before the loop, which could lead to incorrect
+                    // calculations of overflow and power updates.
+                    var pow = this.Power;
+                    if (pow < _orgPower && overflow > 0)
+                    {
+                        var npow = Math.Clamp(pow * 2, 2, _orgPower);
+                        if (Interlocked.CompareExchange(ref _power, npow, pow) == pow)
+                        {
+                            whatChanged.Append($"Health had overflow: {overflow}, Power was: {pow} and new Power: {this.Power}");
+
+                            var shld = this.Shields; // Volatile read
+                            var updatedShld = _30PercentShields * overflow; //will never be more than original shields.
+                            if (Interlocked.CompareExchange(ref _shields, updatedShld, shld) == shld)
+                                whatChanged.Append($"With new Power comes overflow additions to health + 30%: Shields are are now: {updatedShld}");
+                            else 
+                            {
+                                whatChanged.Append($"Shields have already been updated.  Shields are are now: {updatedShld}");
+                                break;
+                            }
+                        }
+                        else
+                            break;  // it was changed somewhere else, so the update didn't take place.
                     }
                 }
                 whatChanged.Append($"Shields was: {prevShields}, now: {this.Shields} ({this.ShieldIntegrity:00}%)");

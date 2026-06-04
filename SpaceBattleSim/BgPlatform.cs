@@ -13,14 +13,20 @@ namespace SpaceBattleSim
 {
     public partial class BgPlatform : Form
     {
+        const string _appTitle = "Space Battleground Simulation";
+        const string _appTitleAbout = "chizl.com";
+        const string _formClosing = "Form_Closed";
+        const float _percentRepairRigs = 0.10f;              // set percentage of total ships that are repair rigs, rest will be Fighters and Raiders.
+        const float _percentCapitalShips = 0.10f;            // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
+
         private BufferedGraphicsContext _bufferedContext = BufferedGraphicsManager.Current;
         private BufferedGraphics? _bufferedGraphics;
 
         // Set to true to make the background transparent
         // while keeping the grid lines visible. 
-        static bool _transparentBG = false;
-        static ABool _startup = ABool.True;
-        const string _appTitle = "Space Battleground Simulation";
+        private static bool _transparentBG = false;
+        private static ABool _startup = ABool.True;
+        private static readonly object _empLock = new();
         private static string _appInfo = "Version: {0} - F1 (Help)";
         private static ABool _loopStarted = ABool.False;
         private static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
@@ -34,10 +40,6 @@ namespace SpaceBattleSim
             "* Only available when not in Windowed mode\n " +
             "Mouse over far left top and click banner that pops up for toggle background transparent.\n\t" +
             "* May be hard to toggle back, because the background is click through.";
-        const string _appTitleAbout = "chizl.com";
-        const string _formClosing = "Form_Closed";
-        const float _percentRepairRigs = 0.10f;              // set percentage of total ships that are repair rigs, rest will be Fighters and Raiders.
-        const float _percentCapitalShips = 0.10f;            // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
 
         readonly static (int min, int max) _totalBattleShipsLimits = (10, 150);         // set limits for total number of Fighters and Raiders combined.
         readonly static (int min, int max) _fpsRateLimits = (10, 30);                   // set limits for frames per second.
@@ -109,6 +111,9 @@ namespace SpaceBattleSim
         private static readonly Pen _glowPenBack = new Pen(Color.FromArgb(120, 255, 190, 64), 6f);       // orange outer glow
         private static readonly Pen _glowPenCenter = new Pen(Color.FromArgb(130, 64, 190, 255), 4f);     // cyan center accent
         private static readonly Pen _corePenFront = new Pen(Color.FromArgb(235, 150, 255, 255), 1.25f);  // bright core with increased transparency for a more subtle effect
+        // semi-transparent black border for planets to help them stand out against the background and add depth.
+        // The large width creates a halo effect around the planet, enhancing its visual prominence in the scene.
+        private readonly Pen _planetBorderPen = new Pen(Color.FromArgb(32, Color.Black), 10);
 
         // Moves X position of HomeBase and _capitalShip anchor points if changed.
         private static float _moveX = 0.0f;          // Center Screen: 200.0f, Far Left: -680.0f, Far Right: 1080.0f
@@ -148,7 +153,6 @@ namespace SpaceBattleSim
         private static PointF _percResetLoc = PointF.Empty;
         private static List<float[]> _baseCords = new();
         private static PointF _baseCenter = PointF.Empty;
-        private readonly Pen _planetBorderPen = new Pen(Color.FromArgb(32, Color.Black), 10);
 
         private CancellationTokenSource _loopTokenSource;
         internal static List<ItemReq> _battleShips = new List<ItemReq>();
@@ -1226,6 +1230,12 @@ namespace SpaceBattleSim
                 this.FormBorderStyle = FormBorderStyle.Fixed3D;
                 this.WindowState = FormWindowState.Normal;
                 this.Resize += BgPlatform_Resize;
+                // Set the form size in the FormStyle to match the actual client size of the form. 
+                FormStyle.FormSize = this.ClientSize;
+
+                // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
+                _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
+                                            FormStyle.ViewSize.Width, FormStyle.ViewSize.Height, FormStyle.ViewSize);
             }
             else if (_screenViewType == SimScreenView.FullScreenAll)
             {
@@ -1247,6 +1257,14 @@ namespace SpaceBattleSim
                 var virtualScreen = SystemInformation.VirtualScreen;
                 this.Location = new Point(virtualScreen.Left, virtualScreen.Top);
                 this.Size = new Size(virtualScreen.Width, virtualScreen.Height);
+                // Other classes will be using this form size for calculations, so I set it here in
+                // the constructor after the form is initialized. This ensures that any controls or
+                // animations that rely on the form size will have the correct dimensions to work with.
+                FormStyle.FormSize = this.Size;
+                // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
+                _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
+                                            FormStyle.FormSize.Width, FormStyle.FormSize.Height, FormStyle.FormSize);
+
             }
             else  // default to FullScreenCurrent
             {
@@ -1254,14 +1272,14 @@ namespace SpaceBattleSim
                 this.Size = thisScreen != null ? thisScreen.Bounds.Size : new Size(1920, 1080);
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.WindowState = FormWindowState.Maximized;
+                // Other classes will be using this form size for calculations, so I set it here in
+                // the constructor after the form is initialized. This ensures that any controls or
+                // animations that rely on the form size will have the correct dimensions to work with.
+                FormStyle.FormSize = this.Size;
+                // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
+                _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
+                                            FormStyle.FormSize.Width, FormStyle.FormSize.Height, FormStyle.FormSize);
             }
-
-            // Set the form size in the FormStyle to match the actual client size of the form. 
-            FormStyle.FormSize = this.ClientSize;
-
-            // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
-            _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
-                                        FormStyle.ViewSize.Width, FormStyle.ViewSize.Height, FormStyle.ViewSize);
 
             // If auto-lock is disabled in the configuration, call the method to prevent the
             // system from automatically locking the screen. This is important for ensuring
@@ -1398,7 +1416,7 @@ namespace SpaceBattleSim
 
             _glowPenBack.MiterLimit = 2f;
             _glowPenCenter.MiterLimit = 20f;
-            _corePenFront.MiterLimit = 10f;
+            _corePenFront.MiterLimit = 5f;     //10f
 
             while (!token.IsCancellationRequested)
             {
@@ -1478,17 +1496,9 @@ namespace SpaceBattleSim
 
                 if (_showComet)
                 {
-                    // if comet is off the screen, lets reset it.
-                    if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint))
-                    {
-                        _xCounter = -110.0f;
-                        _yCounter = 0.0f;
-                    }
-                    else
-                    {
-                        _xCounter += 0.1f;
-                        _yCounter += 0.05f;
-                    }
+                    // if comet is off the screen, lets reset it, else move it across the screen.
+                    if (_lastStartPoint.IsEmpty || !ClientRectangle.Contains(_lastStartPoint)) { _xCounter = -110.0f; _yCounter = 0.0f; }
+                    else { _xCounter += 0.1f; _yCounter += 0.05f; }
 
                     foreach (var (start, end, pen) in _cometShapes.DrawList)
                     {
@@ -1619,7 +1629,6 @@ namespace SpaceBattleSim
 
             base.OnFormClosed(e);
         }
-        private static readonly object _empLock = new();
         /// <summary>
         /// Handles the clean up of expired EMP effects from the active EMP list.
         /// </summary>
@@ -1629,10 +1638,12 @@ namespace SpaceBattleSim
                 return;
 
             // remove all Emps that no longer are active.
-            ItemReq.ActiveEmps.ToList().ForEach(emp => {
-                if (emp.Value.HasEnded) 
+            var allEmps = ItemReq.ActiveEmps.ToList();
+            foreach (var emp in allEmps)
+            {
+                if (emp.Value.HasEnded)
                     ItemReq.ActiveEmps.TryRemove(emp.Key, out _);
-            });
+            }
         }
         #endregion
     }
