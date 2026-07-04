@@ -1,13 +1,13 @@
 ﻿using Chizl.Applications;
 using Chizl.Configurations;
 using Chizl.ThreadSupport;
+using SpaceBattleSim.Models.Events;
 using SpaceBattleSim.shapes;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
-using System.Text;
-using SpaceBattleSim.Models.Events;
-using static SpaceBattleSim.StaticConfig;
 using System.Drawing.Text;
+using System.Text;
+using static SpaceBattleSim.StaticConfig;
 
 namespace SpaceBattleSim
 {
@@ -16,8 +16,10 @@ namespace SpaceBattleSim
         const string _appTitle = "Space Battleground Simulation";
         const string _appTitleAbout = "chizl.com";
         const string _formClosing = "Form_Closed";
-        const float _percentRepairRigs = 0.10f;              // set percentage of total ships that are repair rigs, rest will be Fighters and Raiders.
-        const float _percentCapitalShips = 0.10f;            // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
+        const float _percentRepairRigs = 0.10f;             // set percentage of total ships that are repair rigs, rest will be Fighters and Raiders.
+        const float _percentCapitalShips = 0.10f;           // set percentage of total ships that are capital ships, rest will be Fighters and Raiders.
+        const int _errorShowTimer = 30;                     // how long to show exceptions caught by try catch.
+        const int _errLineHight = 12;
 
         private BufferedGraphicsContext _bufferedContext = BufferedGraphicsManager.Current;
         private BufferedGraphics? _bufferedGraphics;
@@ -26,9 +28,9 @@ namespace SpaceBattleSim
         // while keeping the grid lines visible. 
         private static bool _transparentBG = false;
         private static ABool _startup = ABool.True;
-        private static readonly object _empLock = new();
         private static string _appInfo = "Version: {0} - F1 (Help)";
         private static ABool _loopStarted = ABool.False;
+        private static List<(DateTime expireTime, string errorMsg)> _errorInfo = new();
         private static readonly string _helpInfo = "---===[ F-Keys Support ]===---\n " +
             "Esc - Pause/Unpause screen\n " +
             "F1  - This Help Message\n " +
@@ -151,6 +153,7 @@ namespace SpaceBattleSim
         private static Point _lastStartPoint = Point.Empty;
         private static PointF _versionLoc = PointF.Empty;
         private static PointF _percResetLoc = PointF.Empty;
+        private static PointF _errorViewLoc = PointF.Empty;
         private static List<float[]> _baseCords = new();
         private static PointF _baseCenter = PointF.Empty;
 
@@ -212,13 +215,19 @@ namespace SpaceBattleSim
                 // Direct call to all ships to check their hitboxes
                 //foreach (var ship in _battleShips) 
                 //    ship.IsMouseInRect(e.Location);
-                if (CloseButton.IsMouseInRect(e.Location))
-                    CloseButton.Visible = true;
+                if (_pauseScreen || CloseButton.IsMouseInRect(e.Location))
+                {
+                    if (!CloseButton.Visible)
+                        CloseButton.Visible = true;
+                }
                 else
                     CloseButton.Visible = false;
 
-                if (TitleText.IsMouseInRect(e.Location))
-                    TitleText.Visible = true;
+                if (_pauseScreen || TitleText.IsMouseInRect(e.Location))
+                {
+                    if (!TitleText.Visible)
+                        TitleText.Visible = true;
+                }
                 else
                     TitleText.Visible = false;
 
@@ -227,14 +236,14 @@ namespace SpaceBattleSim
                 // set critical transfer to allow interaction even when paused. This property flag is unused as
                 // a button, so I'm using it for pausing.  If not paused, I reset critical transfer to false so
                 // they will hide again when not hovered over.
-                if (_pauseScreen && ((CloseButton.Visible && !CloseButton.CriticalTransfer) || (TitleText.Visible && !TitleText.CriticalTransfer)))
+                if (_pauseScreen)
                 {
-                    if (CloseButton.Visible)
+                    if (CloseButton.Visible && !CloseButton.CriticalTransfer)
                     {
                         CloseButton.CriticalTransfer = true;
                         this.Invalidate(new Region(CloseButton.Rectangle));
                     }
-                    else if (TitleText.Visible)
+                    else if (TitleText.Visible && !TitleText.CriticalTransfer)
                     {
                         TitleText.CriticalTransfer = true;
                         this.Invalidate(new Region(TitleText.Rectangle));
@@ -338,7 +347,7 @@ namespace SpaceBattleSim
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error deleting logs directory: {ex.Message}");
+                    _errorInfo.Add((DateTime.UtcNow.AddSeconds(_errorShowTimer), $"Error deleting logs directory\n\t{ex.Message}"));
                 }
             }
 
@@ -374,6 +383,7 @@ namespace SpaceBattleSim
                 // location for version text to be displayed.
                 _versionLoc = new PointF(Padding.Left + 10, FormStyle.FormSize.Height - Padding.Bottom - 25);
                 _percResetLoc = new PointF(Padding.Left, FormStyle.FormSize.Height - Padding.Bottom - 10);
+                _errorViewLoc = new PointF(Padding.Left + 10, Padding.Top + 10);
 
                 // If transparency background, you can create a fully transparent background while still allowing the
                 // grid lines to be visible. Adjusting the Alpha value allows you to control the transparency level of
@@ -1450,7 +1460,7 @@ namespace SpaceBattleSim
         /// <param name="g">The Graphics context to draw on.</param>
         /// <param name="empCenter">The center point of the EMP effect.</param>
         /// <param name="empDiameter">The diameter of the EMP effect.</param>
-        public void DrawEmp(Graphics g, PointF empCenter, float empDiameter)
+        private void DrawEmp(Graphics g, PointF empCenter, float empDiameter)
         {
             // Generate the EMP points
             PointF[] lightningRing = EffectsGenerator.CreateLightningRing(empCenter, empDiameter, segments: 200, jaggedness: 10f);
@@ -1462,7 +1472,43 @@ namespace SpaceBattleSim
             // Draw the Core (Thin, bright white/light blue)
             g.DrawLines(_corePenFront, lightningRing);
         }
+        private static ABool _errBeingDraw = ABool.False;
+        /// <summary>
+        /// Displays any exceptions that may be occuring.
+        /// </summary>
+        /// <param name="g"></param>
+        private void DrawErrors(Graphics g)
+        {
+            if (_errorInfo.Count == 0 || !_errBeingDraw.TrySetTrue())
+                return;
+            try
+            {
+                var deleteList = _errorInfo.Where(w => w.expireTime < DateTime.UtcNow).ToList();
+                foreach (var error in deleteList)
+                    _errorInfo.Remove(error);
 
+                var loc = _errorViewLoc;
+                if (_errorInfo.Count > 0)
+                {
+                    g.DrawString($"Exceptions: {_errorInfo.Count}", _statsFont, Brushes.White, loc);
+                    loc.Y += _errLineHight;
+                }
+
+                foreach (var error in _errorInfo)
+                {
+                    g.DrawString(error.errorMsg, _statsFont, Brushes.White, loc);
+                    loc.Y += _errLineHight;
+                }
+            }
+            catch (Exception e)
+            {
+                var err = e.Message;
+            }
+            finally
+            {
+                _errBeingDraw.SetFalse();
+            }
+        }
         /// <summary>
         /// Handles the timer tick event to trigger a repaint of the control.
         /// </summary>
@@ -1561,12 +1607,15 @@ namespace SpaceBattleSim
             else
                 g.DrawString($"{_diffRaiders:0.0}%", _xSmallFlierFont, Brushes.White, _percResetLoc);
 
+            DrawErrors(g);
+
             if (TitleText.Visible) TitleText.DrawItem(g);
             if (CloseButton.Visible) CloseButton.DrawItem(g);
 
             // Render buffer to screen (THIS is the only drawing that hits the screen)
             _bufferedGraphics.Render();
         }
+        static ABool _buttonsDrawn = ABool.False;
 
         /// <summary>
         /// Picks up when a status of any ship changes.  However we are only using it for 
@@ -1637,12 +1686,28 @@ namespace SpaceBattleSim
             if (ItemReq.ActiveEmps.IsEmpty)
                 return;
 
+            List<KeyValuePair<string, ActiveEmpZone>> allEmps = new();
+            try
+            {
+                allEmps = ItemReq.ActiveEmps.ToList();
+            }
+            catch (Exception ex) 
+            {
+                _errorInfo.Add((DateTime.UtcNow.AddSeconds(_errorShowTimer), $"Error during copy of EMPs:\n\t{ex.Message}")); 
+            }
+
             // remove all Emps that no longer are active.
-            var allEmps = ItemReq.ActiveEmps.ToList();
             foreach (var emp in allEmps)
             {
-                if (emp.Value.HasEnded)
-                    ItemReq.ActiveEmps.TryRemove(emp.Key, out _);
+                try
+                {
+                    if (emp.Value.HasEnded)
+                        ItemReq.ActiveEmps.TryRemove(emp.Key, out _);
+                }
+                catch(Exception ex)
+                {
+                    _errorInfo.Add((DateTime.UtcNow.AddSeconds(_errorShowTimer), $"Error during drop of EMPs:\n\t{ex.Message}"));
+                }
             }
         }
         #endregion

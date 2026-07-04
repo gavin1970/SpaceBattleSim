@@ -45,6 +45,7 @@ namespace SpaceBattleSim
             BackColor = Color.FromArgb(5, 5, 5);
             ClientSize = new Size(1113, 611);
             FormBorderStyle = FormBorderStyle.Fixed3D;
+            Cursor = Cursors.Cross;
             Name = "BgPlatform";
             ResumeLayout(false);
         }
