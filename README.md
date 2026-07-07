@@ -58,6 +58,7 @@ Config: TotalBattleShips: `150`, ScreenViewType: `FullScreenAll`, ShowMatrixGrid
 - **Unicode ship symbols** — each class is rendered as a distinct Unicode glyph using the Arial font.  Found in [SpaceBattleSim\models\ships\ShipStats.cs](SpaceBattleSim/models/ships/ShipStats.cs).
 - **Image ship symbols** — when app.config->`UseUnicodeShips` is set to false, each ShipType as Unicode glyph is rendered as an image on the fly in memory and used for the ships rendering.  Since Unicode uses color blending to show damage, the image rendering is static, but will have an overlay of black and get darker as the ship takes damage instead.
 - **Transparent-background mode** — Mouse over the top left title and click to toggle `_transparentBG` and make the grid background transparent and click through.
+- **MouseOver Ships Info** — When Paused {ESC}, Mouseover a ship will show ship power, original power, shields, and original shields.
 - **Audit Logging** — All ship actions (Kills, Deaths, Heals, CriticalTransfers, Damage taken at those last moments.) are logged to a file with timestamps for post-simulation analysis.  
   - Audit files are stored in the `.\\audit\\` directory with filenames like `260509_1504.log` (YearMonthDay_HourMin.log).  You can see 3 examples of these audit files found here: [SpaceBattleSim\auditLogs](SpaceBattleSim\auditLogs)
 

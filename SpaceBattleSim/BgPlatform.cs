@@ -160,6 +160,8 @@ namespace SpaceBattleSim
         private CancellationTokenSource _loopTokenSource;
         internal static List<ItemReq> _battleShips = new List<ItemReq>();
         private static string[] _fKeyDisplay = { };
+        private static string[] _shipInfo = { };
+        private static PointF _shipInfoLoc = PointF.Empty;
 
         public BgPlatform()
         {
@@ -190,7 +192,7 @@ namespace SpaceBattleSim
             // Other classes will be using this form size for calculations, so I set it here in
             // the constructor after the form is initialized. This ensures that any controls or
             // animations that rely on the form size will have the correct dimensions to work with.
-            FormStyle.FormSize = this.ClientSize;
+            //FormStyle.FormSize = this.ClientSize;
 
             // Start the object creation process with a short
             // delay to ensure the form is fully initialized.
@@ -248,14 +250,19 @@ namespace SpaceBattleSim
                         TitleText.CriticalTransfer = true;
                         this.Invalidate(new Region(TitleText.Rectangle));
                     }
-
                 }
-                else if (!_pauseScreen)
+                else
                 {
                     if (CloseButton.CriticalTransfer)
                         CloseButton.CriticalTransfer = false;
                     if (TitleText.CriticalTransfer)
                         TitleText.CriticalTransfer = false;
+
+                    if (!_shipInfoLoc.IsEmpty)
+                    {
+                        _shipInfoLoc = PointF.Empty;
+                        _shipInfo = new string[0];
+                    }
                 }
             };
 
@@ -381,8 +388,8 @@ namespace SpaceBattleSim
                 BuildCloseButton();
 
                 // location for version text to be displayed.
-                _versionLoc = new PointF(Padding.Left + 10, FormStyle.FormSize.Height - Padding.Bottom - 25);
-                _percResetLoc = new PointF(Padding.Left, FormStyle.FormSize.Height - Padding.Bottom - 10);
+                _versionLoc = new PointF(Padding.Left + 10, FormStyle.ViewSize.Height - 10);
+                _percResetLoc = !_showVersion ? _versionLoc : new PointF(Padding.Left + 10, FormStyle.ViewSize.Height - 20);
                 _errorViewLoc = new PointF(Padding.Left + 10, Padding.Top + 10);
 
                 // If transparency background, you can create a fully transparent background while still allowing the
@@ -760,7 +767,7 @@ namespace SpaceBattleSim
                         Animation = true,
                         Visible = true
                     };
-
+                    fly.MouseMove += Fly_MouseMove;
                     fly.SetShiptType(shipType);
                     _battleShips.Add(fly);
                 }
@@ -793,10 +800,11 @@ namespace SpaceBattleSim
 
                     // When anchoring lines and using Animation, the start of the line is
                     // the anchor location, while the end is dynamic following the ItemRec.
+                    fly.MouseMove += Fly_MouseMove;
                     fly.SetShiptType(ShipType.Capital);
                     _battleShips.Add(fly);
                 }
-
+                
                 var repairRig = new ShipStats(ShipType.RepairRig);
                 // Create x amount of  animated "X" items that will fling out
                 // from the center of the form when triggered.
@@ -834,11 +842,44 @@ namespace SpaceBattleSim
                     // the anchor location, while the end is dynamic following the ItemRec.
                     //fly.DLine.Add(new PointF(_anchorX + _moveX, _anchorY + _moveY), new PointF(fly.Right, fly.Bottom));
                     fly.DLine.Add(_baseCenter, new PointF(fly.Right, fly.Bottom));
+                    fly.MouseMove += Fly_MouseMove;
                     fly.SetShiptType(ShipType.RepairRig);
                     _battleShips.Add(fly);
                 }
             }));
         }
+
+        private void Fly_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (sender == null || !sender.GetType().Equals(typeof(ItemReq)) || !_pauseScreen)
+                return;
+
+            var ir = sender as ItemReq;
+            var name = ir.Name;
+
+            if (!name.StartsWith("Fighter") && !name.StartsWith("Raider") && 
+                !name.StartsWith("Capital") && !name.StartsWith("RepairRig"))
+                return;
+
+            if (ir.IsMouseInRect(e.Location)) {
+                if (_shipInfo.Length > 0 && _shipInfo[0].Contains(name, StringComparison.CurrentCultureIgnoreCase))
+                    return;
+
+                _shipInfoLoc = e.Location;
+
+                var shipInfo = $"{name}\n" +
+                               $"Power: \t{ir.ShipInfo.Power}\n" +
+                               $"OrgPower: \t{ir.ShipInfo.OrgPower}\n" +
+                               $"Shields: \t{ir.ShipInfo.Shields}\n" +
+                               $"OrgShields: \t{ir.ShipInfo.OrgShields}";
+
+                _shipInfo = shipInfo.Split('\n');
+                this.Cursor = Cursors.Hand;
+            }
+            else if (this.Cursor == Cursors.Hand)
+                this.Cursor = Cursors.Cross;
+        }
+
         /// <summary>
         /// Creates and outputs ship coordinates for all four quadrants of the raider mother ship with appropriate
         /// transformations applied to each quadrant.
@@ -1082,8 +1123,8 @@ namespace SpaceBattleSim
         {
             // System configuration settings
             SetConfigValue("ScreenViewType", ref _screenViewType);
-            if (_screenViewType == SimScreenView.Windowed)
-                FormStyle.FormSize = this.ClientSize;
+            //if (_screenViewType == SimScreenView.Windowed)
+            //    FormStyle.FormSize = this.ClientSize;
 
             SetConfigValue("ShowVersion", ref _showVersion);
             SetConfigValue("DisableAutoLock", ref _disableAutoLock);
@@ -1334,7 +1375,7 @@ namespace SpaceBattleSim
         private void BgPlatform_Resize(object? sender, EventArgs e)
         {
             // Set the form size in the FormStyle to match the actual client size of the form. 
-            FormStyle.FormSize = this.ClientSize;
+            //FormStyle.FormSize = this.ClientSize;
 
             // Set the form bounds in the _formBounds variable, accounting for any padding and centering of the form.
             _formBounds = new DRectangleF(this.Padding.Left, this.Padding.Top,
@@ -1590,6 +1631,33 @@ namespace SpaceBattleSim
 
                 foreach(var emp in ItemReq.ActiveEmps.Values.ToList())
                     DrawEmp(g, emp.Center, emp.MaxRadius);
+            }
+
+            // only shows ship info, during pause
+            if (_pauseScreen && _shipInfo.Length > 0 && !_shipInfoLoc.IsEmpty)
+            {
+                //float y = FormStyle.FormSize.Height - this.Padding.Bottom - (_shipInfo.Length * 24);
+                float textWidth = _shipInfo.OrderByDescending(s => s.Length).FirstOrDefault()?.Length ?? 60.0f;
+                float width = (textWidth * 10.0f) + 20.0f;
+                float left = _shipInfoLoc.X - (width / 2);
+
+
+                float top = (_shipInfoLoc.Y - (_shipInfo.Length * 24)) - 5;
+                float height = (_shipInfo.Length * 20) + 20;
+
+                if (top < 0)
+                    top = _shipInfoLoc.Y + 20;
+                if (left < 0)
+                    left = 0;
+                if (left + width > FormStyle.FormSize.Width)
+                    left = (FormStyle.FormSize.Width - width) - Padding.Right;
+
+                RectangleF rect = new RectangleF(_shipInfoLoc.X - (width / 2), top, width, height);
+                g.FillRectangle(Brushes.Blue, rect);
+                g.DrawRectangle(new Pen(Brushes.Yellow, 1), rect);
+
+                for (int i = 0; i < _shipInfo.Length; i++)
+                    g.DrawString(_shipInfo[i], _statsFont, Brushes.Yellow, new PointF(left + 10, (top + 10) + (i * 20)));
             }
 
             if (_fKeyDisplay.Length > 0)

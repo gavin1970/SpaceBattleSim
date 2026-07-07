@@ -4,6 +4,7 @@ using SpaceBattleSim.Models.Events;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using static DDefaults;
+using static SpaceBattleSim.StaticConfig;
 
 namespace SpaceBattleSim
 {
@@ -109,6 +110,7 @@ namespace SpaceBattleSim
         // event-related flags without needing multiple separate variables for each event type.
         private readonly EventStatus _eventStatus = new();
         private static string[] _shipStats = new string[] { };
+        private static string[] _shipInfo = { };
 
         // default vars
         private char _shadowOpacity = DEF_SHDW_OPACITY;
@@ -1380,8 +1382,8 @@ namespace SpaceBattleSim
         {
             try
             {
-                if (_isSpaceBattle)
-                    return false;
+                //if (_isSpaceBattle)
+                //    return false;
 
                 // First, check if the mouse position is within the bounds of
                 // the parent form to avoid unnecessary calculations.
@@ -1528,6 +1530,9 @@ namespace SpaceBattleSim
         /// <remarks>Handles mouse movement over the parent form to determine if the cursor is within the close button's interactive area.</remarks>
         private void _parentForm_MouseMove(object? sender, MouseEventArgs e)
         {
+            if (Name.StartsWith("Fighter") || Name.StartsWith("Raider"))
+                Debug.WriteLine($"Location: {Location},  e.Location: {e.Location}");
+
             // Check if the mouse is within the rectangle area of the close button, including the shadow area and
             // an expanded hit area for better usability. Max hitbox is button size to prevent excessive expansion
             // that could lead to unintended interactions. If button is 50px wide, max hitbox is 50px, so the hit
@@ -1535,10 +1540,13 @@ namespace SpaceBattleSim
             // larger than button size will be set to size * 3.
             if (this.IsMouseInRect(e.Location))
             {
+                if (Name.StartsWith("Fighter") || Name.StartsWith("Raider"))
+                    Debug.Write("");
+
                 _eventStatus.Set($"{Name}_MouseInRectangle", true);
                 // Only invoke MouseMove when there are subscribers to prevent unnecessary overhead,
                 // since this can be triggered frequently when moving the mouse around the form.
-                this.MouseMove?.Invoke(this, e); 
+                this.MouseMove?.Invoke(this, e);
             }
             else if (_eventStatus.Get($"{Name}_MouseInRectangle") && 
                     e.X > this.Padding.Left &&  
@@ -1633,7 +1641,8 @@ namespace SpaceBattleSim
         /// <summary>
         /// Gets the client area size of the parent form.
         /// </summary>
-        private SizeF ParentSize { get { return _parentForm?.ClientSize ?? SizeF.Empty; } }
+        //private SizeF ParentSize { get { return _parentForm?.ClientSize ?? SizeF.Empty; } }
+        private SizeF ParentSize { get { return FormStyle.FormSize; } }
         /// <summary>
         /// Gets the padding within the parent form.
         /// </summary>
